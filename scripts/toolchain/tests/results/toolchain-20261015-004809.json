@@ -1,0 +1,390 @@
+﻿{
+    "Suite":  "toolchain",
+    "Timestamp":  "2026-10-15T00:48:09.8965347+08:00",
+    "PowerShell":  "5.1.26100.9444",
+    "MasterSeed":  1486039531,
+    "RequiredConsecutivePasses":  5,
+    "Result":  "PASS",
+    "Runs":  [
+                 {
+                     "Run":  1,
+                     "Seed":  1302212592,
+                     "Passed":  true,
+                     "Seconds":  1,
+                     "Consecutive":  1,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "fresh-install",
+                                           "Passed":  true,
+                                           "Ms":  198,
+                                           "Detail":  "packages=3"
+                                       },
+                                       {
+                                           "Scenario":  "idempotent-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  122,
+                                           "Detail":  "packages=3"
+                                       },
+                                       {
+                                           "Scenario":  "refuses-to-delete-outside-tools",
+                                           "Passed":  true,
+                                           "Ms":  42,
+                                           "Detail":  "target=..\\..\\outside"
+                                       },
+                                       {
+                                           "Scenario":  "zip-slip-rejected",
+                                           "Passed":  true,
+                                           "Ms":  69,
+                                           "Detail":  "entry=../escape-177134.txt"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-cache-redownloads",
+                                           "Passed":  true,
+                                           "Ms":  53,
+                                           "Detail":  "corrupted=pkg8439"
+                                       },
+                                       {
+                                           "Scenario":  "offline-reinstall-from-cache",
+                                           "Passed":  true,
+                                           "Ms":  69,
+                                           "Detail":  "reinstalled=pkg1876 source=hidden"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-without-source-fails-cleanly",
+                                           "Passed":  true,
+                                           "Ms":  97,
+                                           "Detail":  "failed-cleanly=pkg8439"
+                                       },
+                                       {
+                                           "Scenario":  "upgrade-replaces-old-version",
+                                           "Passed":  true,
+                                           "Ms":  69,
+                                           "Detail":  "pkg8439: 1.2.28 -\u003e 1.3.13"
+                                       },
+                                       {
+                                           "Scenario":  "uninstall-one-then-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  64,
+                                           "Detail":  "removed-and-restored=pkg7103"
+                                       },
+                                       {
+                                           "Scenario":  "properties-point-at-real-homes",
+                                           "Passed":  true,
+                                           "Ms":  9,
+                                           "Detail":  "homes=3"
+                                       },
+                                       {
+                                           "Scenario":  "remove-everything",
+                                           "Passed":  true,
+                                           "Ms":  25,
+                                           "Detail":  "tools root deleted"
+                                       }
+                                   ]
+                 },
+                 {
+                     "Run":  2,
+                     "Seed":  1476451262,
+                     "Passed":  true,
+                     "Seconds":  0.5,
+                     "Consecutive":  2,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "fresh-install",
+                                           "Passed":  true,
+                                           "Ms":  65,
+                                           "Detail":  "packages=2"
+                                       },
+                                       {
+                                           "Scenario":  "upgrade-replaces-old-version",
+                                           "Passed":  true,
+                                           "Ms":  59,
+                                           "Detail":  "pkg1225: 1.6.1 -\u003e 1.7.42"
+                                       },
+                                       {
+                                           "Scenario":  "properties-point-at-real-homes",
+                                           "Passed":  true,
+                                           "Ms":  4,
+                                           "Detail":  "homes=2"
+                                       },
+                                       {
+                                           "Scenario":  "offline-reinstall-from-cache",
+                                           "Passed":  true,
+                                           "Ms":  43,
+                                           "Detail":  "reinstalled=pkg2058 source=hidden"
+                                       },
+                                       {
+                                           "Scenario":  "refuses-to-delete-outside-tools",
+                                           "Passed":  true,
+                                           "Ms":  32,
+                                           "Detail":  "target=..\\..\\outside"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-cache-redownloads",
+                                           "Passed":  true,
+                                           "Ms":  30,
+                                           "Detail":  "corrupted=pkg2058"
+                                       },
+                                       {
+                                           "Scenario":  "zip-slip-rejected",
+                                           "Passed":  true,
+                                           "Ms":  53,
+                                           "Detail":  "entry=../escape-164953.txt"
+                                       },
+                                       {
+                                           "Scenario":  "uninstall-one-then-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  54,
+                                           "Detail":  "removed-and-restored=pkg2058"
+                                       },
+                                       {
+                                           "Scenario":  "idempotent-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  47,
+                                           "Detail":  "packages=2"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-without-source-fails-cleanly",
+                                           "Passed":  true,
+                                           "Ms":  67,
+                                           "Detail":  "failed-cleanly=pkg2058"
+                                       },
+                                       {
+                                           "Scenario":  "remove-everything",
+                                           "Passed":  true,
+                                           "Ms":  16,
+                                           "Detail":  "tools root deleted"
+                                       }
+                                   ]
+                 },
+                 {
+                     "Run":  3,
+                     "Seed":  669932779,
+                     "Passed":  true,
+                     "Seconds":  0.6,
+                     "Consecutive":  3,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "fresh-install",
+                                           "Passed":  true,
+                                           "Ms":  83,
+                                           "Detail":  "packages=3"
+                                       },
+                                       {
+                                           "Scenario":  "uninstall-one-then-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  72,
+                                           "Detail":  "removed-and-restored=pkg6072"
+                                       },
+                                       {
+                                           "Scenario":  "idempotent-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  64,
+                                           "Detail":  "packages=3"
+                                       },
+                                       {
+                                           "Scenario":  "offline-reinstall-from-cache",
+                                           "Passed":  true,
+                                           "Ms":  53,
+                                           "Detail":  "reinstalled=pkg9180 source=hidden"
+                                       },
+                                       {
+                                           "Scenario":  "zip-slip-rejected",
+                                           "Passed":  true,
+                                           "Ms":  75,
+                                           "Detail":  "entry=../../escape-365271.txt"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-cache-redownloads",
+                                           "Passed":  true,
+                                           "Ms":  52,
+                                           "Detail":  "corrupted=pkg9180"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-without-source-fails-cleanly",
+                                           "Passed":  true,
+                                           "Ms":  73,
+                                           "Detail":  "failed-cleanly=pkg9050"
+                                       },
+                                       {
+                                           "Scenario":  "upgrade-replaces-old-version",
+                                           "Passed":  true,
+                                           "Ms":  70,
+                                           "Detail":  "pkg9180: 1.10.9 -\u003e 1.11.0"
+                                       },
+                                       {
+                                           "Scenario":  "refuses-to-delete-outside-tools",
+                                           "Passed":  true,
+                                           "Ms":  36,
+                                           "Detail":  "target=..\\outside"
+                                       },
+                                       {
+                                           "Scenario":  "properties-point-at-real-homes",
+                                           "Passed":  true,
+                                           "Ms":  3,
+                                           "Detail":  "homes=3"
+                                       },
+                                       {
+                                           "Scenario":  "remove-everything",
+                                           "Passed":  true,
+                                           "Ms":  18,
+                                           "Detail":  "tools root deleted"
+                                       }
+                                   ]
+                 },
+                 {
+                     "Run":  4,
+                     "Seed":  44285273,
+                     "Passed":  true,
+                     "Seconds":  0.7,
+                     "Consecutive":  4,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "fresh-install",
+                                           "Passed":  true,
+                                           "Ms":  107,
+                                           "Detail":  "packages=4"
+                                       },
+                                       {
+                                           "Scenario":  "upgrade-replaces-old-version",
+                                           "Passed":  true,
+                                           "Ms":  71,
+                                           "Detail":  "pkg8469: 1.6.42 -\u003e 1.7.46"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-without-source-fails-cleanly",
+                                           "Passed":  true,
+                                           "Ms":  89,
+                                           "Detail":  "failed-cleanly=pkg8469"
+                                       },
+                                       {
+                                           "Scenario":  "properties-point-at-real-homes",
+                                           "Passed":  true,
+                                           "Ms":  3,
+                                           "Detail":  "homes=4"
+                                       },
+                                       {
+                                           "Scenario":  "zip-slip-rejected",
+                                           "Passed":  true,
+                                           "Ms":  67,
+                                           "Detail":  "entry=bin/../../escape-609364.txt"
+                                       },
+                                       {
+                                           "Scenario":  "refuses-to-delete-outside-tools",
+                                           "Passed":  true,
+                                           "Ms":  38,
+                                           "Detail":  "target=C:\\Windows"
+                                       },
+                                       {
+                                           "Scenario":  "idempotent-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  82,
+                                           "Detail":  "packages=4"
+                                       },
+                                       {
+                                           "Scenario":  "offline-reinstall-from-cache",
+                                           "Passed":  true,
+                                           "Ms":  57,
+                                           "Detail":  "reinstalled=pkg6874 source=hidden"
+                                       },
+                                       {
+                                           "Scenario":  "uninstall-one-then-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  83,
+                                           "Detail":  "removed-and-restored=pkg8144"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-cache-redownloads",
+                                           "Passed":  true,
+                                           "Ms":  43,
+                                           "Detail":  "corrupted=pkg9952"
+                                       },
+                                       {
+                                           "Scenario":  "remove-everything",
+                                           "Passed":  true,
+                                           "Ms":  38,
+                                           "Detail":  "tools root deleted"
+                                       }
+                                   ]
+                 },
+                 {
+                     "Run":  5,
+                     "Seed":  387125783,
+                     "Passed":  true,
+                     "Seconds":  0.8,
+                     "Consecutive":  5,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "fresh-install",
+                                           "Passed":  true,
+                                           "Ms":  117,
+                                           "Detail":  "packages=4"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-cache-redownloads",
+                                           "Passed":  true,
+                                           "Ms":  51,
+                                           "Detail":  "corrupted=pkg8030"
+                                       },
+                                       {
+                                           "Scenario":  "properties-point-at-real-homes",
+                                           "Passed":  true,
+                                           "Ms":  6,
+                                           "Detail":  "homes=4"
+                                       },
+                                       {
+                                           "Scenario":  "refuses-to-delete-outside-tools",
+                                           "Passed":  true,
+                                           "Ms":  54,
+                                           "Detail":  "target=..\\outside"
+                                       },
+                                       {
+                                           "Scenario":  "zip-slip-rejected",
+                                           "Passed":  true,
+                                           "Ms":  80,
+                                           "Detail":  "entry=../escape-950934.txt"
+                                       },
+                                       {
+                                           "Scenario":  "idempotent-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  69,
+                                           "Detail":  "packages=4"
+                                       },
+                                       {
+                                           "Scenario":  "upgrade-replaces-old-version",
+                                           "Passed":  true,
+                                           "Ms":  86,
+                                           "Detail":  "pkg5742: 1.4.17 -\u003e 1.5.25"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-without-source-fails-cleanly",
+                                           "Passed":  true,
+                                           "Ms":  108,
+                                           "Detail":  "failed-cleanly=pkg5742"
+                                       },
+                                       {
+                                           "Scenario":  "offline-reinstall-from-cache",
+                                           "Passed":  true,
+                                           "Ms":  61,
+                                           "Detail":  "reinstalled=pkg6820 source=hidden"
+                                       },
+                                       {
+                                           "Scenario":  "uninstall-one-then-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  85,
+                                           "Detail":  "removed-and-restored=pkg5742"
+                                       },
+                                       {
+                                           "Scenario":  "remove-everything",
+                                           "Passed":  true,
+                                           "Ms":  39,
+                                           "Detail":  "tools root deleted"
+                                       }
+                                   ]
+                 }
+             ]
+}

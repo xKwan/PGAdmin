@@ -1,0 +1,21 @@
+﻿{
+    "Suite":  "toolchain",
+    "Timestamp":  "2026-10-15T00:45:33.5957664+08:00",
+    "PowerShell":  "5.1.26100.9444",
+    "MasterSeed":  1485886656,
+    "RequiredConsecutivePasses":  5,
+    "Result":  "FAIL",
+    "Runs":  [
+                 {
+                     "Run":  1,
+                     "Seed":  1796334269,
+                     "Passed":  false,
+                     "Seconds":  0.3,
+                     "Consecutive":  0,
+                     "Error":  "The property \u0027Count\u0027 cannot be found on this object. Verify that the property exists.\nat Update-ToolchainFiles, S:\\Code\\PGAdmin\\scripts\\toolchain\\Toolchain.psm1: line 448\r\nat Install-Toolchain, S:\\Code\\PGAdmin\\scripts\\toolchain\\Toolchain.psm1: line 331\r\nat Invoke-OneRun, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 323\r\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 364",
+                     "Scenarios":  [
+
+                                   ]
+                 }
+             ]
+}

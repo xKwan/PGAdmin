@@ -1,0 +1,57 @@
+{
+  "description": "Software the project installs into tools/ (managed) or detects on the machine (pre-existing). Exact versions, URLs and checksums are pinned in software.lock.json.",
+  "packages": [
+    {
+      "name": "jdk",
+      "displayName": "Eclipse Temurin JDK",
+      "resolver": "adoptium",
+      "versionSpec": "21",
+      "homeCheck": "bin/java.exe",
+      "purpose": "Java runtime and compiler for the Spring Boot backend (ADR-0001). Runs Maven, JUnit tests and the SonarQube Maven scanner."
+    },
+    {
+      "name": "maven",
+      "displayName": "Apache Maven",
+      "resolver": "maven-central",
+      "versionSpec": "3.9",
+      "homeCheck": "bin/mvn.cmd",
+      "extraProperties": { "repo.local": "m2/repository" },
+      "purpose": "Backend build tool: dependencies, compilation, unit (Surefire) and integration (Failsafe) tests, JaCoCo coverage, SonarQube analysis (ADR-0008). Its local repository is kept in tools/m2 and becomes the offline Maven bundle."
+    }
+  ],
+  "preexisting": [
+    {
+      "name": "postgresql",
+      "displayName": "PostgreSQL (EDB installer)",
+      "command": "psql.exe",
+      "searchPaths": [ "%ProgramFiles%\\PostgreSQL\\*\\bin\\psql.exe" ],
+      "versionArgs": [ "--version" ],
+      "versionPattern": "(\\d+(\\.\\d+)+)",
+      "purpose": "Local development database and the initdb/pg_ctl binaries for throwaway test clusters (ADR-0007)."
+    },
+    {
+      "name": "node",
+      "displayName": "Node.js",
+      "command": "node.exe",
+      "versionArgs": [ "-v" ],
+      "versionPattern": "v?(\\d+(\\.\\d+)+)",
+      "purpose": "Frontend build (Vite) and tests (Vitest) in later phases."
+    },
+    {
+      "name": "git",
+      "displayName": "Git for Windows",
+      "command": "git.exe",
+      "versionArgs": [ "--version" ],
+      "versionPattern": "(\\d+(\\.\\d+)+)",
+      "purpose": "Version control."
+    },
+    {
+      "name": "docker",
+      "displayName": "Docker Desktop (CLI)",
+      "command": "docker.exe",
+      "versionArgs": [ "--version" ],
+      "versionPattern": "(\\d+(\\.\\d+)+)",
+      "purpose": "Not used by the project (ADR-0007, D6). Listed for transparency only."
+    }
+  ]
+}

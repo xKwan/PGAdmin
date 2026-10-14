@@ -1,0 +1,50 @@
+﻿{
+    "Suite":  "toolchain",
+    "Timestamp":  "2026-10-15T00:46:40.1508994+08:00",
+    "PowerShell":  "5.1.26100.9444",
+    "MasterSeed":  1485952765,
+    "RequiredConsecutivePasses":  5,
+    "Result":  "FAIL",
+    "Runs":  [
+                 {
+                     "Run":  1,
+                     "Seed":  1828752101,
+                     "Passed":  false,
+                     "Seconds":  0.7,
+                     "Consecutive":  0,
+                     "Error":  "Cannot overwrite variable HOME because it is read-only or constant.\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 289\r\nat Invoke-OneRun, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 331\r\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 364",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "fresh-install",
+                                           "Passed":  true,
+                                           "Ms":  208,
+                                           "Detail":  "packages=3"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-cache-redownloads",
+                                           "Passed":  true,
+                                           "Ms":  70,
+                                           "Detail":  "corrupted=pkg5047"
+                                       },
+                                       {
+                                           "Scenario":  "idempotent-reinstall",
+                                           "Passed":  true,
+                                           "Ms":  107,
+                                           "Detail":  "packages=3"
+                                       },
+                                       {
+                                           "Scenario":  "corrupt-without-source-fails-cleanly",
+                                           "Passed":  true,
+                                           "Ms":  137,
+                                           "Detail":  "failed-cleanly=pkg5047"
+                                       },
+                                       {
+                                           "Scenario":  "properties-point-at-real-homes",
+                                           "Passed":  false,
+                                           "Ms":  19,
+                                           "Detail":  "Cannot overwrite variable HOME because it is read-only or constant."
+                                       }
+                                   ]
+                 }
+             ]
+}

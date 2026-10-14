@@ -1,0 +1,26 @@
+{
+    "entries":  [
+                    {
+                        "name":  "jdk",
+                        "versionSpec":  "21",
+                        "version":  "21.0.12.1+1",
+                        "url":  "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.12.1%2B1/OpenJDK21U-jdk_x64_windows_hotspot_21.0.12.1_1.zip",
+                        "file":  "OpenJDK21U-jdk_x64_windows_hotspot_21.0.12.1_1.zip",
+                        "hashAlgorithm":  "SHA256",
+                        "hash":  "F9D6E191AB098C0D416E7D588A24420A8621CD2F4720DAB2459B8B7B2D2D8B4E",
+                        "hashSource":  "Adoptium API (HTTPS)",
+                        "resolvedAt":  "2026-10-14T16:46:55.5862431Z"
+                    },
+                    {
+                        "name":  "maven",
+                        "versionSpec":  "3.9",
+                        "version":  "3.9.16",
+                        "url":  "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.16/apache-maven-3.9.16-bin.zip",
+                        "file":  "apache-maven-3.9.16-bin.zip",
+                        "hashAlgorithm":  "SHA512",
+                        "hash":  "ED41650D42485CFC243FAD22158CAF9CBB5DC408CE7A09DDB94DD42A019DE929CA43065BFA450612CF12BF78B5CAFA3884B96C090DE326FF590448C933454AF3",
+                        "hashSource":  "Maven Central .sha512 (HTTPS)",
+                        "resolvedAt":  "2026-10-14T16:47:01.6843715Z"
+                    }
+                ]
+}

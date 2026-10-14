@@ -17,7 +17,7 @@ Collected on 2026-10-15 by running read-only commands on the workstation. **This
 | Domain-joined | **No** | Verified | `Win32_ComputerSystem.PartOfDomain` |
 | Git | 2.56.0.windows.2 | Verified | `git --version` |
 | Node.js / npm | v24.20.0 / 11.19.0 | Verified | `node -v`, `npm -v` |
-| JDK / Maven | **Not installed** (not on PATH, no JDK directory found) | Verified | `Get-Command`, directory scan |
+| JDK / Maven | Not installed system-wide. Since 2026-10-15, installed **project-locally** in `tools\` by `scripts/toolchain`: Temurin JDK 21.0.12.1+1 and Maven 3.9.16 (see `software-list.md`) | Verified | `Get-Command`, directory scan; `java -version`, `mvn -v` from `tools\` |
 | PostgreSQL | 18.6, Windows service `postgresql-x64-18`, binaries in `S:\Program Files\PostgreSQL\18\bin` (`initdb`, `pg_ctl`, `psql` present) | Verified | `psql --version`, service query |
 | Docker | Docker Desktop installed and running | Verified | service `com.docker.service` |
 | Microsoft Edge | 155.0.4283.45 | Verified | `msedge.exe` file version |

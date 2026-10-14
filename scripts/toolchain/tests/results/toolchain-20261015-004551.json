@@ -1,0 +1,32 @@
+﻿{
+    "Suite":  "toolchain",
+    "Timestamp":  "2026-10-15T00:45:51.3320770+08:00",
+    "PowerShell":  "5.1.26100.9444",
+    "MasterSeed":  1485904218,
+    "RequiredConsecutivePasses":  5,
+    "Result":  "FAIL",
+    "Runs":  [
+                 {
+                     "Run":  1,
+                     "Seed":  1438494322,
+                     "Passed":  false,
+                     "Seconds":  0.4,
+                     "Consecutive":  0,
+                     "Error":  "Assertion failed: uninstall did not refuse a path outside the tools root (no exception)\nat Assert-True, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 37\r\nat Assert-Throws, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 42\r\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 260\r\nat Invoke-OneRun, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 331\r\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\scripts\\toolchain\\tests\\Test-Toolchain.ps1: line 364",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "fresh-install",
+                                           "Passed":  true,
+                                           "Ms":  232,
+                                           "Detail":  "packages=2"
+                                       },
+                                       {
+                                           "Scenario":  "refuses-to-delete-outside-tools",
+                                           "Passed":  false,
+                                           "Ms":  48,
+                                           "Detail":  "Assertion failed: uninstall did not refuse a path outside the tools root (no exception)"
+                                       }
+                                   ]
+                 }
+             ]
+}
