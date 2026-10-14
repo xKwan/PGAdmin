@@ -1,2 +1,5 @@
 # Project-local software installs (see software-list.md). Never commit program files.
 /tools/
+
+# Maven build output
+target/

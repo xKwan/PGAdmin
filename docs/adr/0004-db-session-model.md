@@ -29,4 +29,10 @@ Transactions must span HTTP requests, users must be isolated, and cancellation m
 
 ## Validation
 
-S3 (terminate from same role works on Windows PostgreSQL) and P6/P7 tests. **Not run yet.**
+S3 (terminate from same role works on Windows PostgreSQL) and P6/P7 tests.
+
+- **S5 F3/F4 and S3 J10–J12 (Tested on the workstation, PG 18.6, 2026-10-15):**
+  - A same-role non-superuser companion can cancel and terminate the main backend. The transaction rolls back and its locks are released.
+  - The same role can't signal another role's backend (42501).
+  - Evidence: `spikes/s5-ephemeral-pg/REPORT.md`, `spikes/s3-driver/REPORT.md`.
+- **Still open:** target PostgreSQL versions, the GitLab runner, and P6/P7 tests.

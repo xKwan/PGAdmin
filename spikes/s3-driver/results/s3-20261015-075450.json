@@ -1,0 +1,1563 @@
+﻿{
+    "spike":  "S3 driver protocol",
+    "overall":  "PASS",
+    "masterSeed":  2002493668,
+    "requiredConsecutivePasses":  5,
+    "started":  "2026-10-15T07:53:51.7452520+08:00",
+    "finished":  "2026-10-15T07:54:45.4225706+08:00",
+    "machine":  "KWAN-DESKTOP",
+    "os":  "Microsoft Windows 11 Pro",
+    "java":  "S:\\Code\\PGAdmin\\tools\\jdk-21.0.12.1+1",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  843730190,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  30,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  9.9,
+                     "consecutive":  1,
+                     "findings":  [
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "environment",
+                                          "key":  "server_version",
+                                          "value":  "18.6"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "environment",
+                                          "key":  "pg_bin",
+                                          "value":  "S:\\Program Files\\PostgreSQL\\18\\bin"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "maxRows":  106,
+                                                        "autoCommit":  true,
+                                                        "serverProduced":  106,
+                                                        "total":  105916
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "maxRows":  157,
+                                                        "autoCommit":  false,
+                                                        "serverProduced":  157,
+                                                        "total":  110000
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "fetch_size",
+                                          "value":  {
+                                                        "serverProduced":  309,
+                                                        "fetchSize":  309,
+                                                        "rowsRead":  72
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "command_outcomes",
+                                          "value":  {
+                                                        "CREATE TABLE":  "resultSet=false updateCount=0",
+                                                        "INSERT n":  "resultSet=false updateCount=8",
+                                                        "UPDATE 0":  "resultSet=false updateCount=0",
+                                                        "SELECT":  "resultSet=true updateCount=n/a",
+                                                        "SET":  "resultSet=false updateCount=0",
+                                                        "DO":  "resultSet=false updateCount=0",
+                                                        "CREATE INDEX":  "resultSet=false updateCount=0",
+                                                        "DELETE n":  "resultSet=false updateCount=8",
+                                                        "DROP TABLE":  "resultSet=false updateCount=0"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "dml_returning_max_rows",
+                                          "value":  "UPDATE ... RETURNING with maxRows=25 updated all 239 rows; the UI must say the result was truncated, not that fewer rows changed"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "escape_processing",
+                                          "value":  "default ON rewrites \u0027SELECT {fn ucase(\u0027w7222\u0027)} AS x\u0027 to \u0027SELECT upper(\u0027w7222\u0027) AS x\u0027. The app must call setEscapeProcessing(false)."
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_extended_mode",
+                                          "value":  "client-side split into 2 separate Execute messages (server never saw the whole script)"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_simple_mode",
+                                          "value":  "whole script sent as one simple Query; the server executes every statement. Never use preferQueryMode=simple."
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_idle",
+                                          "value":  {
+                                                        "observed":  "false",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_open",
+                                          "value":  {
+                                                        "observed":  "true",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_failed",
+                                          "value":  {
+                                                        "observed":  "25P02",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-commit",
+                                          "value":  {
+                                                        "observed":  "false",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-rollback",
+                                          "value":  {
+                                                        "observed":  "false",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_savepoint",
+                                          "value":  {
+                                                        "observed":  "true",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "multi_statement_prepared",
+                                          "value":  "server rejected a 2-statement script with 42601 \u0027cannot insert multiple commands into a prepared statement\u0027; nothing ran"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "simple_query_api",
+                                          "value":  "query() ran all 4 statements of a script. Only preparedQuery() may carry user SQL."
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "delayMs":  358,
+                                                        "elapsedMs":  484
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "cursor_read",
+                                          "value":  {
+                                                        "serverProduced":  85,
+                                                        "batch":  85
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  12,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      },
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits).",
+                                                        "commit":  true
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  7,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      },
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits).",
+                                                        "commit":  false
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "vertx",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "statement_timeout_override",
+                                          "value":  "SET statement_timeout = 0 disables the backstop; an app-side timer with cancel() is required"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_terminate_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_cancel_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "companion_terminate",
+                                          "value":  {
+                                                        "mainSqlState":  "57P01",
+                                                        "result":  "rolled back, locks released, connection invalid"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "delayMs":  1230,
+                                                        "elapsedMs":  1255,
+                                                        "inTransaction":  false,
+                                                        "sqlState":  "57014"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "delayMs":  723,
+                                                        "elapsedMs":  738,
+                                                        "inTransaction":  true,
+                                                        "sqlState":  "57014"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true",
+                                                        "begin":  "BEGIN",
+                                                        "failedInside":  false,
+                                                        "end":  "ROLLBACK"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true",
+                                                        "begin":  "BEGIN",
+                                                        "failedInside":  true,
+                                                        "end":  "END"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  843730190,
+                                          "area":  "environment",
+                                          "key":  "teardown",
+                                          "value":  "directory removed and port free"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  2,
+                     "seed":  1320130260,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  30,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  10.3,
+                     "consecutive":  2,
+                     "findings":  [
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "environment",
+                                          "key":  "server_version",
+                                          "value":  "18.6"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "environment",
+                                          "key":  "pg_bin",
+                                          "value":  "S:\\Program Files\\PostgreSQL\\18\\bin"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "serverProduced":  123,
+                                                        "autoCommit":  true,
+                                                        "maxRows":  123,
+                                                        "total":  92998
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "serverProduced":  137,
+                                                        "autoCommit":  false,
+                                                        "maxRows":  137,
+                                                        "total":  196774
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "dml_returning_max_rows",
+                                          "value":  "UPDATE ... RETURNING with maxRows=95 updated all 186 rows; the UI must say the result was truncated, not that fewer rows changed"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "command_outcomes",
+                                          "value":  {
+                                                        "CREATE TABLE":  "resultSet=false updateCount=0",
+                                                        "INSERT n":  "resultSet=false updateCount=9",
+                                                        "UPDATE 0":  "resultSet=false updateCount=0",
+                                                        "SELECT":  "resultSet=true updateCount=n/a",
+                                                        "SET":  "resultSet=false updateCount=0",
+                                                        "DO":  "resultSet=false updateCount=0",
+                                                        "CREATE INDEX":  "resultSet=false updateCount=0",
+                                                        "DELETE n":  "resultSet=false updateCount=9",
+                                                        "DROP TABLE":  "resultSet=false updateCount=0"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "fetch_size",
+                                          "value":  {
+                                                        "serverProduced":  37,
+                                                        "rowsRead":  21,
+                                                        "fetchSize":  37
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "companion_terminate",
+                                          "value":  {
+                                                        "result":  "rolled back, locks released, connection invalid",
+                                                        "mainSqlState":  "57P01"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "statement_timeout_override",
+                                          "value":  "SET statement_timeout = 0 disables the backstop; an app-side timer with cancel() is required"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "sqlState":  "57014",
+                                                        "inTransaction":  false,
+                                                        "elapsedMs":  325,
+                                                        "delayMs":  309
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "sqlState":  "57014",
+                                                        "inTransaction":  true,
+                                                        "elapsedMs":  1116,
+                                                        "delayMs":  1101
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true",
+                                                        "end":  "END",
+                                                        "failedInside":  false,
+                                                        "begin":  "START TRANSACTION READ ONLY"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true",
+                                                        "end":  "COMMIT",
+                                                        "failedInside":  true,
+                                                        "begin":  "START TRANSACTION"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_terminate_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_cancel_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "elapsedMs":  670,
+                                                        "delayMs":  651
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "multi_statement_prepared",
+                                          "value":  "server rejected a 3-statement script with 42601 \u0027cannot insert multiple commands into a prepared statement\u0027; nothing ran"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "simple_query_api",
+                                          "value":  "query() ran all 3 statements of a script. Only preparedQuery() may carry user SQL."
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  6,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      },
+                                                        "commit":  true,
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits)."
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  16,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      },
+                                                        "commit":  false,
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits)."
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_idle",
+                                          "value":  {
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE",
+                                                        "observed":  "false"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_open",
+                                          "value":  {
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE",
+                                                        "observed":  "true"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_failed",
+                                          "value":  {
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE",
+                                                        "observed":  "25P02"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-commit",
+                                          "value":  {
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE",
+                                                        "observed":  "false"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-rollback",
+                                          "value":  {
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE",
+                                                        "observed":  "false"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_savepoint",
+                                          "value":  {
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE",
+                                                        "observed":  "true"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "cursor_read",
+                                          "value":  {
+                                                        "serverProduced":  127,
+                                                        "batch":  127
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "vertx",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "escape_processing",
+                                          "value":  "default ON rewrites \u0027SELECT {fn ucase(\u0027w7887\u0027)} AS x\u0027 to \u0027SELECT upper(\u0027w7887\u0027) AS x\u0027. The app must call setEscapeProcessing(false)."
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_simple_mode",
+                                          "value":  "whole script sent as one simple Query; the server executes every statement. Never use preferQueryMode=simple."
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_extended_mode",
+                                          "value":  "client-side split into 3 separate Execute messages (server never saw the whole script)"
+                                      },
+                                      {
+                                          "seed":  1320130260,
+                                          "area":  "environment",
+                                          "key":  "teardown",
+                                          "value":  "directory removed and port free"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  3,
+                     "seed":  1519185369,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  30,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  11.4,
+                     "consecutive":  3,
+                     "findings":  [
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "environment",
+                                          "key":  "server_version",
+                                          "value":  "18.6"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "environment",
+                                          "key":  "pg_bin",
+                                          "value":  "S:\\Program Files\\PostgreSQL\\18\\bin"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_idle",
+                                          "value":  {
+                                                        "observed":  "false",
+                                                        "begin":  "START TRANSACTION"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_open",
+                                          "value":  {
+                                                        "observed":  "true",
+                                                        "begin":  "START TRANSACTION"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_failed",
+                                          "value":  {
+                                                        "observed":  "25P02",
+                                                        "begin":  "START TRANSACTION"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-commit",
+                                          "value":  {
+                                                        "observed":  "false",
+                                                        "begin":  "START TRANSACTION"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-rollback",
+                                          "value":  {
+                                                        "observed":  "false",
+                                                        "begin":  "START TRANSACTION"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_savepoint",
+                                          "value":  {
+                                                        "observed":  "true",
+                                                        "begin":  "START TRANSACTION"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "delayMs":  546,
+                                                        "elapsedMs":  561
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "multi_statement_prepared",
+                                          "value":  "server rejected a 5-statement script with 42601 \u0027cannot insert multiple commands into a prepared statement\u0027; nothing ran"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "cursor_read",
+                                          "value":  {
+                                                        "batch":  7,
+                                                        "serverProduced":  7
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "simple_query_api",
+                                          "value":  "query() ran all 3 statements of a script. Only preparedQuery() may carry user SQL."
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits).",
+                                                        "commit":  true,
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  2,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      }
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits).",
+                                                        "commit":  false,
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  14,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      }
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "command_outcomes",
+                                          "value":  {
+                                                        "CREATE TABLE":  "resultSet=false updateCount=0",
+                                                        "INSERT n":  "resultSet=false updateCount=6",
+                                                        "UPDATE 0":  "resultSet=false updateCount=0",
+                                                        "SELECT":  "resultSet=true updateCount=n/a",
+                                                        "SET":  "resultSet=false updateCount=0",
+                                                        "DO":  "resultSet=false updateCount=0",
+                                                        "CREATE INDEX":  "resultSet=false updateCount=0",
+                                                        "DELETE n":  "resultSet=false updateCount=6",
+                                                        "DROP TABLE":  "resultSet=false updateCount=0"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "serverProduced":  167,
+                                                        "total":  50396,
+                                                        "maxRows":  167,
+                                                        "autoCommit":  true
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "serverProduced":  57,
+                                                        "total":  156635,
+                                                        "maxRows":  57,
+                                                        "autoCommit":  false
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "dml_returning_max_rows",
+                                          "value":  "UPDATE ... RETURNING with maxRows=19 updated all 54 rows; the UI must say the result was truncated, not that fewer rows changed"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "fetch_size",
+                                          "value":  {
+                                                        "fetchSize":  496,
+                                                        "rowsRead":  21,
+                                                        "serverProduced":  496
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_terminate_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_cancel_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "delayMs":  1382,
+                                                        "elapsedMs":  1398,
+                                                        "inTransaction":  false,
+                                                        "sqlState":  "57014"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "delayMs":  772,
+                                                        "elapsedMs":  789,
+                                                        "inTransaction":  true,
+                                                        "sqlState":  "57014"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "companion_terminate",
+                                          "value":  {
+                                                        "mainSqlState":  "57P01",
+                                                        "result":  "rolled back, locks released, connection invalid"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "statement_timeout_override",
+                                          "value":  "SET statement_timeout = 0 disables the backstop; an app-side timer with cancel() is required"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "begin":  "BEGIN WORK",
+                                                        "failedInside":  false,
+                                                        "end":  "END",
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "begin":  "START TRANSACTION READ ONLY",
+                                                        "failedInside":  true,
+                                                        "end":  "ROLLBACK",
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "escape_processing",
+                                          "value":  "default ON rewrites \u0027SELECT {fn ucase(\u0027w3724\u0027)} AS x\u0027 to \u0027SELECT upper(\u0027w3724\u0027) AS x\u0027. The app must call setEscapeProcessing(false)."
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_simple_mode",
+                                          "value":  "whole script sent as one simple Query; the server executes every statement. Never use preferQueryMode=simple."
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_extended_mode",
+                                          "value":  "client-side split into 3 separate Execute messages (server never saw the whole script)"
+                                      },
+                                      {
+                                          "seed":  1519185369,
+                                          "area":  "environment",
+                                          "key":  "teardown",
+                                          "value":  "directory removed and port free"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  4,
+                     "seed":  1148643936,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  30,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  10.7,
+                     "consecutive":  4,
+                     "findings":  [
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "environment",
+                                          "key":  "server_version",
+                                          "value":  "18.6"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "environment",
+                                          "key":  "pg_bin",
+                                          "value":  "S:\\Program Files\\PostgreSQL\\18\\bin"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_extended_mode",
+                                          "value":  "client-side split into 3 separate Execute messages (server never saw the whole script)"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "escape_processing",
+                                          "value":  "default ON rewrites \u0027SELECT {fn ucase(\u0027w2875\u0027)} AS x\u0027 to \u0027SELECT upper(\u0027w2875\u0027) AS x\u0027. The app must call setEscapeProcessing(false)."
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_simple_mode",
+                                          "value":  "whole script sent as one simple Query; the server executes every statement. Never use preferQueryMode=simple."
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "fetch_size",
+                                          "value":  {
+                                                        "serverProduced":  267,
+                                                        "rowsRead":  252,
+                                                        "fetchSize":  267
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "serverProduced":  95,
+                                                        "autoCommit":  true,
+                                                        "maxRows":  95,
+                                                        "total":  93729
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "serverProduced":  115,
+                                                        "autoCommit":  false,
+                                                        "maxRows":  115,
+                                                        "total":  141911
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "command_outcomes",
+                                          "value":  {
+                                                        "CREATE TABLE":  "resultSet=false updateCount=0",
+                                                        "INSERT n":  "resultSet=false updateCount=12",
+                                                        "UPDATE 0":  "resultSet=false updateCount=0",
+                                                        "SELECT":  "resultSet=true updateCount=n/a",
+                                                        "SET":  "resultSet=false updateCount=0",
+                                                        "DO":  "resultSet=false updateCount=0",
+                                                        "CREATE INDEX":  "resultSet=false updateCount=0",
+                                                        "DELETE n":  "resultSet=false updateCount=12",
+                                                        "DROP TABLE":  "resultSet=false updateCount=0"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "dml_returning_max_rows",
+                                          "value":  "UPDATE ... RETURNING with maxRows=201 updated all 321 rows; the UI must say the result was truncated, not that fewer rows changed"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "multi_statement_prepared",
+                                          "value":  "server rejected a 3-statement script with 42601 \u0027cannot insert multiple commands into a prepared statement\u0027; nothing ran"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "simple_query_api",
+                                          "value":  "query() ran all 5 statements of a script. Only preparedQuery() may carry user SQL."
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "cursor_read",
+                                          "value":  {
+                                                        "serverProduced":  256,
+                                                        "batch":  256
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_idle",
+                                          "value":  {
+                                                        "observed":  "false",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_open",
+                                          "value":  {
+                                                        "observed":  "true",
+                                                        "begin":  "START TRANSACTION"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_failed",
+                                          "value":  {
+                                                        "observed":  "25P02",
+                                                        "begin":  "START TRANSACTION"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-commit",
+                                          "value":  {
+                                                        "observed":  "false",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-rollback",
+                                          "value":  {
+                                                        "observed":  "false",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_savepoint",
+                                          "value":  {
+                                                        "observed":  "true",
+                                                        "begin":  "BEGIN ISOLATION LEVEL SERIALIZABLE"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits).",
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  13,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      },
+                                                        "commit":  true
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits).",
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  3,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      },
+                                                        "commit":  false
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "vertx",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "elapsedMs":  572,
+                                                        "delayMs":  550
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "statement_timeout_override",
+                                          "value":  "SET statement_timeout = 0 disables the backstop; an app-side timer with cancel() is required"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "begin":  "START TRANSACTION",
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true",
+                                                        "end":  "COMMIT WORK",
+                                                        "failedInside":  false
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "begin":  "BEGIN",
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true",
+                                                        "end":  "ROLLBACK",
+                                                        "failedInside":  true
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_terminate_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_cancel_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "companion_terminate",
+                                          "value":  {
+                                                        "mainSqlState":  "57P01",
+                                                        "result":  "rolled back, locks released, connection invalid"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "delayMs":  822,
+                                                        "sqlState":  "57014",
+                                                        "inTransaction":  false,
+                                                        "elapsedMs":  837
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "delayMs":  314,
+                                                        "sqlState":  "57014",
+                                                        "inTransaction":  true,
+                                                        "elapsedMs":  331
+                                                    }
+                                      },
+                                      {
+                                          "seed":  1148643936,
+                                          "area":  "environment",
+                                          "key":  "teardown",
+                                          "value":  "directory removed and port free"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  5,
+                     "seed":  598377408,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  30,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  11.1,
+                     "consecutive":  5,
+                     "findings":  [
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "environment",
+                                          "key":  "server_version",
+                                          "value":  "18.6"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "environment",
+                                          "key":  "pg_bin",
+                                          "value":  "S:\\Program Files\\PostgreSQL\\18\\bin"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_terminate_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "cross_role_signal",
+                                          "value":  "pg_cancel_backend on another role\u0027s backend: 42501 permission denied"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "sqlState":  "57014",
+                                                        "inTransaction":  false,
+                                                        "elapsedMs":  545,
+                                                        "delayMs":  416
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "sqlState":  "57014",
+                                                        "inTransaction":  true,
+                                                        "elapsedMs":  1223,
+                                                        "delayMs":  1208
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "statement_timeout_override",
+                                          "value":  "SET statement_timeout = 0 disables the backstop; an app-side timer with cancel() is required"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "end":  "COMMIT WORK",
+                                                        "failedInside":  false,
+                                                        "begin":  "begin",
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "transaction_state",
+                                          "value":  {
+                                                        "end":  "COMMIT",
+                                                        "failedInside":  true,
+                                                        "begin":  "BEGIN ISOLATION LEVEL REPEATABLE READ",
+                                                        "result":  "OPEN/FAILED/IDLE tracked; getAutoCommit() stayed true"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "companion_terminate",
+                                          "value":  {
+                                                        "result":  "rolled back, locks released, connection invalid",
+                                                        "mainSqlState":  "57P01"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_simple_mode",
+                                          "value":  "whole script sent as one simple Query; the server executes every statement. Never use preferQueryMode=simple."
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "multi_statement_extended_mode",
+                                          "value":  "client-side split into 5 separate Execute messages (server never saw the whole script)"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "escape_processing",
+                                          "value":  "default ON rewrites \u0027SELECT {fn ucase(\u0027w1681\u0027)} AS x\u0027 to \u0027SELECT upper(\u0027w1681\u0027) AS x\u0027. The app must call setEscapeProcessing(false)."
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "dml_returning_max_rows",
+                                          "value":  "UPDATE ... RETURNING with maxRows=213 updated all 490 rows; the UI must say the result was truncated, not that fewer rows changed"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "fetch_size",
+                                          "value":  {
+                                                        "rowsRead":  39,
+                                                        "fetchSize":  114,
+                                                        "serverProduced":  114
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "total":  187517,
+                                                        "serverProduced":  135,
+                                                        "autoCommit":  true,
+                                                        "maxRows":  135
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "max_rows",
+                                          "value":  {
+                                                        "total":  129260,
+                                                        "serverProduced":  127,
+                                                        "autoCommit":  false,
+                                                        "maxRows":  127
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "pgjdbc",
+                                          "key":  "command_outcomes",
+                                          "value":  {
+                                                        "CREATE TABLE":  "resultSet=false updateCount=0",
+                                                        "INSERT n":  "resultSet=false updateCount=5",
+                                                        "UPDATE 0":  "resultSet=false updateCount=0",
+                                                        "SELECT":  "resultSet=true updateCount=n/a",
+                                                        "SET":  "resultSet=false updateCount=0",
+                                                        "DO":  "resultSet=false updateCount=0",
+                                                        "CREATE INDEX":  "resultSet=false updateCount=0",
+                                                        "DELETE n":  "resultSet=false updateCount=5",
+                                                        "DROP TABLE":  "resultSet=false updateCount=0"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "simple_query_api",
+                                          "value":  "query() ran all 3 statements of a script. Only preparedQuery() may carry user SQL."
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "corpus_sent_intact",
+                                          "value":  "20 sampled statements each sent as one unmodified Execute"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "cancel",
+                                          "value":  {
+                                                        "delayMs":  1290,
+                                                        "elapsedMs":  1308
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits).",
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  2,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      },
+                                                        "commit":  true
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "transaction_and_outcomes",
+                                          "value":  {
+                                                        "note":  "BEGIN/COMMIT/ROLLBACK work via preparedQuery; no public API exposes the ReadyForQuery transaction status. rowCount() for DDL is garbage (command-tag word decoded as digits).",
+                                                        "rowCounts":  {
+                                                                          "CREATE TABLE":  379101,
+                                                                          "BEGIN":  0,
+                                                                          "INSERT n":  12,
+                                                                          "UPDATE 0":  0,
+                                                                          "CREATE INDEX":  282250,
+                                                                          "SET":  0,
+                                                                          "END":  0
+                                                                      },
+                                                        "commit":  false
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "cursor_read",
+                                          "value":  {
+                                                        "serverProduced":  114,
+                                                        "batch":  114
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_idle",
+                                          "value":  {
+                                                        "begin":  "BEGIN",
+                                                        "observed":  "false"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_open",
+                                          "value":  {
+                                                        "begin":  "BEGIN",
+                                                        "observed":  "true"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_failed",
+                                          "value":  {
+                                                        "begin":  "BEGIN",
+                                                        "observed":  "25P02"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-commit",
+                                          "value":  {
+                                                        "begin":  "BEGIN",
+                                                        "observed":  "false"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_after-rollback",
+                                          "value":  {
+                                                        "begin":  "BEGIN",
+                                                        "observed":  "false"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "txn_probe_savepoint",
+                                          "value":  {
+                                                        "begin":  "BEGIN",
+                                                        "observed":  "true"
+                                                    }
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "vertx",
+                                          "key":  "multi_statement_prepared",
+                                          "value":  "server rejected a 4-statement script with 42601 \u0027cannot insert multiple commands into a prepared statement\u0027; nothing ran"
+                                      },
+                                      {
+                                          "seed":  598377408,
+                                          "area":  "environment",
+                                          "key":  "teardown",
+                                          "value":  "directory removed and port free"
+                                      }
+                                  ]
+                 }
+             ]
+}

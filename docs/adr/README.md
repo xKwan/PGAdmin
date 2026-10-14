@@ -15,3 +15,4 @@ An ADR moves to `Accepted` only on explicit stakeholder approval, recorded in th
 | [0006](0006-execution-limits.md) | Execution limits, timeouts and transaction behaviour | D5, D10, D11 | Proposed |
 | [0007](0007-test-database-strategy.md) | Integration-test database strategy without Docker | D6 | Proposed |
 | [0008](0008-offline-dependency-process.md) | Offline dependency intake and CI platform | D7, D8 | Proposed |
+| [0009](0009-driver-choice.md) | PostgreSQL driver and single-statement enforcement | S3 outcome | Proposed |

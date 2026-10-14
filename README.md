@@ -10,6 +10,7 @@ An internal web application, similar to DBeaver for everyday workflows, that let
 |---|---|
 | Implementation plan (architecture, phases, decision register) | [`docs/implementation-plan-v2.md`](docs/implementation-plan-v2.md) |
 | Architecture decisions | [`docs/adr/`](docs/adr/README.md) |
+| Decision log (stakeholder instructions) | [`docs/decision-log.md`](docs/decision-log.md) |
 | Requirements (MVP vs deferred) | [`docs/requirements.md`](docs/requirements.md) |
 | Threat model | [`docs/threat-model.md`](docs/threat-model.md) |
 | SQL audit policy | [`docs/audit-policy.md`](docs/audit-policy.md) |
@@ -95,11 +96,12 @@ Every component is tested with randomised scenarios and must pass **at least 5 c
 |---|---|---|
 | Toolchain scripts | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\toolchain\tests\Test-Toolchain.ps1` | `scripts/toolchain/tests/results/` |
 | Spike S5: throwaway PostgreSQL clusters, concurrency and cancellation | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s5-ephemeral-pg\Invoke-S5Spike.ps1` | [`spikes/s5-ephemeral-pg/REPORT.md`](spikes/s5-ephemeral-pg/REPORT.md) |
+| Spike S3: driver protocol (pgJDBC vs Vert.x), offline Maven | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s3-driver\Invoke-S3Spike.ps1` | [`spikes/s3-driver/REPORT.md`](spikes/s3-driver/REPORT.md) |
 
 ## Project status
 
 | Phase | State |
 |---|---|
 | 0: Discovery and decisions | Drafts complete. Awaiting stakeholder decisions and environment facts ([`docs/phase-0-status.md`](docs/phase-0-status.md)). |
-| 1: Feasibility spikes | Toolchain automation done. S5 passed on the workstation (runner and Windows Server still pending). S1–S4 and S6 not started. |
+| 1: Feasibility spikes | Toolchain automation done. S5 and S3 passed on the workstation (target PostgreSQL versions, runner and Windows Server still pending). Driver decision drafted (ADR-0009, Proposed). S1, S2, S4 and S6 not started. |
 | 2–12 | Not started |
