@@ -1,9 +1,38 @@
 # PostgreSQL Web Query Interface: Implementation Plan (v2)
 
-> **Status:** Revised proposal, awaiting review and approval
-> **Date:** 2026-10-14
+> **Status:** Revised proposal (v2.1), awaiting review and approval. **Nothing in this plan has been verified against the target environment or tested.**
+> **Date:** 2026-10-15 (v2.1); 2026-10-14 (v2)
 > **Supersedes:** `docs/implementation-plan.md` (v1, kept for comparison)
-> **Repository state at planning time:** git repository on `main` with no commits. The only files are the two plan documents, both uncommitted.
+> **Revision history:** tracked in git. v2.1 adds verification-status labels, approval gates G0–G5, cancellation resource-release criteria, indeterminate audit outcomes, the Waffle/Spring Security 7 risk, and GitLab constraints.
+
+### Status labels used in this document
+
+| Label | Meaning |
+|---|---|
+| **Verified** | Confirmed by direct observation of the target environment |
+| **Tested** | Proven by a test or spike that actually ran, with output recorded |
+| **Stated** | Told to us by the stakeholder; not independently checked |
+| **Assumed** | A technical belief based on knowledge of the tools; not checked here |
+| **Unresolved** | Needs a stakeholder decision or environment information |
+
+A requirement counts as satisfied only when it is **Tested** or **Verified** with recorded evidence. Describing it in this document does not satisfy it.
+
+### Current verification status
+
+| # | Risk area | Status | Gate |
+|---|---|---|---|
+| 1 | Waffle ↔ Java 21 / Spring Boot | Assumed / Unresolved | Blocker: P0 inventory and spike S1 |
+| 2 | Identity and DataAdmin source | Unresolved | Blocker: D1 and S1 |
+| 3 | Internal PostgreSQL (5433) authentication | Unresolved | Blocker: D1, D3 and `pg_hba.conf` review |
+| 4 | SQL execution safety | Assumed | Blocker: S2 and S3; execution stays disabled |
+| 5 | Cancellation and resource control | Assumed | Blocker: S3 and P7 tests |
+| 6 | Audit and privacy | Unresolved | Blocker: D4 and D13 |
+| 7 | Air-gapped dependencies | Assumed | Blocker: S4 and the intake process |
+| 8 | GitLab CI on Windows runners | Assumed | Blocker: P0 inventory, S4–S6 |
+| 9 | External PostgreSQL (5432) connections | Unresolved | Blocker for P6: D2 |
+| 10 | Approval gates | Proposed (§9.1) | Must be adopted by the stakeholder |
+
+No item is currently Verified or Tested.
 
 ---
 
@@ -88,7 +117,7 @@ Internal PG :5433    External PG :5432       Audit DB (pgweb_audit) — location
 | Concern | Choice | Reason |
 |---|---|---|
 | Backend runtime | **Java 21 LTS** (Java 25 LTS acceptable; see D7) | Waffle requires the JVM. Spring Boot, pgJDBC and the SonarQube Java analyser all support it. |
-| Framework | **Spring Boot** (3.5.x or 4.0.x, chosen by the Waffle compatibility spike) | Waffle has Spring Security integration. Spring Security provides CSRF, session fixation protection, headers and method security. |
+| Framework | **Spring Boot** (3.5.x or 4.0.x, chosen by the Waffle compatibility spike) | Waffle has Spring Security integration. Spring Security provides CSRF, session fixation protection, headers and method security. **Open risk (Assumed/Unresolved):** it is not known whether Waffle provides a module for Spring Security 7, which Spring Boot 4.x uses. Spring Boot 3.5.x (Spring Security 6) is the likely fallback. Spike S1 decides. Waffle will not be replaced without stakeholder approval. |
 | Windows auth | **Waffle** (`waffle-jna` plus the Spring Security module matching the chosen Spring Security major) | Reuses the existing mechanism, as required |
 | PostgreSQL driver | **pgJDBC 42.7.x**. Vert.x PG Client is the alternative if spike S3 requires it. | Standard driver. Supports native cancel (`Statement.cancel()`), `setMaxRows`, `setFetchSize`, transaction-state access, SCRAM and TLS. |
 | SQL parser | **libpg_query** (PostgreSQL's own parser extracted as a library), pinned to the server's major version, reached through JNA (already present via Waffle) or a WASM runtime in the JVM. **Feasibility-gated (S2).** | Uses the real PostgreSQL grammar for splitting and audit normalisation. No hand-written splitter. |
@@ -134,6 +163,8 @@ Windows authentication **does not** log the user in to PostgreSQL. The plan neve
 - Only configured domains are accepted.
 - The PostgreSQL role name comes from a configured rule. The default is the lowercase `sAMAccountName`. An explicit override table in server config handles exceptions.
 - The naming convention used by existing internal accounts must be confirmed (D1).
+
+**Trusted identity source:** the Windows identity comes only from the server-side security context that Waffle establishes after Negotiate succeeds. No API accepts a username, role or authorisation flag from the client. Request fields such as `user`, `role` or `isDataAdmin` are **rejected**, not ignored. `GET /api/me` capabilities only drive the display; the server re-checks every request.
 
 **`DataAdmin` check:** the source must be confirmed (D1). It is either an AD group, which Waffle exposes as a granted authority, or a role stored by the existing application. It is checked **on every internal-scoped request**, not only at connect time. Group membership from AD is fixed in the logon token when the user authenticates. Removing someone from the group therefore takes effect at their next authentication, so the absolute app-session lifetime caps the revocation delay (default 8 h; D10).
 
@@ -268,6 +299,8 @@ No app-owned account ever runs user SQL. Where the audit DB lives is decision D4
    - `client_connection_check_interval` (PostgreSQL 14+);
    - role-level `statement_timeout` and `idle_in_transaction_session_timeout`.
 6. **No unsafe reuse:** a connection runs another statement only if its last exchange ended in a ReadyForQuery the app saw and its state is known. `BROKEN`, `TERMINATED` and `UNKNOWN` connections are closed, never pooled or reused. The user has to open a new session.
+
+**Limits of cancellation:** a cancel only takes effect when the backend reaches an interrupt check. Some work may not respond quickly, such as extension functions or waits inside external calls. After a terminate, rolling back a large transaction still takes time on the server. Whether resources were actually released is therefore **measured** (P7 acceptance criteria), never inferred from the cancel call returning.
 
 The app also sets `statement_timeout`, `lock_timeout` and `idle_in_transaction_session_timeout` at the start of each session as **backstops only**. Users can change them. Tests prove the app's controls still hold after users change them.
 
@@ -422,6 +455,15 @@ States: `CONNECTING → READY ⇄ EXECUTING → READY | TX_OPEN | TX_FAILED | BR
 1. An `exec_intent` record must **commit** to the audit DB *before* the SQL is sent.
 2. `exec_outcome` is written after execution. If that write fails, the record goes to a **local spool** (append-only JSONL file; NTFS ACL: service account write, auditors read) and an alert goes to the log or Windows Event Log. A reconciler replays the spool when the DB is back. An intent with no outcome means "outcome unknown", which is still evidence the statement was attempted.
 
+**Uncertain outcomes:**
+- If execution is cut off by a socket loss or an unconfirmed cancel, an autocommit statement may have committed just before. The outcome is recorded as **`indeterminate` (may have committed)**, never as a failure.
+- The reconciler reports every intent record that has no outcome as **`outcome_unknown`**.
+
+**What is and isn't the audit record:**
+- The **audit DB is the only record of truth.**
+- The local spool is temporary storage. Spool entries are hash-chained, marked "spooled", and raise an alert.
+- Application logs (Logback) are for operations only. They are **never** treated as audit records or as tamper-proof.
+
 | Policy | Behaviour when the intent can't be persisted | Security consequence | Operational consequence |
 |---|---|---|---|
 | **Fail-closed (recommended)** | Execution is refused with `503 AUDIT_UNAVAILABLE`. Connect/disconnect still works. | No database change happens without an audit record. This matches DataAdmin-level access. | An audit DB outage stops all SQL execution. The audit DB becomes a critical dependency and needs monitoring and a recovery runbook. |
@@ -541,6 +583,13 @@ States: `CONNECTING → READY ⇄ EXECUTING → READY | TX_OPEN | TX_FAILED | BR
 | `analysis` | `sonar:backend`, `sonar:frontend` with `sonar.qualitygate.wait=true` | Quality gate red (see §8.3 for edition-specific behaviour) |
 | `package` | Build SPA → copy into JAR → `mvn package`, CycloneDX SBOMs, SHA-256 manifest; release bundle zip (JAR, service wrapper, config templates, scripts, docs) | Build failure |
 | `deploy` (manual) | `deploy:test` via PowerShell to the test server; `deploy:prod` manual and protected | Smoke test failure triggers documented rollback |
+
+**Pipeline constraints:**
+- No remote `include:` (no gitlab.com templates or external URLs).
+- No `image:` or `services:` keywords (no Docker).
+- No external SaaS. The `analysis` jobs reach only the internal SonarQube.
+- GitLab Runner itself must be installable offline (P0 inventory).
+- No GitHub Actions.
 
 Merge requests to `main` run every stage up to `analysis`. `main` is protected and requires the pipeline to pass. Nightly: the concurrency suite repeated ×20 to catch flaky tests, plus audit chain verification against the test DB.
 
@@ -662,6 +711,19 @@ P0 Discovery & decisions ─► P1 Feasibility spikes ─► P2 Offline toolchai
           ─► P9 Transactions & concurrency ─► P10 Metadata browser
           ─► P11 Hardening, E2E, security suite, offline rehearsal ─► P12 Deployment readiness ═ MVP
 ```
+
+#### 9.1 Approval gates (blocking)
+
+| Gate | Opens | Requires (all must hold) |
+|---|---|---|
+| **G0** | Phase 0 work | Stakeholder approves this plan |
+| **G1** | Phase 1 spikes | P0 inventory complete; D0, D1, D3, D5 and D7 decided; spike dependency list approved for intake |
+| **G2** | Phase 2 scaffolding and app code | S1 and S4 PASS; S5 PASS or fallback approved; S2/S3 outcomes recorded; compatibility matrix rows marked **Tested** with evidence |
+| **G3** | Phase 6 DB connections | P4 authorisation and audit tests pass; D2, D4 and D14b/c decided |
+| **G4** | Turning on execution (P8) | P7 acceptance tests pass with evidence (gate, limits, cancel and resource release, isolation, fail-closed audit); written stakeholder sign-off |
+| **G5** | Production enablement | P11 and P12 complete; threat-model items mitigated or formally accepted |
+
+**A failed spike or an undecided security item is a blocker.** It is reported with evidence and options, and never routed around. No implementation, package installation or application code change happens without the relevant gate's explicit approval.
 
 ---
 
@@ -903,6 +965,13 @@ P0 Discovery & decisions ─► P1 Feasibility spikes ─► P2 Offline toolchai
   - Type fidelity.
   - Timeout enforced after `SET statement_timeout=0` / `RESET ALL`.
   - Cancel confirmed, escalated and unconfirmed paths.
+  - **Resource release, measured:**
+    - after a confirmed cancel, that PID in `pg_stat_activity` is no longer `active` within N seconds, and it holds no rows in `pg_locks`;
+    - after escalation, the PID is gone from `pg_stat_activity`;
+    - another session can then take the locks the cancelled session held;
+    - JVM heap stays below a stated bound during a 100k-row query (JMX);
+    - all of the above still hold after the user runs `SET statement_timeout = 0`, `SET lock_timeout = 0` and `RESET ALL`.
+  - Interrupted execution is audited as `indeterminate`; intents without outcomes are reported as `outcome_unknown`.
   - Quarantined connection never reused.
   - Concurrent execute on one session → 409.
   - Audit DB down → no SQL reaches PostgreSQL (verified via server log) and `503`.
@@ -1099,32 +1168,36 @@ P0 Discovery & decisions ─► P1 Feasibility spikes ─► P2 Offline toolchai
 
 #### 11.1 Facts established by the environment (as stated by the stakeholder)
 
-| # | Fact |
-|---|---|
-| F1 | The environment is Windows-based and air-gapped. Nothing is downloaded at install time or runtime. |
-| F2 | PostgreSQL is installed with the Windows EDB installer. No containers. |
-| F3 | Internal PostgreSQL is on port 5433. Access requires Waffle authentication **and** the `DataAdmin` role, plus an existing matching PostgreSQL account. |
-| F4 | External PostgreSQL is on port 5432. Any Waffle-authenticated user may use it, with their own credentials. Users currently connect through DBeaver with host, port, username and password. |
-| F5 | The existing application uses Waffle. It must remain the entry point. No OIDC or other identity provider. |
-| F6 | CI/CD is GitLab. SonarQube and Vitest are mandatory. The frontend is React in JavaScript only, built with Vite. |
-| F7 | Docker, Testcontainers and online registries can't be assumed. |
+| # | Fact | Status |
+|---|---|---|
+| F1 | The environment is Windows-based and air-gapped. Nothing is downloaded at install time or runtime. | Stated |
+| F2 | PostgreSQL is installed with the Windows EDB installer. No containers. | Stated |
+| F3 | Internal PostgreSQL is on port 5433. Access requires Waffle authentication **and** the `DataAdmin` role, plus an existing matching PostgreSQL account. | Stated |
+| F4 | External PostgreSQL is on port 5432. Any Waffle-authenticated user may use it, with their own credentials. Users currently connect through DBeaver with host, port, username and password. | Stated |
+| F5 | The existing application uses Waffle. It must remain the entry point. No OIDC or other identity provider. | Stated |
+| F6 | CI/CD is GitLab. SonarQube and Vitest are mandatory. The frontend is React in JavaScript only, built with Vite. | Stated |
+| F7 | Docker, Testcontainers and online registries can't be assumed. | Stated |
 
 #### 11.2 Technical assumptions still to verify (verified in P0/P1)
 
-| # | Assumption | Verified in |
-|---|---|---|
-| A1 | The existing app is Java. Its Waffle version and Spring version can be identified and reused for the new service. | P0, S1 |
-| A2 | A Waffle module exists for the chosen Spring Security major version | S1 |
-| A3 | An SPN can be registered, so Kerberos is used rather than NTLM. Browsers are configured for automatic Negotiate. | P0, S1 |
-| A4 | Internal PostgreSQL accounts can authenticate with password/SCRAM (needed for I-A) | P0 (`pg_hba.conf`) |
-| A5 | The PostgreSQL major versions on 5432 and 5433 are known and ≥ 14 (`client_connection_check_interval`, `BEGIN ATOMIC`) | P0 |
-| A6 | libpg_query matching those versions can be built or loaded on Windows offline | S2 |
-| A7 | pgJDBC behaviour (splitting, maxRows, cancel, transaction state, command type) is as described | S3 |
-| A8 | The GitLab Windows runner can run `initdb`/`pg_ctl` and Edge, and is domain-joined | S5, S6 |
-| A9 | The SonarQube server's version and edition support the Java and JS analysers, scanner JRE provisioning and the needed gate conditions | P0, S4 |
-| A10 | The external server supports TLS | P0 |
-| A11 | Users' PostgreSQL connection limits allow 2 connections per session | P0 |
-| A12 | An internal artifact repository exists, or the file-bundle process is acceptable | P0 |
+| # | Assumption | Status | Verified in |
+|---|---|---|---|
+| A1 | The existing app is Java. Its Waffle version (`javax` 1.x/2.x or `jakarta` 3.x), framework (filter, Spring Security or Tomcat valve) and Spring version can be identified, and its setup reused for the new service. | Assumed | P0, S1 |
+| A2 | A Waffle module exists for the chosen Spring Security major version. Support for Spring Security 7 (Spring Boot 4.x) is **unknown**; Boot 3.5.x is the likely fallback. | Assumed / Unresolved | S1 |
+| A3 | An SPN can be registered, so Kerberos is used rather than NTLM. Browsers are configured for automatic Negotiate. | Assumed | P0, S1 |
+| A4 | Internal PostgreSQL accounts can authenticate with password/SCRAM (needed for I-A). If they are SSPI-only, I-A is impossible. | Unresolved | P0 (`pg_hba.conf`) |
+| A5 | The PostgreSQL major versions on 5432 and 5433 are known and ≥ 14 (`client_connection_check_interval`, `BEGIN ATOMIC`) | Unresolved | P0 |
+| A6 | libpg_query matching those versions can be built or loaded on Windows offline, and its normalisation strips literals and comments | Assumed | S2 |
+| A7 | pgJDBC behaviour (client-side splitting, maxRows, cancel, transaction state, command type) is as described | Assumed | S3 |
+| A8 | The GitLab Windows runner can run `initdb`/`pg_ctl` and Edge, and is domain-joined | Assumed | S5, S6 |
+| A9 | The SonarQube server's version and edition support the Java and JS analysers, scanner JRE provisioning and the needed gate conditions | Assumed | P0, S4 |
+| A10 | The external server supports TLS | Unresolved | P0 |
+| A11 | Users' PostgreSQL connection limits allow 2 connections per session | Assumed | P0 |
+| A12 | An internal artifact repository exists, or the file-bundle process is acceptable | Unresolved | P0 |
+| A13 | Cancellation reaches PostgreSQL on Windows and measurably releases locks and backend activity | Assumed | S3, P7 |
+| A14 | GitLab Runner can be installed and updated offline | Unresolved | P0 |
+
+All decisions in §11.3 are currently **Unresolved**.
 
 #### 11.3 Decisions requiring explicit approval
 
@@ -1136,7 +1209,7 @@ Format for each: recommended default · reasoning · effect of choosing differen
   - *Blocks:* **P0 sign-off and everything after.**
 - **D1: Internal identity mapping and the DataAdmin source.**
   - *Default:* PostgreSQL role = lowercase `sAMAccountName`, from configured domains only, plus an override table. DataAdmin = AD group `<DOMAIN>\DataAdmin` (or the existing app's role store if that's where it lives). Checked on every request. App session max 8 h.
-  - *Effect of alternatives:* a different naming convention changes only the mapper config. A role held in the existing app's DB needs a read-only integration with that store.
+  - *Effect of alternatives:* a different naming convention changes only the mapper config. If DataAdmin is a role stored by the existing application, the new service needs a read-only, server-side integration with that store. **That design does not exist yet** and becomes a P0 design item.
   - *Blocks:* P4 (DataAdmin) and P6 (mapping).
 - **D2: External credential handling.**
   - *Default:* §2.5. Server-fixed host and port, database allow-list, username/password per session, not kept after connecting, no "remember me", `autocomplete="off"`, throttling 5/5 min, TLS `verify-full` if available.
