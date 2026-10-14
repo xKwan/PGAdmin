@@ -1,0 +1,70 @@
+﻿{
+    "Spike":  "S5",
+    "Timestamp":  "2026-10-15T00:22:04.9145319+08:00",
+    "Machine":  "Microsoft Windows 11 Pro 10.0.26200",
+    "PowerShell":  "5.1.26100.9444",
+    "PostgreSQL":  "psql (PostgreSQL) 18.6",
+    "MasterSeed":  1484464437,
+    "RequiredConsecutivePasses":  5,
+    "Result":  "FAIL",
+    "Runs":  [
+                 {
+                     "Run":  1,
+                     "Seed":  1349827849,
+                     "Passed":  false,
+                     "Seconds":  13.4,
+                     "Consecutive":  0,
+                     "Error":  "The property \u0027Count\u0027 cannot be found on this object. Verify that the property exists.\nat Assert-ClusterGone, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 316\r\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 482\r\nat Invoke-OneRun, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 505\r\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 542",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "lock-timeout-then-terminate",
+                                           "Passed":  true,
+                                           "Ms":  1004,
+                                           "Detail":  "id=5 lock_timeout=281ms"
+                                       },
+                                       {
+                                           "Scenario":  "same-row-update",
+                                           "Passed":  true,
+                                           "Ms":  468,
+                                           "Detail":  "id=14 a=70 b=50"
+                                       },
+                                       {
+                                           "Scenario":  "deadlock",
+                                           "Passed":  true,
+                                           "Ms":  680,
+                                           "Detail":  "k1=3 k2=7 victim=B"
+                                       },
+                                       {
+                                           "Scenario":  "safety-guard",
+                                           "Passed":  true,
+                                           "Ms":  60,
+                                           "Detail":  "guard accepts own cluster, refuses mismatched token"
+                                       },
+                                       {
+                                           "Scenario":  "timeout-backstop-overridable",
+                                           "Passed":  true,
+                                           "Ms":  3665,
+                                           "Detail":  "backstop=1s override-wait=2182ms"
+                                       },
+                                       {
+                                           "Scenario":  "cancel-releases-locks",
+                                           "Passed":  true,
+                                           "Ms":  489,
+                                           "Detail":  "id=12 delta=29"
+                                       },
+                                       {
+                                           "Scenario":  "cleanup-after-failure",
+                                           "Passed":  false,
+                                           "Ms":  3468,
+                                           "Detail":  "The property \u0027Count\u0027 cannot be found on this object. Verify that the property exists."
+                                       },
+                                       {
+                                           "Scenario":  "teardown-leaves-nothing",
+                                           "Passed":  false,
+                                           "Ms":  0,
+                                           "Detail":  "The property \u0027Count\u0027 cannot be found on this object. Verify that the property exists."
+                                       }
+                                   ]
+                 }
+             ]
+}

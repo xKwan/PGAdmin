@@ -37,7 +37,7 @@
 | T13 | T | XSS through result values, error messages, object names or usernames | React escaping; `dangerouslySetInnerHTML` banned; strict CSP (§5) | P5, P8, P11 | XSS payload tests | Planned |
 | T14 | T | SQL injection in app-generated metadata or audit SQL | Parameterised statements; quoted identifiers from catalog or allow-list; ArchUnit rule (§5) | P3, P10 | Injection-payload identifier tests; ArchUnit | Planned |
 | T15 | D | Long-running or huge queries exhaust DB or app resources | Wall-clock timeout plus cancel and escalation; row, byte and cell limits; session caps (§3.4, §3.5) | P7 | Timeout, limit and heap tests | Planned |
-| T16 | D | Cancellation fails and the query keeps running | Escalation via companion `pg_terminate_backend`; quarantine; DBA backstops (§3.5) | P7 | Resource-release measurements | Planned / Assumed (A13) |
+| T16 | D | Cancellation fails and the query keeps running | Escalation via companion `pg_terminate_backend`; quarantine; DBA backstops (§3.5) | P7 | Resource-release measurements | Planned. Same-role cancel/terminate releasing locks **Tested** on Windows PG 18.6 (S5 report F3, F4); pgJDBC path still Assumed. |
 | T17 | D | Abandoned transactions hold locks | Idle-in-transaction timeout; heartbeat abandonment; max transaction age (§4) | P6, P9 | Reaper and abandonment tests | Planned |
 | T18 | D | Connection exhaustion on target instances | Per-user and global caps; per-role `CONNECTION LIMIT` | P6 | Cap tests | Planned / Unresolved (A11) |
 | T19 | T | Multi-statement text executes statements the user didn't intend, or misreports outcomes | Parser gate or server-enforced single statement; no hand-written splitter (§3.1, §3.2) | P1, P7 | S2 corpus; S3 server-log proof | Planned / Assumed (A6, A7) |

@@ -1,0 +1,23 @@
+﻿{
+    "Spike":  "S5",
+    "Timestamp":  "2026-10-15T00:20:56.7730007+08:00",
+    "Machine":  "Microsoft Windows 11 Pro 10.0.26200",
+    "PowerShell":  "5.1.26100.9444",
+    "PostgreSQL":  "psql (PostgreSQL) 18.6",
+    "MasterSeed":  1484404625,
+    "RequiredConsecutivePasses":  5,
+    "Result":  "FAIL",
+    "Runs":  [
+                 {
+                     "Run":  1,
+                     "Seed":  699371630,
+                     "Passed":  false,
+                     "Seconds":  5.1,
+                     "Consecutive":  0,
+                     "Error":  "You cannot call a method on a null-valued expression.",
+                     "Scenarios":  [
+
+                                   ]
+                 }
+             ]
+}

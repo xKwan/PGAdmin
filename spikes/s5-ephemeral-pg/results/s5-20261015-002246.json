@@ -1,0 +1,64 @@
+﻿{
+    "Spike":  "S5",
+    "Timestamp":  "2026-10-15T00:22:46.8217283+08:00",
+    "Machine":  "Microsoft Windows 11 Pro 10.0.26200",
+    "PowerShell":  "5.1.26100.9444",
+    "PostgreSQL":  "psql (PostgreSQL) 18.6",
+    "MasterSeed":  1484510031,
+    "RequiredConsecutivePasses":  5,
+    "Result":  "FAIL",
+    "Runs":  [
+                 {
+                     "Run":  1,
+                     "Seed":  189703795,
+                     "Passed":  false,
+                     "Seconds":  9.7,
+                     "Consecutive":  0,
+                     "Error":  "The property \u0027AppUser\u0027 cannot be found on this object. Verify that the property exists.\nat Start-Psql, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 159\r\nat Invoke-Psql, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 169\r\nat Get-Scalar, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 174\r\nat Get-Value, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 192\r\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 459\r\nat Invoke-OneRun, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 506\r\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 543",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "safety-guard",
+                                           "Passed":  true,
+                                           "Ms":  50,
+                                           "Detail":  "guard accepts own cluster, refuses mismatched token"
+                                       },
+                                       {
+                                           "Scenario":  "timeout-backstop-overridable",
+                                           "Passed":  true,
+                                           "Ms":  4328,
+                                           "Detail":  "backstop=1s override-wait=2497ms"
+                                       },
+                                       {
+                                           "Scenario":  "lock-timeout-then-terminate",
+                                           "Passed":  true,
+                                           "Ms":  1099,
+                                           "Detail":  "id=7 lock_timeout=570ms"
+                                       },
+                                       {
+                                           "Scenario":  "basic-crud",
+                                           "Passed":  true,
+                                           "Ms":  124,
+                                           "Detail":  "rows=218 mult=42"
+                                       },
+                                       {
+                                           "Scenario":  "cancel-releases-locks",
+                                           "Passed":  true,
+                                           "Ms":  375,
+                                           "Detail":  "id=7 delta=6"
+                                       },
+                                       {
+                                           "Scenario":  "serialization-failure",
+                                           "Passed":  false,
+                                           "Ms":  13,
+                                           "Detail":  "The property \u0027AppUser\u0027 cannot be found on this object. Verify that the property exists."
+                                       },
+                                       {
+                                           "Scenario":  "teardown-leaves-nothing",
+                                           "Passed":  true,
+                                           "Ms":  0,
+                                           "Detail":  "port 56777"
+                                       }
+                                   ]
+                 }
+             ]
+}

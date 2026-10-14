@@ -1,0 +1,23 @@
+﻿{
+    "Spike":  "S5",
+    "Timestamp":  "2026-10-15T00:21:36.8471486+08:00",
+    "Machine":  "Microsoft Windows 11 Pro 10.0.26200",
+    "PowerShell":  "5.1.26100.9444",
+    "PostgreSQL":  "psql (PostgreSQL) 18.6",
+    "MasterSeed":  1484446500,
+    "RequiredConsecutivePasses":  5,
+    "Result":  "FAIL",
+    "Runs":  [
+                 {
+                     "Run":  1,
+                     "Seed":  1902030483,
+                     "Passed":  false,
+                     "Seconds":  3.3,
+                     "Consecutive":  0,
+                     "Error":  "You cannot call a method on a null-valued expression.\nat Get-Scalar, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 175\r\nat New-Cluster, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 269\r\nat Invoke-OneRun, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 497\r\nat \u003cScriptBlock\u003e, S:\\Code\\PGAdmin\\spikes\\s5-ephemeral-pg\\Invoke-S5Spike.ps1: line 541",
+                     "Scenarios":  [
+
+                                   ]
+                 }
+             ]
+}

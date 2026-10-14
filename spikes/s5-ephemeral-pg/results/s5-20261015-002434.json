@@ -1,0 +1,362 @@
+﻿{
+    "Spike":  "S5",
+    "Timestamp":  "2026-10-15T00:24:34.6178650+08:00",
+    "Machine":  "Microsoft Windows 11 Pro 10.0.26200",
+    "PowerShell":  "5.1.26100.9444",
+    "PostgreSQL":  "psql (PostgreSQL) 18.6",
+    "MasterSeed":  1484559546,
+    "RequiredConsecutivePasses":  5,
+    "Result":  "PASS",
+    "Runs":  [
+                 {
+                     "Run":  1,
+                     "Seed":  2099744631,
+                     "Passed":  true,
+                     "Seconds":  13.9,
+                     "Consecutive":  1,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "deadlock",
+                                           "Passed":  true,
+                                           "Ms":  540,
+                                           "Detail":  "k1=15 k2=17 victim=B"
+                                       },
+                                       {
+                                           "Scenario":  "cancel-releases-locks",
+                                           "Passed":  true,
+                                           "Ms":  616,
+                                           "Detail":  "id=18 delta=48"
+                                       },
+                                       {
+                                           "Scenario":  "same-row-update",
+                                           "Passed":  true,
+                                           "Ms":  302,
+                                           "Detail":  "id=10 a=20 b=7"
+                                       },
+                                       {
+                                           "Scenario":  "lock-timeout-then-terminate",
+                                           "Passed":  true,
+                                           "Ms":  954,
+                                           "Detail":  "id=2 lock_timeout=422ms"
+                                       },
+                                       {
+                                           "Scenario":  "basic-crud",
+                                           "Passed":  true,
+                                           "Ms":  102,
+                                           "Detail":  "rows=94 mult=51"
+                                       },
+                                       {
+                                           "Scenario":  "cleanup-after-failure",
+                                           "Passed":  true,
+                                           "Ms":  3418,
+                                           "Detail":  "second cluster on port 53046 removed after injected failure"
+                                       },
+                                       {
+                                           "Scenario":  "serialization-failure",
+                                           "Passed":  true,
+                                           "Ms":  430,
+                                           "Detail":  "id=8 concurrent=+50"
+                                       },
+                                       {
+                                           "Scenario":  "safety-guard",
+                                           "Passed":  true,
+                                           "Ms":  47,
+                                           "Detail":  "guard accepts own cluster, refuses mismatched token"
+                                       },
+                                       {
+                                           "Scenario":  "timeout-backstop-overridable",
+                                           "Passed":  true,
+                                           "Ms":  3355,
+                                           "Detail":  "backstop=1s override-wait=1924ms"
+                                       },
+                                       {
+                                           "Scenario":  "teardown-leaves-nothing",
+                                           "Passed":  true,
+                                           "Ms":  0,
+                                           "Detail":  "port 58169"
+                                       }
+                                   ]
+                 },
+                 {
+                     "Run":  2,
+                     "Seed":  1148414492,
+                     "Passed":  true,
+                     "Seconds":  13.3,
+                     "Consecutive":  2,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "serialization-failure",
+                                           "Passed":  true,
+                                           "Ms":  436,
+                                           "Detail":  "id=15 concurrent=+28"
+                                       },
+                                       {
+                                           "Scenario":  "cancel-releases-locks",
+                                           "Passed":  true,
+                                           "Ms":  465,
+                                           "Detail":  "id=4 delta=12"
+                                       },
+                                       {
+                                           "Scenario":  "same-row-update",
+                                           "Passed":  true,
+                                           "Ms":  423,
+                                           "Detail":  "id=12 a=89 b=85"
+                                       },
+                                       {
+                                           "Scenario":  "safety-guard",
+                                           "Passed":  true,
+                                           "Ms":  52,
+                                           "Detail":  "guard accepts own cluster, refuses mismatched token"
+                                       },
+                                       {
+                                           "Scenario":  "basic-crud",
+                                           "Passed":  true,
+                                           "Ms":  102,
+                                           "Detail":  "rows=349 mult=64"
+                                       },
+                                       {
+                                           "Scenario":  "cleanup-after-failure",
+                                           "Passed":  true,
+                                           "Ms":  2998,
+                                           "Detail":  "second cluster on port 62823 removed after injected failure"
+                                       },
+                                       {
+                                           "Scenario":  "deadlock",
+                                           "Passed":  true,
+                                           "Ms":  540,
+                                           "Detail":  "k1=10 k2=15 victim=B"
+                                       },
+                                       {
+                                           "Scenario":  "lock-timeout-then-terminate",
+                                           "Passed":  true,
+                                           "Ms":  628,
+                                           "Detail":  "id=16 lock_timeout=244ms"
+                                       },
+                                       {
+                                           "Scenario":  "timeout-backstop-overridable",
+                                           "Passed":  true,
+                                           "Ms":  4093,
+                                           "Detail":  "backstop=1s override-wait=2558ms"
+                                       },
+                                       {
+                                           "Scenario":  "teardown-leaves-nothing",
+                                           "Passed":  true,
+                                           "Ms":  0,
+                                           "Detail":  "port 62769"
+                                       }
+                                   ]
+                 },
+                 {
+                     "Run":  3,
+                     "Seed":  1225944288,
+                     "Passed":  true,
+                     "Seconds":  13.8,
+                     "Consecutive":  3,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "deadlock",
+                                           "Passed":  true,
+                                           "Ms":  828,
+                                           "Detail":  "k1=3 k2=17 victim=B"
+                                       },
+                                       {
+                                           "Scenario":  "safety-guard",
+                                           "Passed":  true,
+                                           "Ms":  149,
+                                           "Detail":  "guard accepts own cluster, refuses mismatched token"
+                                       },
+                                       {
+                                           "Scenario":  "timeout-backstop-overridable",
+                                           "Passed":  true,
+                                           "Ms":  3718,
+                                           "Detail":  "backstop=1s override-wait=2078ms"
+                                       },
+                                       {
+                                           "Scenario":  "cancel-releases-locks",
+                                           "Passed":  true,
+                                           "Ms":  352,
+                                           "Detail":  "id=12 delta=40"
+                                       },
+                                       {
+                                           "Scenario":  "cleanup-after-failure",
+                                           "Passed":  true,
+                                           "Ms":  3178,
+                                           "Detail":  "second cluster on port 51258 removed after injected failure"
+                                       },
+                                       {
+                                           "Scenario":  "serialization-failure",
+                                           "Passed":  true,
+                                           "Ms":  292,
+                                           "Detail":  "id=12 concurrent=+20"
+                                       },
+                                       {
+                                           "Scenario":  "basic-crud",
+                                           "Passed":  true,
+                                           "Ms":  100,
+                                           "Detail":  "rows=137 mult=84"
+                                       },
+                                       {
+                                           "Scenario":  "same-row-update",
+                                           "Passed":  true,
+                                           "Ms":  331,
+                                           "Detail":  "id=2 a=33 b=33"
+                                       },
+                                       {
+                                           "Scenario":  "lock-timeout-then-terminate",
+                                           "Passed":  true,
+                                           "Ms":  1075,
+                                           "Detail":  "id=7 lock_timeout=674ms"
+                                       },
+                                       {
+                                           "Scenario":  "teardown-leaves-nothing",
+                                           "Passed":  true,
+                                           "Ms":  0,
+                                           "Detail":  "port 50195"
+                                       }
+                                   ]
+                 },
+                 {
+                     "Run":  4,
+                     "Seed":  1471025089,
+                     "Passed":  true,
+                     "Seconds":  13.6,
+                     "Consecutive":  4,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "basic-crud",
+                                           "Passed":  true,
+                                           "Ms":  101,
+                                           "Detail":  "rows=276 mult=72"
+                                       },
+                                       {
+                                           "Scenario":  "cleanup-after-failure",
+                                           "Passed":  true,
+                                           "Ms":  3235,
+                                           "Detail":  "second cluster on port 53208 removed after injected failure"
+                                       },
+                                       {
+                                           "Scenario":  "deadlock",
+                                           "Passed":  true,
+                                           "Ms":  671,
+                                           "Detail":  "k1=14 k2=5 victim=B"
+                                       },
+                                       {
+                                           "Scenario":  "same-row-update",
+                                           "Passed":  true,
+                                           "Ms":  460,
+                                           "Detail":  "id=6 a=17 b=91"
+                                       },
+                                       {
+                                           "Scenario":  "cancel-releases-locks",
+                                           "Passed":  true,
+                                           "Ms":  373,
+                                           "Detail":  "id=4 delta=20"
+                                       },
+                                       {
+                                           "Scenario":  "timeout-backstop-overridable",
+                                           "Passed":  true,
+                                           "Ms":  3312,
+                                           "Detail":  "backstop=1s override-wait=1786ms"
+                                       },
+                                       {
+                                           "Scenario":  "lock-timeout-then-terminate",
+                                           "Passed":  true,
+                                           "Ms":  1313,
+                                           "Detail":  "id=2 lock_timeout=716ms"
+                                       },
+                                       {
+                                           "Scenario":  "serialization-failure",
+                                           "Passed":  true,
+                                           "Ms":  541,
+                                           "Detail":  "id=7 concurrent=+74"
+                                       },
+                                       {
+                                           "Scenario":  "safety-guard",
+                                           "Passed":  true,
+                                           "Ms":  39,
+                                           "Detail":  "guard accepts own cluster, refuses mismatched token"
+                                       },
+                                       {
+                                           "Scenario":  "teardown-leaves-nothing",
+                                           "Passed":  true,
+                                           "Ms":  0,
+                                           "Detail":  "port 53191"
+                                       }
+                                   ]
+                 },
+                 {
+                     "Run":  5,
+                     "Seed":  123915652,
+                     "Passed":  true,
+                     "Seconds":  13.4,
+                     "Consecutive":  5,
+                     "Error":  "",
+                     "Scenarios":  [
+                                       {
+                                           "Scenario":  "lock-timeout-then-terminate",
+                                           "Passed":  true,
+                                           "Ms":  596,
+                                           "Detail":  "id=20 lock_timeout=207ms"
+                                       },
+                                       {
+                                           "Scenario":  "same-row-update",
+                                           "Passed":  true,
+                                           "Ms":  680,
+                                           "Detail":  "id=20 a=81 b=37"
+                                       },
+                                       {
+                                           "Scenario":  "safety-guard",
+                                           "Passed":  true,
+                                           "Ms":  39,
+                                           "Detail":  "guard accepts own cluster, refuses mismatched token"
+                                       },
+                                       {
+                                           "Scenario":  "basic-crud",
+                                           "Passed":  true,
+                                           "Ms":  109,
+                                           "Detail":  "rows=87 mult=12"
+                                       },
+                                       {
+                                           "Scenario":  "serialization-failure",
+                                           "Passed":  true,
+                                           "Ms":  407,
+                                           "Detail":  "id=17 concurrent=+25"
+                                       },
+                                       {
+                                           "Scenario":  "timeout-backstop-overridable",
+                                           "Passed":  true,
+                                           "Ms":  3148,
+                                           "Detail":  "backstop=1s override-wait=1711ms"
+                                       },
+                                       {
+                                           "Scenario":  "cancel-releases-locks",
+                                           "Passed":  true,
+                                           "Ms":  622,
+                                           "Detail":  "id=14 delta=3"
+                                       },
+                                       {
+                                           "Scenario":  "cleanup-after-failure",
+                                           "Passed":  true,
+                                           "Ms":  3201,
+                                           "Detail":  "second cluster on port 63493 removed after injected failure"
+                                       },
+                                       {
+                                           "Scenario":  "deadlock",
+                                           "Passed":  true,
+                                           "Ms":  658,
+                                           "Detail":  "k1=9 k2=12 victim=B"
+                                       },
+                                       {
+                                           "Scenario":  "teardown-leaves-nothing",
+                                           "Passed":  true,
+                                           "Ms":  0,
+                                           "Detail":  "port 53322"
+                                       }
+                                   ]
+                 }
+             ]
+}
