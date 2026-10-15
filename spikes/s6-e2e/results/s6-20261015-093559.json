@@ -1,0 +1,405 @@
+﻿{
+    "spike":  "S6 Edge E2E with Windows integrated auth (partial) + S4 npm offline install (partial)",
+    "overall":  "PASS",
+    "masterSeed":  1142775326,
+    "requiredConsecutivePasses":  5,
+    "started":  "2026-10-15T09:29:50.5972510+08:00",
+    "finished":  "2026-10-15T09:35:58.5105062+08:00",
+    "os":  "Microsoft Windows 11 Pro",
+    "domainJoined":  false,
+    "edgeVersion":  "155.0.4283.45",
+    "node":  "v24.20.0",
+    "playwright":  "1.63.0",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  986515467,
+                     "pass":  true,
+                     "npmOfflineSeconds":  4,
+                     "tests":  6,
+                     "failures":  0,
+                     "failed":  [
+
+                                ],
+                     "problems":  [
+
+                                  ],
+                     "observations":  [
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "result",
+                                              "value":  "200 as expected SID"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "result",
+                                              "value":  "no automatic logon (explicit credentials requested)"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "result",
+                                              "value":  "200"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "result",
+                                              "value":  "2 pages, all 200"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "observed",
+                                              "value":  "localhost without allowlist -\u003e 200"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "result",
+                                              "value":  "127.0.0.1 with allowlist=localhost: no automatic logon"
+                                          }
+                                      ],
+                     "seconds":  73.5,
+                     "consecutive":  1
+                 },
+                 {
+                     "run":  2,
+                     "seed":  404318123,
+                     "pass":  true,
+                     "npmOfflineSeconds":  4.5,
+                     "tests":  6,
+                     "failures":  0,
+                     "failed":  [
+
+                                ],
+                     "problems":  [
+
+                                  ],
+                     "observations":  [
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "result",
+                                              "value":  "200 as expected SID"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "result",
+                                              "value":  "no automatic logon (explicit credentials requested)"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "result",
+                                              "value":  "200"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "result",
+                                              "value":  "4 pages, all 200"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "observed",
+                                              "value":  "localhost without allowlist -\u003e 200"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "result",
+                                              "value":  "127.0.0.1 with allowlist=localhost: no automatic logon"
+                                          }
+                                      ],
+                     "seconds":  73.8,
+                     "consecutive":  2
+                 },
+                 {
+                     "run":  3,
+                     "seed":  979524963,
+                     "pass":  true,
+                     "npmOfflineSeconds":  4.1,
+                     "tests":  6,
+                     "failures":  0,
+                     "failed":  [
+
+                                ],
+                     "problems":  [
+
+                                  ],
+                     "observations":  [
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "result",
+                                              "value":  "200 as expected SID"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "result",
+                                              "value":  "no automatic logon (explicit credentials requested)"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "result",
+                                              "value":  "200"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "result",
+                                              "value":  "2 pages, all 200"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "observed",
+                                              "value":  "localhost without allowlist -\u003e 200"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "result",
+                                              "value":  "127.0.0.1 with allowlist=localhost: no automatic logon"
+                                          }
+                                      ],
+                     "seconds":  73.9,
+                     "consecutive":  3
+                 },
+                 {
+                     "run":  4,
+                     "seed":  301375404,
+                     "pass":  true,
+                     "npmOfflineSeconds":  3.9,
+                     "tests":  6,
+                     "failures":  0,
+                     "failed":  [
+
+                                ],
+                     "problems":  [
+
+                                  ],
+                     "observations":  [
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "result",
+                                              "value":  "200 as expected SID"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "result",
+                                              "value":  "no automatic logon (explicit credentials requested)"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "result",
+                                              "value":  "200"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "result",
+                                              "value":  "3 pages, all 200"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "observed",
+                                              "value":  "localhost without allowlist -\u003e 200"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "result",
+                                              "value":  "127.0.0.1 with allowlist=localhost: no automatic logon"
+                                          }
+                                      ],
+                     "seconds":  73.3,
+                     "consecutive":  4
+                 },
+                 {
+                     "run":  5,
+                     "seed":  1397680386,
+                     "pass":  true,
+                     "npmOfflineSeconds":  4.1,
+                     "tests":  6,
+                     "failures":  0,
+                     "failed":  [
+
+                                ],
+                     "problems":  [
+
+                                  ],
+                     "observations":  [
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlisted host: Edge authenticates automatically with the Windows account",
+                                              "type":  "result",
+                                              "value":  "200 as expected SID"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "host outside the allowlist: Edge does not send Windows credentials",
+                                              "type":  "result",
+                                              "value":  "no automatic logon (explicit credentials requested)"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "DataAdmin endpoint through the browser",
+                                              "type":  "result",
+                                              "value":  "200"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "several pages at once all authenticate",
+                                              "type":  "result",
+                                              "value":  "2 pages, all 200"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "observe: default policy (no allowlist switch)",
+                                              "type":  "observed",
+                                              "value":  "localhost without allowlist -\u003e 200"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "edge-version",
+                                              "value":  "155.0.4283.45"
+                                          },
+                                          {
+                                              "test":  "allowlist is per host name: 127.0.0.1 is not covered by \"localhost\"",
+                                              "type":  "result",
+                                              "value":  "127.0.0.1 with allowlist=localhost: no automatic logon"
+                                          }
+                                      ],
+                     "seconds":  73.4,
+                     "consecutive":  5
+                 }
+             ]
+}

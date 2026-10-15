@@ -296,6 +296,40 @@ $Scenarios = [ordered]@{
         "custom=$(@($S.Packages | Where-Object { $_.PSObject.Properties['hashSource'] }).Count)/$($S.Packages.Count)"
     }
 
+    'caches-recorded-and-confined' = {
+        param($S, $Rng)
+        $caches = @()
+        for ($i = 0; $i -lt $Rng.Next(1, 4); $i++) {
+            $caches += [pscustomobject]@{ name = "c$i"; path = "cache-$($Rng.Next(100, 999))-$i"; envVar = "TEST_CACHE_$i"; purpose = "test cache $i" }
+        }
+        # One cache gets content so the size column is exercised.
+        $withData = Join-Path $S.Ctx.ToolsRoot $caches[0].path
+        New-Item -ItemType Directory -Force -Path $withData | Out-Null
+        [IO.File]::WriteAllBytes((Join-Path $withData 'blob.bin'), (New-Object byte[] ($Rng.Next(1, 4) * 1MB)))
+        $obj = [pscustomobject]@{ description = 'test'; packages = @($S.Packages); caches = $caches }
+        [IO.File]::WriteAllText($S.Ctx.ManifestPath, ($obj | ConvertTo-Json -Depth 6))
+        try {
+            Update-ToolchainFiles -Ctx $S.Ctx
+            $props = Get-Props $S
+            $list = [IO.File]::ReadAllText((Join-Path $S.Repo 'software-list.md'))
+            foreach ($c in $caches) {
+                Assert-True ($props["cache.$($c.name)"] -eq "tools/$($c.path)") "cache.$($c.name) = '$($props["cache.$($c.name)"])'"
+                Assert-True ($props["cache.$($c.name).env"] -eq $c.envVar) "cache.$($c.name).env"
+                Assert-True ($list.Contains("``tools/$($c.path)``")) "software-list.md lists $($c.name)"
+            }
+            Assert-True ($list -match "\| c0 \| ``tools/[^``]+`` \| ``TEST_CACHE_0`` \| \d+\.\d MB \|") 'size shown for a non-empty cache'
+            # A cache path that escapes the tools root is refused.
+            $evil = [pscustomobject]@{ description = 'test'; packages = @($S.Packages); caches = @([pscustomobject]@{ name = 'evil'; path = '..\outside'; envVar = 'X'; purpose = 'x' }) }
+            [IO.File]::WriteAllText($S.Ctx.ManifestPath, ($evil | ConvertTo-Json -Depth 6))
+            Assert-Throws { Update-ToolchainFiles -Ctx $S.Ctx } '' 'cache path outside the tools root is refused'
+        } finally {
+            Save-Manifest $S $S.Packages
+            Update-ToolchainFiles -Ctx $S.Ctx
+            Remove-Item -Recurse -Force $withData
+        }
+        "caches=$($caches.Count)"
+    }
+
     'properties-point-at-real-homes' = {
         param($S, $Rng)
         $props = Get-Props $S

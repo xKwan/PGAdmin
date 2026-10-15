@@ -3,8 +3,9 @@
 .SYNOPSIS
     Dot-source to use the project's tools in the CURRENT PowerShell session only:
         . .\scripts\toolchain\Use-Toolchain.ps1
-    Sets JAVA_HOME, MAVEN_HOME, MAVEN_ARGS (local Maven repository inside tools\) and
-    prepends their bin folders to PATH. Nothing is changed permanently.
+    Sets JAVA_HOME, MAVEN_HOME, MAVEN_ARGS (local Maven repository inside tools\), the dependency
+    cache variables listed as cache.<name>.env (e.g. npm_config_cache) and prepends the bin folders to
+    PATH. Nothing is changed permanently.
 #>
 [CmdletBinding()]
 param([switch]$Quiet)
@@ -38,6 +39,15 @@ if ($props.ContainsKey('maven.home')) {
         $env:MAVEN_ARGS = '-Dmaven.repo.local=' + (Resolve-ProjectPath $props['maven.repo.local'])
     }
 }
+# Dependency caches: cache.<name>=<path> and cache.<name>.env=<variable>
+foreach ($key in @($props.Keys | Where-Object { $_ -match '^cache\.[^.]+$' })) {
+    $envKey = "$key.env"
+    if ($props.ContainsKey($envKey) -and $props[$envKey]) {
+        [Environment]::SetEnvironmentVariable($props[$envKey], (Resolve-ProjectPath $props[$key]), 'Process')
+    }
+}
+if ($props.ContainsKey('cache.playwright-browsers')) { $env:PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = '1' }
+
 if ($prepend.Count -gt 0) {
     $rest = @($env:PATH -split ';' | Where-Object { $_ -and ($prepend -notcontains $_) })
     $env:PATH = (@($prepend) + $rest) -join ';'
@@ -46,4 +56,7 @@ if (-not $Quiet) {
     Write-Host "JAVA_HOME  = $env:JAVA_HOME"
     Write-Host "MAVEN_HOME = $env:MAVEN_HOME"
     Write-Host "MAVEN_ARGS = $env:MAVEN_ARGS"
+    foreach ($key in @($props.Keys | Where-Object { $_ -match '^cache\.[^.]+\.env$' } | Sort-Object)) {
+        Write-Host ("{0,-10} = {1}" -f $props[$key], [Environment]::GetEnvironmentVariable($props[$key], 'Process'))
+    }
 }

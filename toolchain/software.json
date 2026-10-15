@@ -87,5 +87,19 @@
       "versionPattern": "(\\d+(\\.\\d+)+)",
       "purpose": "Not used by the project (ADR-0007, D6). Listed for transparency only."
     }
+  ],
+  "caches": [
+    {
+      "name": "npm",
+      "path": "npm-cache",
+      "envVar": "npm_config_cache",
+      "purpose": "npm package cache for the frontend and Playwright (spike S6). Copy it with tools\\ to install JavaScript dependencies offline (npm ci --offline)."
+    },
+    {
+      "name": "playwright-browsers",
+      "path": "ms-playwright",
+      "envVar": "PLAYWRIGHT_BROWSERS_PATH",
+      "purpose": "Where Playwright would put downloaded browsers. Kept empty: tests use the installed Microsoft Edge (channel msedge) and PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1."
+    }
   ]
 }

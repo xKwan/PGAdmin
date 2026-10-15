@@ -5,3 +5,7 @@
 target/
 # Spike S2 build output (pg_query.dll is rebuilt from pinned sources by Build-PgQuery.ps1)
 spikes/s2-parser/build/
+# Node / Playwright output
+node_modules/
+test-results/
+playwright-report/

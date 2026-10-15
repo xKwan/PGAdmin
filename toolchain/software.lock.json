@@ -20,7 +20,7 @@
                         "hashAlgorithm":  "SHA256",
                         "hash":  "05CA8A633007479C75B2BEEBFCE301184FB523FA5F34EAD62A4335AA3346D0A1",
                         "hashSource":  "pinned at first download, 2026-10-15 (GitHub publishes no checksum for tag archives; two downloads matched)",
-                        "resolvedAt":  "2026-10-15T00:00:08.1137082Z"
+                        "resolvedAt":  "2026-10-15T01:45:44.1037239Z"
                     },
                     {
                         "name":  "maven",

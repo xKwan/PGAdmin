@@ -466,6 +466,16 @@ function Update-ToolchainFiles {
             }
         }
     }
+    $caches = @()
+    if ($manifest -and $manifest.PSObject.Properties['caches']) { $caches = @($manifest.caches) }
+    if ($caches.Count -gt 0) {
+        $p.Add('')
+        $p.Add('# Dependency caches inside the tools root (set for the session by Use-Toolchain.ps1)')
+        foreach ($c in $caches) {
+            $p.Add("cache.$($c.name)=" + (Get-DisplayPath $Ctx (Get-SafeChildPath -Ctx $Ctx -Parent $Ctx.ToolsRoot -ChildName $c.path)))
+            $p.Add("cache.$($c.name).env=$($c.envVar)")
+        }
+    }
     if ($pre.Count -gt 0) {
         $p.Add('')
         $p.Add('# Pre-existing software detected on this machine (not installed or managed by the project)')
@@ -501,6 +511,22 @@ function Update-ToolchainFiles {
             $m.Add("| $display | $($s.version) | $purpose | ``$(Get-DisplayPath $Ctx (Join-Path $Ctx.ToolsRoot $s.dir))`` | $source | $($s.hashAlgorithm) ``$($s.hash)`` | $($s.installedAt) |")
         }
     }
+    if ($caches.Count -gt 0) {
+        $m.Add('')
+        $m.Add('## Dependency caches (inside the tools root, not committed)')
+        $m.Add('')
+        $m.Add('| Cache | Location | Environment variable | Size | Purpose |')
+        $m.Add('|---|---|---|---|---|')
+        foreach ($c in $caches) {
+            $dir = Get-SafeChildPath -Ctx $Ctx -Parent $Ctx.ToolsRoot -ChildName $c.path
+            $size = 'empty'
+            if (Test-Path -LiteralPath $dir) {
+                $bytes = (@(Get-ChildItem -LiteralPath $dir -Recurse -Force -File -ErrorAction SilentlyContinue) | Measure-Object -Property Length -Sum).Sum
+                if ($bytes) { $size = '{0:n1} MB' -f ($bytes / 1MB) }
+            }
+            $m.Add("| $($c.name) | ``$(Get-DisplayPath $Ctx $dir)`` | ``$($c.envVar)`` | $size | $($c.purpose) |")
+        }
+    }
     $m.Add('')
     $m.Add('## Pre-existing on this machine (detected, not managed)')
     $m.Add('')
@@ -525,7 +551,8 @@ function Update-ToolchainFiles {
     $m.Add('| Remove one package | `... scripts\toolchain\Uninstall-Toolchain.ps1 -Name maven` |')
     $m.Add('| Remove everything the project installed, including downloads and the Maven repository | `... scripts\toolchain\Uninstall-Toolchain.ps1 -All -Purge` |')
     $m.Add('')
-    $m.Add('For an air-gapped machine, copy the repository plus `tools\downloads\` (and `tools\m2\` once it exists), then run the offline install.')
+    $m.Add('For an air-gapped machine, copy the repository plus `tools\downloads\` and the dependency caches (`tools\m2\`, `tools
+pm-cache\`) once they exist, then run the offline install.')
     Write-TextFile -Path $Ctx.ListPath -Text (($m -join "`n") + "`n")
 }
 

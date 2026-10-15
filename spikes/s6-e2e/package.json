@@ -1,0 +1,13 @@
+{
+  "name": "pgweb-spike-s6-e2e",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Spike S6 (partial): Playwright drives the installed Microsoft Edge against the S1 Waffle service. Throwaway code.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
