@@ -1,0 +1,278 @@
+﻿{
+    "spike":  "S7 pgJDBC SSPI logon under Waffle impersonation (partial: one local account, no domain)",
+    "overall":  "PASS",
+    "masterSeed":  1280369289,
+    "requiredConsecutivePasses":  5,
+    "started":  "2026-10-15T20:58:46.6972173+08:00",
+    "finished":  "2026-10-15T20:59:14.8882924+08:00",
+    "os":  "Microsoft Windows 11 Pro",
+    "java":  "S:\\Code\\PGAdmin\\tools\\jdk-21.0.12.1+1",
+    "domainJoined":  false,
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  1739859021,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  5,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  5.7,
+                     "consecutive":  1,
+                     "findings":  [
+                                      {
+                                          "seed":  1739859021,
+                                          "area":  "sspi",
+                                          "key":  "process_identity",
+                                          "value":  "session_user=cheek, method=sspi"
+                                      },
+                                      {
+                                          "seed":  1739859021,
+                                          "area":  "sspi",
+                                          "key":  "outlives_token",
+                                          "value":  "queries keep working after revert and dispose"
+                                      },
+                                      {
+                                          "seed":  1739859021,
+                                          "area":  "sspi",
+                                          "key":  "anonymous",
+                                          "value":  "refused: 28000 FATAL: SSPI authentication failed for user \"cheek\""
+                                      },
+                                      {
+                                          "seed":  1739859021,
+                                          "area":  "sspi",
+                                          "key":  "per_thread",
+                                          "value":  "7 threads, anonymous=[true, false, true, false, false, true, false]: only non-anonymous ones connected"
+                                      },
+                                      {
+                                          "seed":  1739859021,
+                                          "area":  "sspi",
+                                          "key":  "impersonated",
+                                          "value":  "thread user while impersonating=cheek, session_user=cheek"
+                                      },
+                                      {
+                                          "seed":  1739859021,
+                                          "area":  "cleanup",
+                                          "key":  "cluster_gone",
+                                          "value":  "true"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  2,
+                     "seed":  1289506242,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  5,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  5.6,
+                     "consecutive":  2,
+                     "findings":  [
+                                      {
+                                          "seed":  1289506242,
+                                          "area":  "sspi",
+                                          "key":  "anonymous",
+                                          "value":  "refused: 28000 FATAL: SSPI authentication failed for user \"cheek\""
+                                      },
+                                      {
+                                          "seed":  1289506242,
+                                          "area":  "sspi",
+                                          "key":  "per_thread",
+                                          "value":  "6 threads, anonymous=[true, false, true, true, true, true]: only non-anonymous ones connected"
+                                      },
+                                      {
+                                          "seed":  1289506242,
+                                          "area":  "sspi",
+                                          "key":  "outlives_token",
+                                          "value":  "queries keep working after revert and dispose"
+                                      },
+                                      {
+                                          "seed":  1289506242,
+                                          "area":  "sspi",
+                                          "key":  "impersonated",
+                                          "value":  "thread user while impersonating=cheek, session_user=cheek"
+                                      },
+                                      {
+                                          "seed":  1289506242,
+                                          "area":  "sspi",
+                                          "key":  "process_identity",
+                                          "value":  "session_user=cheek, method=sspi"
+                                      },
+                                      {
+                                          "seed":  1289506242,
+                                          "area":  "cleanup",
+                                          "key":  "cluster_gone",
+                                          "value":  "true"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  3,
+                     "seed":  333598018,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  5,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  6.3,
+                     "consecutive":  3,
+                     "findings":  [
+                                      {
+                                          "seed":  333598018,
+                                          "area":  "sspi",
+                                          "key":  "impersonated",
+                                          "value":  "thread user while impersonating=cheek, session_user=cheek"
+                                      },
+                                      {
+                                          "seed":  333598018,
+                                          "area":  "sspi",
+                                          "key":  "process_identity",
+                                          "value":  "session_user=cheek, method=sspi"
+                                      },
+                                      {
+                                          "seed":  333598018,
+                                          "area":  "sspi",
+                                          "key":  "outlives_token",
+                                          "value":  "queries keep working after revert and dispose"
+                                      },
+                                      {
+                                          "seed":  333598018,
+                                          "area":  "sspi",
+                                          "key":  "anonymous",
+                                          "value":  "refused: 28000 FATAL: SSPI authentication failed for user \"cheek\""
+                                      },
+                                      {
+                                          "seed":  333598018,
+                                          "area":  "sspi",
+                                          "key":  "per_thread",
+                                          "value":  "4 threads, anonymous=[true, false, true, true]: only non-anonymous ones connected"
+                                      },
+                                      {
+                                          "seed":  333598018,
+                                          "area":  "cleanup",
+                                          "key":  "cluster_gone",
+                                          "value":  "true"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  4,
+                     "seed":  1790838567,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  5,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  5.3,
+                     "consecutive":  4,
+                     "findings":  [
+                                      {
+                                          "seed":  1790838567,
+                                          "area":  "sspi",
+                                          "key":  "impersonated",
+                                          "value":  "thread user while impersonating=cheek, session_user=cheek"
+                                      },
+                                      {
+                                          "seed":  1790838567,
+                                          "area":  "sspi",
+                                          "key":  "process_identity",
+                                          "value":  "session_user=cheek, method=sspi"
+                                      },
+                                      {
+                                          "seed":  1790838567,
+                                          "area":  "sspi",
+                                          "key":  "anonymous",
+                                          "value":  "refused: 28000 FATAL: SSPI authentication failed for user \"cheek\""
+                                      },
+                                      {
+                                          "seed":  1790838567,
+                                          "area":  "sspi",
+                                          "key":  "outlives_token",
+                                          "value":  "queries keep working after revert and dispose"
+                                      },
+                                      {
+                                          "seed":  1790838567,
+                                          "area":  "sspi",
+                                          "key":  "per_thread",
+                                          "value":  "7 threads, anonymous=[true, false, false, false, true, false, false]: only non-anonymous ones connected"
+                                      },
+                                      {
+                                          "seed":  1790838567,
+                                          "area":  "cleanup",
+                                          "key":  "cluster_gone",
+                                          "value":  "true"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  5,
+                     "seed":  1767723731,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  5,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  5.2,
+                     "consecutive":  5,
+                     "findings":  [
+                                      {
+                                          "seed":  1767723731,
+                                          "area":  "sspi",
+                                          "key":  "anonymous",
+                                          "value":  "refused: 28000 FATAL: SSPI authentication failed for user \"cheek\""
+                                      },
+                                      {
+                                          "seed":  1767723731,
+                                          "area":  "sspi",
+                                          "key":  "impersonated",
+                                          "value":  "thread user while impersonating=cheek, session_user=cheek"
+                                      },
+                                      {
+                                          "seed":  1767723731,
+                                          "area":  "sspi",
+                                          "key":  "per_thread",
+                                          "value":  "6 threads, anonymous=[true, false, true, true, false, false]: only non-anonymous ones connected"
+                                      },
+                                      {
+                                          "seed":  1767723731,
+                                          "area":  "sspi",
+                                          "key":  "outlives_token",
+                                          "value":  "queries keep working after revert and dispose"
+                                      },
+                                      {
+                                          "seed":  1767723731,
+                                          "area":  "sspi",
+                                          "key":  "process_identity",
+                                          "value":  "session_user=cheek, method=sspi"
+                                      },
+                                      {
+                                          "seed":  1767723731,
+                                          "area":  "cleanup",
+                                          "key":  "cluster_gone",
+                                          "value":  "true"
+                                      }
+                                  ]
+                 }
+             ]
+}
