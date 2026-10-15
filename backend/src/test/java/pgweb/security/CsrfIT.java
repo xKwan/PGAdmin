@@ -91,7 +91,7 @@ class CsrfIT {
         String ok = c.origin();
         List<Map<String, String>> attacks = List.of(
                 Map.of("Origin", ok),                                                         // no token
-                Map.of("Origin", ok, "X-CSRF-Token", "x" + c.csrf().substring(1)),            // wrong token
+                Map.of("Origin", ok, "X-CSRF-Token", (c.csrf().charAt(0) == 'x' ? "y" : "x") + c.csrf().substring(1)), // wrong token
                 Map.of("Origin", ok, "X-CSRF-Token", other.csrf()),                           // another session's token
                 Map.of("Origin", "http://evil.example", "X-CSRF-Token", c.csrf()),            // foreign origin
                 Map.of("Origin", "http://localhost:" + (app.port() + 1), "X-CSRF-Token", c.csrf()), // other port

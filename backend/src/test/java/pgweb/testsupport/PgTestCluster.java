@@ -45,14 +45,16 @@ public final class PgTestCluster implements AutoCloseable {
     private final String migratorPassword = secret();
     private final String appPassword = secret();
     private final List<String> hbaExtra;
+    private final List<String> identLines;
     private final Thread hook;
     private int port;
     private boolean started;
     private boolean auditBootstrapped;
 
-    private PgTestCluster(Path pgBin, List<String> hbaExtra) throws IOException {
+    private PgTestCluster(Path pgBin, List<String> hbaExtra, List<String> identLines) throws IOException {
         this.pgBin = pgBin;
         this.hbaExtra = hbaExtra;
+        this.identLines = identLines;
         this.root = Files.createTempDirectory("pgweb-it-");
         this.data = root.resolve("data");
         this.hook = new Thread(this::close, "pgweb-it-cleanup");
@@ -65,7 +67,12 @@ public final class PgTestCluster implements AutoCloseable {
 
     /** @param hbaExtra extra {@code pg_hba.conf} lines, inserted after the superuser line (e.g. sspi rules) */
     public static PgTestCluster start(List<String> hbaExtra) throws Exception {
-        PgTestCluster c = new PgTestCluster(resolvePgBin(), hbaExtra);
+        return start(hbaExtra, List.of());
+    }
+
+    /** @param identLines {@code pg_ident.conf} lines (for sspi rules with {@code map=...}) */
+    public static PgTestCluster start(List<String> hbaExtra, List<String> identLines) throws Exception {
+        PgTestCluster c = new PgTestCluster(resolvePgBin(), hbaExtra, identLines);
         try {
             c.init();
             return c;
@@ -91,6 +98,9 @@ public final class PgTestCluster implements AutoCloseable {
         hba.append("host all all 127.0.0.1/32 scram-sha-256\n");
         hba.append("host all all ::1/128 scram-sha-256\n");
         Files.writeString(data.resolve("pg_hba.conf"), hba.toString(), StandardCharsets.US_ASCII);
+        if (!identLines.isEmpty()) {
+            Files.writeString(data.resolve("pg_ident.conf"), String.join(System.lineSeparator(), identLines) + System.lineSeparator(), StandardCharsets.US_ASCII);
+        }
 
         IOException last = null;
         for (int attempt = 1; attempt <= 3 && !started; attempt++) {

@@ -1,0 +1,58 @@
+﻿{
+    "tag":  "phase-6",
+    "when":  "2026-10-16T06:17:28.2637151+08:00",
+    "server":  "SonarQube Community Build 26.9.0.129388",
+    "gate":  "pgweb gate",
+    "commit":  "a4cef5b",
+    "overall":  "OK",
+    "projects":  [
+                     {
+                         "project":  "pgweb-backend",
+                         "gate":  "OK",
+                         "analysedAt":  "2026-10-16T06:16:09+0800",
+                         "analysedRevision":  "a4cef5b2f88c7f624194a3f5613a0c286a9e22c0",
+                         "failedConditions":  [
+
+                                              ],
+                         "measures":  {
+                                          "coverage":  "92.0",
+                                          "duplicated_lines_density":  "0.0",
+                                          "software_quality_security_rating":  "1.0",
+                                          "security_hotspots":  "0",
+                                          "software_quality_high_issues":  "0",
+                                          "bugs":  "0",
+                                          "branch_coverage":  "87.4",
+                                          "ncloc":  "4107",
+                                          "software_quality_blocker_issues":  "0",
+                                          "software_quality_reliability_rating":  "1.0",
+                                          "vulnerabilities":  "0",
+                                          "line_coverage":  "94.1",
+                                          "software_quality_maintainability_rating":  "1.0"
+                                      }
+                     },
+                     {
+                         "project":  "pgweb-frontend",
+                         "gate":  "OK",
+                         "analysedAt":  "2026-10-16T06:16:51+0800",
+                         "analysedRevision":  "a4cef5b2f88c7f624194a3f5613a0c286a9e22c0",
+                         "failedConditions":  [
+
+                                              ],
+                         "measures":  {
+                                          "coverage":  "95.9",
+                                          "duplicated_lines_density":  "0.0",
+                                          "software_quality_security_rating":  "1.0",
+                                          "security_hotspots":  "0",
+                                          "software_quality_high_issues":  "0",
+                                          "bugs":  "0",
+                                          "branch_coverage":  "92.7",
+                                          "ncloc":  "735",
+                                          "software_quality_blocker_issues":  "0",
+                                          "software_quality_reliability_rating":  "1.0",
+                                          "vulnerabilities":  "0",
+                                          "line_coverage":  "98.7",
+                                          "software_quality_maintainability_rating":  "1.0"
+                                      }
+                     }
+                 ]
+}

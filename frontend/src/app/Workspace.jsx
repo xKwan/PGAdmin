@@ -1,13 +1,17 @@
+import { useState } from 'react';
 import { EmptyState, StatusBadge } from '../components/common/index.jsx';
 import { Splitter } from '../components/common/Splitter.jsx';
+import ConnectPanel from '../features/connections/ConnectPanel.jsx';
+import SessionBar from '../features/connections/SessionBar.jsx';
 
 const NAMES = { internal: 'Internal PostgreSQL', external: 'External PostgreSQL' };
 
 /**
- * The DBeaver-style workspace: object explorer on the left, editor above results on the right. The panes are
- * filled in by later phases (connections P6, editor and results P8, metadata P10).
+ * The DBeaver-style workspace: object explorer on the left, editor above results on the right. Connecting is
+ * Phase 6; the editor and results arrive in Phase 8 and the object tree in Phase 10.
  */
 export default function Workspace({ profile, onBack }) {
+  const [session, setSession] = useState(null);
   return (
     <section className="workspace" aria-label={`${NAMES[profile] || profile} workspace`}>
       <div className="workspace-bar">
@@ -15,7 +19,7 @@ export default function Workspace({ profile, onBack }) {
           ← Servers
         </button>
         <span className="workspace-title">{NAMES[profile] || profile}</span>
-        <StatusBadge tone="neutral">Not connected</StatusBadge>
+        {session ? <SessionBar session={session} onClosed={() => setSession(null)} /> : <StatusBadge tone="neutral">Not connected</StatusBadge>}
       </div>
       <Splitter
         direction="horizontal"
@@ -25,7 +29,11 @@ export default function Workspace({ profile, onBack }) {
         label="Resize object explorer"
         first={
           <aside className="pane pane-explorer" aria-label="Object explorer">
-            <EmptyState title="No connection">Connect to a database to browse its objects.</EmptyState>
+            {session ? (
+              <EmptyState title={session.database}>Object browsing arrives in a later version.</EmptyState>
+            ) : (
+              <ConnectPanel profile={profile} onConnected={setSession} />
+            )}
           </aside>
         }
         second={
@@ -37,7 +45,7 @@ export default function Workspace({ profile, onBack }) {
             label="Resize editor and results"
             first={
               <section className="pane pane-editor" aria-label="SQL editor">
-                <EmptyState title="SQL editor">Available once you are connected.</EmptyState>
+                <EmptyState title="SQL editor">{session ? 'The SQL editor arrives in a later version.' : 'Available once you are connected.'}</EmptyState>
               </section>
             }
             second={

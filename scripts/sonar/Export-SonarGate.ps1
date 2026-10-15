@@ -22,8 +22,17 @@ foreach ($key in 'pgweb-backend', 'pgweb-frontend') {
     $m = Get-Api "/api/measures/component?component=$key&metricKeys=$metrics"
     $measures = [ordered]@{}
     foreach ($x in @($m.component.measures)) { $measures[$x.metric] = $x.value }
+    # The gate status is that of the project's LAST analysis. Refuse to export it if that analysis is older than the
+    # newest change in the project's sources (a scan that silently failed to upload would otherwise look like a pass).
+    $last = @((Get-Api "/api/project_analyses/search?project=$key&ps=1").analyses)[0]
+    $analysedAt = [DateTimeOffset]::Parse($last.date)
+    $srcDir = if ($key -eq 'pgweb-backend') { 'backend\src' } else { 'frontend\src' }
+    $newest = Get-ChildItem -Recurse -File (Join-Path $repoRoot $srcDir) | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+    if ($newest.LastWriteTimeUtc -gt $analysedAt.UtcDateTime) {
+        throw "${key}: last analysis ($($last.date)) is older than $($newest.FullName) ($($newest.LastWriteTimeUtc.ToString('o'))). Run the sonar job first."
+    }
     $projects += [pscustomobject]@{
-        project = $key; gate = $gate.projectStatus.status
+        project = $key; gate = $gate.projectStatus.status; analysedAt = $last.date; analysedRevision = $last.revision
         failedConditions = @($gate.projectStatus.conditions | Where-Object { $_.status -ne 'OK' } | ForEach-Object { "$($_.metricKey) $($_.actualValue)" })
         measures = $measures
     }

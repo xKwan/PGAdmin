@@ -13,6 +13,7 @@ export class ApiError extends Error {
   }
 
   get kind() {
+    if (this.status === 401 && this.code === 'DELEGATION_HANDSHAKE') return 'delegation';
     if (this.status === 401) return 'unauthenticated';
     if (this.status === 403) return 'forbidden';
     if (this.status === 503 && this.code === 'AUDIT_UNAVAILABLE') return 'audit-unavailable';
@@ -22,7 +23,8 @@ export class ApiError extends Error {
 }
 
 let csrfToken = null;
-let onUnauthenticated = () => window.location.reload();
+/** What to do on 401. Receives the ApiError; the default reloads the page to sign in again. */
+const handlers = { unauthenticated: (_error) => window.location.reload() };
 
 /** Remembers the CSRF token returned by /api/me (kept in memory only, never in browser storage). */
 export function setCsrfToken(token) {
@@ -31,7 +33,7 @@ export function setCsrfToken(token) {
 
 /** Test hook: what to do on 401 (default: reload the page to sign in again). */
 export function setUnauthenticatedHandler(handler) {
-  onUnauthenticated = handler;
+  handlers.unauthenticated = handler;
 }
 
 const UNSAFE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -78,6 +80,8 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
   if (response.ok) return response.json();
   const err = await readEnvelope(response);
   const apiError = new ApiError(response.status, err.code, err.message, err.requestId ?? null);
-  if (response.status === 401) onUnauthenticated(apiError);
+  // DELEGATION_HANDSHAKE: the browser could not complete the Windows sign-in for a database connection; the app
+  // session itself is fine, so this is an ordinary error, not a reason to reload.
+  if (response.status === 401 && apiError.code !== 'DELEGATION_HANDSHAKE') handlers.unauthenticated(apiError);
   throw apiError;
 }

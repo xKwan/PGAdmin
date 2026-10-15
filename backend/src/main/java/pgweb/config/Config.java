@@ -15,7 +15,17 @@ public record Config(
         Map<String, DbProfile> profiles,
         Limits limits,
         boolean executionEnabled,
-        Path logDir) {
+        Path logDir,
+        Identity identity) {
+
+    /**
+     * How a Windows account maps to its PostgreSQL role (ADR-0002).
+     * @param lowerCase lower-case the sAMAccountName (default)
+     * @param overrides domain-qualified account (upper case, backslash-separated) to role, for accounts that don't
+     *                  follow the rule
+     */
+    public record Identity(boolean lowerCase, Map<String, String> overrides) {
+    }
 
     public record Server(String bind, int port, String publicHost, Optional<Tls> tls, Path workDir) {
     }

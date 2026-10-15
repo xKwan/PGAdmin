@@ -36,4 +36,4 @@
 | Check | Result | File |
 |---|---|---|
 | Randomised loop: frontend lint + 29 Vitest tests with coverage; backend 51 unit + 64 integration tests | **PASS 5/5**, master seed `959626999` | `docs/evidence/phase-5/loop-20261016-020423.json` |
-| SonarQube "pgweb gate" | **OK** for both projects (after removing three duplicated literals in the new servlet) | `docs/evidence/phase-5/sonar-20261016-020424.json` |
+| SonarQube "pgweb gate" | **OK** for both projects (after removing three duplicated literals in the new servlet). **Correction (Phase 6, finding P6-4):** the frontend half of this export was stale. No frontend analysis of this commit reached the server; the gate shown was that of Phase 3. Analysing this code in Phase 6 found two false positives in `Splitter.jsx` (suppressed inline, with the reason) and one real issue in `client.js` (fixed). The backend half is valid. | `docs/evidence/phase-5/sonar-20261016-020424.json` |

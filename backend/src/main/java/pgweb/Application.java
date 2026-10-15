@@ -10,6 +10,15 @@ import pgweb.authz.Access;
 import pgweb.authz.AccessFilter;
 import pgweb.config.Config;
 import pgweb.config.Mode;
+import pgweb.dbsession.AppSessionListener;
+import pgweb.dbsession.DbConnector;
+import pgweb.dbsession.DbSessionManager;
+import pgweb.dbsession.DbSessionServlets;
+import pgweb.dbsession.SspiDelegatingConnector;
+import pgweb.identity.RoleMapper;
+import pgweb.security.FreshNegotiateFilter;
+import pgweb.security.PassThroughFilter;
+import waffle.windows.auth.impl.WindowsAuthProviderImpl;
 import pgweb.security.AuthSchemeFilter;
 import pgweb.security.CsrfFilter;
 import pgweb.security.SecurityHeadersFilter;
@@ -41,9 +50,13 @@ public final class Application implements AutoCloseable {
      * Test hooks. {@code authOverride} replaces Waffle (the mock provider in tests); it is refused in prod mode
      * (threat T26). {@code extraRoutes} adds test-only endpoints; {@code clock} drives session lifetimes.
      */
-    public record Options(Filter authOverride, Consumer<WebServer.Routes> extraRoutes, Clock clock) {
+    public record Options(Filter authOverride, Consumer<WebServer.Routes> extraRoutes, Clock clock, DbConnector connector) {
+        public Options(Filter authOverride, Consumer<WebServer.Routes> extraRoutes, Clock clock) {
+            this(authOverride, extraRoutes, clock, null);
+        }
+
         public static Options defaults() {
-            return new Options(null, r -> { }, Clock.systemUTC());
+            return new Options(null, r -> { }, Clock.systemUTC(), null);
         }
     }
 
@@ -52,14 +65,17 @@ public final class Application implements AutoCloseable {
     private final Config config;
     private final AuditDatabase auditDb;
     private final AuditService audit;
+    private final DbSessionManager sessions;
     private final WebServer server;
     private final List<WebServer.Routes.Route> inventory;
     private volatile boolean closed;
 
-    private Application(Config config, AuditDatabase auditDb, AuditService audit, WebServer.Routes routes) throws java.io.IOException {
+    private Application(Config config, AuditDatabase auditDb, AuditService audit, DbSessionManager sessions, WebServer.Routes routes)
+            throws java.io.IOException {
         this.config = config;
         this.auditDb = auditDb;
         this.audit = audit;
+        this.sessions = sessions;
         this.inventory = routes.inventory();
         this.server = new WebServer(config, routes); // owned by this application; released by close()
     }
@@ -69,8 +85,8 @@ public final class Application implements AutoCloseable {
     }
 
     public static Application start(Config config, Options options) throws Exception {
-        if (config.mode() == Mode.PROD && options.authOverride() != null) {
-            throw new IllegalStateException("an authentication override is refused with pgweb.mode=prod (threat T26)");
+        if (config.mode() == Mode.PROD && (options.authOverride() != null || options.connector() != null)) {
+            throw new IllegalStateException("an authentication or connector override is refused with pgweb.mode=prod (threat T26)");
         }
         AuditDatabase auditDb = new AuditDatabase(config.audit());
         AuditService audit;
@@ -83,11 +99,22 @@ public final class Application implements AutoCloseable {
             throw e;
         }
 
+        boolean production = options.connector() == null;
+        DbSessionManager sessions = new DbSessionManager(config, production ? new SspiDelegatingConnector() : options.connector(),
+                new RoleMapper(config.identity().lowerCase(), config.identity().overrides()), audit, options.clock(), true);
+
         WebServer.Routes routes = new WebServer.Routes()
+                .listener(new AppSessionListener(sessions, audit))
                 .servlet("health", new HealthServlet(null), Access.PUBLIC, "/api/health")
                 .servlet("ready", new HealthServlet(auditDb::ping), Access.PUBLIC, "/api/ready")
                 .servlet("me", new MeServlet(config), Access.AUTHENTICATED, "/api/me")
-                .servlet("logout", new LogoutServlet(audit), Access.AUTHENTICATED, "/api/logout");
+                .servlet("logout", new LogoutServlet(audit), Access.AUTHENTICATED, "/api/logout")
+                .servlet("profiles", new DbSessionServlets.Profiles(config), Access.AUTHENTICATED, "/api/profiles")
+                .servlet("databasesInternal", new DbSessionServlets.Databases(sessions, "internal"), Access.DATA_ADMIN, "/api/profiles/internal/*")
+                .servlet("databasesExternal", new DbSessionServlets.Databases(sessions, "external"), Access.AUTHENTICATED, "/api/profiles/external/*")
+                .servlet("openInternal", new DbSessionServlets.Open(sessions, "internal"), Access.DATA_ADMIN, "/api/db-sessions/internal")
+                .servlet("openExternal", new DbSessionServlets.Open(sessions, "external"), Access.AUTHENTICATED, "/api/db-sessions/external")
+                .servlet("dbSessions", new DbSessionServlets.Sessions(sessions), Access.AUTHENTICATED, "/api/db-sessions", "/api/db-sessions/*");
         options.extraRoutes().accept(routes);
         routes.servlet("default", new StaticContentServlet(), Access.AUTHENTICATED, "/");
 
@@ -101,12 +128,19 @@ public final class Application implements AutoCloseable {
                 .filter("session", new SessionFilter(config.auth(), audit, options.clock()), Map.of(), "/*")
                 .filter("csrf", new CsrfFilter(() -> CsrfFilter.originsFor(config.server().publicHost(),
                         self.get() == null ? config.server().port() : self.get().port(), tls), audit), Map.of(), "/*")
-                .filter("access", new AccessFilter(access, audit), Map.of(), "/*");
+                .filter("access", new AccessFilter(access, audit), Map.of(), "/*")
+                // Opening a connection needs the request's own Windows handshake (ADR-0002). Tests that supply a
+                // connector (test scope only, refused in prod) skip it.
+                .filter("freshNegotiate", production
+                                ? new FreshNegotiateFilter(new WindowsAuthProviderImpl(), config.auth().protocols(), audit)
+                                : new PassThroughFilter(),
+                        Map.of(), "/api/db-sessions/internal", "/api/db-sessions/external", "/api/profiles/internal/*", "/api/profiles/external/*");
 
         Application app;
         try {
-            app = new Application(config, auditDb, audit, routes);
+            app = new Application(config, auditDb, audit, sessions, routes);
         } catch (Exception e) {
+            sessions.close();
             audit.close();
             auditDb.close();
             throw e;
@@ -149,6 +183,10 @@ public final class Application implements AutoCloseable {
         return audit;
     }
 
+    public DbSessionManager sessions() {
+        return sessions;
+    }
+
     /** Every registered endpoint with its declared access (the authorisation matrix test iterates it). */
     public List<WebServer.Routes.Route> inventory() {
         return inventory;
@@ -162,6 +200,7 @@ public final class Application implements AutoCloseable {
         closed = true;
         LOG.info("pgweb shutting down");
         server.close();
+        sessions.close();
         audit.close();
         auditDb.close();
     }

@@ -34,7 +34,10 @@ public final class ConfigLoader {
     private static final Pattern DNS_LABEL = Pattern.compile("^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$");
     private static final Pattern IPV4 = Pattern.compile("^\\d{1,3}(\\.\\d{1,3}){3}$");
     private static final Pattern DOMAIN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._-]{0,62}$");
-    private static final Pattern DB_NAME = Pattern.compile("^[A-Za-z_][A-Za-z0-9_$]{0,62}$");
+    private static final String BACKSLASH = "\\";
+    /** {@code DOMAIN\account}: a domain name, one backslash, an account without backslashes or spaces. */
+    private static final Pattern OVERRIDE_ACCOUNT = Pattern.compile("^[A-Za-z0-9._-]+" + Pattern.quote(BACKSLASH) + "[^\\\\\\s]+$");
+    private static final Pattern DB_NAME =Pattern.compile("^[A-Za-z_][A-Za-z0-9_$]{0,62}$");
 
     private static final Set<String> KEYS = Set.of(
             "pgweb.mode",
@@ -48,7 +51,7 @@ public final class ConfigLoader {
             "limits.cancelGraceSeconds", "limits.idleSessionMinutes", "limits.idleInTransactionMinutes",
             "limits.idleInTransactionWarningMinutes", "limits.maxTransactionAgeMinutes", "limits.heartbeatAbandonSeconds",
             "limits.sessionsPerUser", "limits.sessionsGlobal", "limits.failedOpensPerWindow", "limits.failedOpenWindowMinutes",
-            "logging.dir");
+            "logging.dir", "identity.roleCase", "identity.roleOverrides");
     private static final Set<String> PROFILE_KEYS = Set.of(
             "displayName", "host", "port", "sslMode", "sslRootCert", "maintenanceDb", "requiresDataAdmin", "statementTimeoutSeconds");
 
@@ -126,7 +129,11 @@ public final class ConfigLoader {
             if (!problems.isEmpty()) {
                 throw new ConfigException(problems);
             }
-            return new Config(mode, server, auth, audit, profiles, limits, execution, logDir);
+            Config.Identity identity = identity();
+            if (!problems.isEmpty()) {
+                throw new ConfigException(problems);
+            }
+            return new Config(mode, server, auth, audit, profiles, limits, execution, logDir, identity);
         }
 
         private Config.Server server(boolean prod) {
@@ -297,6 +304,29 @@ public final class ConfigLoader {
                 }
             });
             return root;
+        }
+
+        private Config.Identity identity() {
+            String roleCase = str("identity.roleCase", "lower").toLowerCase(Locale.ROOT);
+            if (!roleCase.equals("lower") && !roleCase.equals("asis")) {
+                problems.add("identity.roleCase must be lower or asis, not " + roleCase);
+            }
+            Map<String, String> overrides = new LinkedHashMap<>();
+            String raw = str("identity.roleOverrides", "");
+            for (String entry : raw.split(";")) {
+                if (entry.isBlank()) {
+                    continue;
+                }
+                int eq = entry.indexOf('=');
+                String account = eq < 0 ? "" : entry.substring(0, eq).strip();
+                String role = eq < 0 ? "" : entry.substring(eq + 1).strip();
+                if (!OVERRIDE_ACCOUNT.matcher(account).matches() || !pgweb.identity.RoleMapper.ROLE.matcher(role).matches()) {
+                    problems.add("identity.roleOverrides: expected DOMAIN" + BACKSLASH + "account=role entries separated by ';', not " + entry.strip());
+                } else {
+                    overrides.put(account.toUpperCase(Locale.ROOT), role);
+                }
+            }
+            return new Config.Identity(!roleCase.equals("asis"), Map.copyOf(overrides));
         }
 
         private Config.Limits limits() {

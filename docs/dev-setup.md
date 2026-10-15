@@ -72,6 +72,8 @@ Unknown keys are errors, so a misspelt setting can't silently fall back to a def
 | `audit.migrator.user`, `audit.migrator.password` | — | Only for `migrate` and `verify-audit-chain` |
 | `audit.failMode` | `closed` | `closed`: an operation whose audit record can't be written is refused (503 `AUDIT_UNAVAILABLE`). `open`: the record is spooled and the operation continues (not recommended, D4). |
 | `profile.internal.*`, `profile.external.*` | — | `host` (a DNS name, never an IP: S7-3), `port` (5433/5432), `sslMode` (`verify-full` in prod, `disable` in test), `sslRootCert`, `maintenanceDb` (`postgres`), `requiresDataAdmin` (always true for internal), `displayName`, `statementTimeoutSeconds` (300/60) |
+| `identity.roleCase` | `lower` | `lower`: the PostgreSQL role is the lower-cased `sAMAccountName`; `asis`: keep its case |
+| `identity.roleOverrides` | — | `DOMAINccount=role` entries separated by `;`, for accounts whose role doesn't follow the rule. The server's `pg_ident.conf` must agree. |
 | `execution.enabled` | `false` | SQL execution kill switch (EXE-01) |
 | `limits.*` | ADR-0006 | `maxRows` 1000, `maxResponseBytes` 10 MB, `maxCellBytes` 64 KB, `maxSqlBytes` 1 MB, `cancelGraceSeconds` 5, `idleSessionMinutes` 15, `idleInTransactionMinutes` 10 (warning at 8), `maxTransactionAgeMinutes` 60, `heartbeatAbandonSeconds` 120, `sessionsPerUser` 3, `sessionsGlobal` 50, `failedOpensPerWindow` 5 per `failedOpenWindowMinutes` 5 |
 | `logging.dir` | `logs` | Rolling `pgweb.log` (50 MB × 30 days, 2 GB cap). Messages and stack traces are redacted. |

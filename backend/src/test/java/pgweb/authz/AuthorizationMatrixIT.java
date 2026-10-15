@@ -127,7 +127,9 @@ class AuthorizationMatrixIT {
                         if (s != 403) {
                             failures.add(cell + " (non-DataAdmin must get 403)");
                         }
-                    } else if (s == 401 || s == 403) {
+                    } else if ((s == 401 && !r.body().contains("DELEGATION_HANDSHAKE")) || s == 403) {
+                        // Opening a DB connection answers an allowed user with a Windows handshake challenge
+                        // (DELEGATION_HANDSHAKE): authorisation passed, the handshake comes next.
                         failures.add(cell + " (should be allowed)");
                     }
                 }

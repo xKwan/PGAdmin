@@ -87,3 +87,13 @@ h1 { font-size: 1.4rem; margin: 0 0 0.75rem; }
 .pane { height: 100%; background: var(--panel); }
 
 .status-page { max-width: 640px; margin: 4rem auto; padding: 1.5rem; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+
+.connect-panel { padding: 0.5rem; }
+.db-list { list-style: none; margin: 0; padding: 0; }
+.db-item { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem; border: none; border-bottom: 1px solid var(--line); background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.db-item:hover, .db-item:focus-visible { background: #eef3fb; }
+.db-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-bar { display: flex; align-items: center; gap: 0.6rem; margin-left: auto; min-width: 0; }
+.session-db { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 20vw; }
+.session-meta { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-lost { color: var(--danger); }

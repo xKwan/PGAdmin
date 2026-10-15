@@ -10,15 +10,15 @@
 |---|---|---|---|---|
 | SEC-01 | Every protected page and API requires Waffle authentication; unauthenticated requests get 401 / the Negotiate flow | P4 | Route-inventory anonymous test; E2E unauthenticated journey | Tested (P4) |
 | SEC-02 | Identity comes only from the server-side Waffle context; client-supplied usernames, roles and flags are rejected | P4 | Forged-field tests | Tested (P4) |
-| SEC-03 | Internal PostgreSQL requires `DataAdmin`, checked server-side on every request | P4, P6 | Direct-API authorisation matrix | Planned |
-| SEC-04 | Internal and external sessions connect as the user via Kerberos constrained delegation (ADR-0002) and run as the mapped PostgreSQL role; `session_user` is verified | P6 | Mapping tests | Planned |
-| SEC-05 | External sessions: only databases the user has CONNECT on are offered; host and port come from server config only (ADR-0003) | P6 | Credential and override-rejection tests | Planned |
-| SEC-06 | No shared or privileged account runs user SQL; superuser sessions refused (D14c) | P6 | Privilege and superuser tests | Planned |
-| SEC-07 | DB sessions are isolated per user; foreign session IDs return 404 | P6 | Cross-user tests | Planned |
-| SEC-08 | No user passwords are handled; delegated tokens are never stored; app secrets are never logged, persisted, returned or stored in the browser | P3, P6 | Secret-grep tests | Planned |
+| SEC-03 | Internal PostgreSQL requires `DataAdmin`, checked server-side on every request | P4, P6 | Direct-API authorisation matrix | Tested (P4, P6) |
+| SEC-04 | Internal and external sessions connect as the user via Kerberos constrained delegation (ADR-0002) and run as the mapped PostgreSQL role; `session_user` is verified | P6 | Mapping tests | Tested (P6; Kerberos in target env) |
+| SEC-05 | External sessions: only databases the user has CONNECT on are offered; host and port come from server config only (ADR-0003) | P6 | Credential and override-rejection tests | Tested (P6) |
+| SEC-06 | No shared or privileged account runs user SQL; superuser sessions refused (D14c) | P6 | Privilege and superuser tests | Tested (P6) |
+| SEC-07 | DB sessions are isolated per user; foreign session IDs return 404 | P6 | Cross-user tests | Tested (P6) |
+| SEC-08 | No user passwords are handled; delegated tokens are never stored; app secrets are never logged, persisted, returned or stored in the browser | P3, P6 | Secret-grep tests | Tested (P6) |
 | SEC-09 | CSRF, CSP, clickjacking and security-header protections | P4 | Header and CSRF tests | Tested (P4) |
 | SEC-10 | App-generated SQL is parameterised; identifiers are safely quoted | P3, P10 | Injection-payload tests; ArchUnit | Planned |
-| SEC-11 | Failed DB-session opens are rate-limited per user and audited | P6 | Throttling test | Planned |
+| SEC-11 | Failed DB-session opens are rate-limited per user and audited | P6 | Throttling test | Tested (P6) |
 
 ## 2. MVP: execution, limits and audit
 
@@ -42,8 +42,8 @@
 | ID | Requirement | Phase | Verified by | Status |
 |---|---|---|---|---|
 | FN-01 | Landing page offering internal (DataAdmin only) and external options | P5 | RTL; E2E | Tested (P5; E2E in P11) |
-| FN-02 | External connection: choose a database from those the user may CONNECT to (no password) | P6 | RTL; integration | Planned |
-| FN-03 | Connection status and session info; multiple sessions; expired/lost handling | P6 | RTL; integration | Planned |
+| FN-02 | External connection: choose a database from those the user may CONNECT to (no password) | P6 | RTL; integration | Tested (P6) |
+| FN-03 | Connection status and session info; multiple sessions; expired/lost handling | P6 | RTL; integration | Tested (P6) |
 | FN-04 | SQL editor with PostgreSQL highlighting and practical editing features | P8 | RTL | Planned |
 | FN-05 | Execute selection or current statement; cancel; running timer | P8 | RTL; E2E | Planned |
 | FN-06 | Bounded, locally sortable, paginated results with NULL and type-aware display | P8 | RTL | Planned |

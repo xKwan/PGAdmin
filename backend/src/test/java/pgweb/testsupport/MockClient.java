@@ -73,7 +73,7 @@ public final class MockClient {
     public HttpResponse<String> send(String method, String path, String body, Map<String, String> headers) throws Exception {
         HttpRequest.Builder b = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).timeout(Duration.ofSeconds(20))
                 .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body));
-        if (userHeader != null) {
+        if (userHeader != null && !headers.containsKey(MockAuthFilter.HEADER)) {
             b.header(MockAuthFilter.HEADER, userHeader);
         }
         headers.forEach(b::header);

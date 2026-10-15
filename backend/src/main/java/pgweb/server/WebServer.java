@@ -44,6 +44,13 @@ public final class WebServer implements AutoCloseable {
 
         private final List<F> filters = new ArrayList<>();
         private final List<S> servlets = new ArrayList<>();
+        private final List<java.util.EventListener> listeners = new ArrayList<>();
+
+        /** Servlet API listeners (for example an HttpSessionListener). */
+        public Routes listener(java.util.EventListener listener) {
+            listeners.add(listener);
+            return this;
+        }
 
         public Routes filter(String name, Filter filter, Map<String, String> params, String... patterns) {
             filters.add(new F(name, filter, params, List.of(patterns)));
@@ -119,6 +126,8 @@ public final class WebServer implements AutoCloseable {
         ctx.setSessionTimeout((int) config.auth().sessionIdle().toMinutes());
         ctx.getManager();
 
+        List<java.util.EventListener> listeners = List.copyOf(routes.listeners);
+        ctx.addServletContainerInitializer((classes, servletContext) -> listeners.forEach(servletContext::addListener), null);
         addFilter(ctx, "requestId", new RequestIdFilter(), Map.of(), "/*");
         for (Routes.F f : routes.filters) {
             addFilter(ctx, f.name, f.filter, f.params, f.patterns.toArray(String[]::new));

@@ -45,6 +45,11 @@ public final class ServletStubs {
                     case "getUserPrincipal" -> principal;
                     case "isSecure" -> secure;
                     case "getRemoteAddr" -> "127.0.0.1";
+                    case "getRemotePort" -> 50000;
+                    case "removeAttribute" -> {
+                        attrs.remove((String) a[0]);
+                        yield null;
+                    }
                     case "getAttribute" -> attrs.get((String) a[0]);
                     case "setAttribute" -> {
                         attrs.put((String) a[0], a[1]);
@@ -113,6 +118,10 @@ public final class ServletStubs {
                             headers.put((String) a[0], (String) a[1]);
                             yield null;
                         }
+                        case "addHeader" -> {
+                            headers.merge((String) a[0], (String) a[1], (x, y) -> x + ", " + y);
+                            yield null;
+                        }
                         case "setContentType", "setCharacterEncoding", "resetBuffer" -> null;
                         case "isCommitted" -> false;
                         case "getOutputStream" -> out;
@@ -126,7 +135,7 @@ public final class ServletStubs {
     }
 
     /** A filter chain that records the request it was given. */
-    public static final class Chain implements FilterChain {
+    public static class Chain implements FilterChain {
         public HttpServletRequest seen;
 
         @Override

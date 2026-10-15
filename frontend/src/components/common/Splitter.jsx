@@ -48,10 +48,12 @@ export function Splitter({ direction = 'horizontal', initial = 30, min = 10, max
       <div className="split-pane" style={{ flexBasis: `${size}%` }}>
         {first}
       </div>
-      <div
+      {/* WAI-ARIA window splitter: a focusable separator is an interactive widget (ARIA 1.2), so Sonar's
+          non-interactive-element rules (S6845, S6847) don't apply; <hr> can't take focus or keys. */}
+      <div // NOSONAR
         className="split-divider"
         role="separator"
-        tabIndex={0}
+        tabIndex={0} // NOSONAR
         aria-label={label}
         aria-orientation={horizontal ? 'vertical' : 'horizontal'}
         aria-valuenow={size}

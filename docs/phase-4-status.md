@@ -55,7 +55,7 @@ Every request passes these filters, in order (`pgweb.Application`). Each one run
 | Check | Result | File |
 |---|---|---|
 | Randomised loop: frontend lint + Vitest; backend 51 unit + 58 integration tests, JaCoCo thresholds (`security`, `authz`, `audit` ≥ 90/85) | **PASS 5/5**, master seed `964826653` | `docs/evidence/phase-4/loop-20261016-014524.json` |
-| SonarQube "pgweb gate" | **OK** for both projects; backend coverage 91%; 0 blocker/high issues | `docs/evidence/phase-4/sonar-20261016-014546.json` |
+| SonarQube "pgweb gate" | **OK** for both projects; backend coverage 91%; 0 blocker/high issues. **Correction (Phase 6, finding P6-4):** the frontend half of this export was stale. No frontend analysis of this commit reached the server; the gate shown was that of Phase 3. The next real frontend analysis (Phase 6) covered this code too; see the Phase 5 correction for what it found. The backend half is valid. | `docs/evidence/phase-4/sonar-20261016-014546.json` |
 
 ## Findings
 
