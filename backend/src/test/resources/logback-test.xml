@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tests: console only (no log files in the working tree), same redacting converters as production. -->
+<configuration>
+  <conversionRule conversionWord="rmsg" class="pgweb.logging.RedactingMessageConverter"/>
+  <conversionRule conversionWord="rex" class="pgweb.logging.RedactingThrowableConverter"/>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder><pattern>%d{HH:mm:ss.SSS} %-5level [%thread] [%X{requestId:-}] %logger{36} - %rmsg%n%rex</pattern></encoder>
+  </appender>
+  <logger name="org.apache" level="WARN"/>
+  <logger name="org.flywaydb" level="WARN"/>
+  <logger name="com.zaxxer.hikari" level="ERROR"/>
+  <logger name="org.postgresql" level="ERROR"/>
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+  </root>
+</configuration>

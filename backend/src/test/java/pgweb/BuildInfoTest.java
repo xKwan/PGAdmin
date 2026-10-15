@@ -20,15 +20,10 @@ class BuildInfoTest {
     }
 
     @Test
-    void mainPrintsTheDescription() {
-        java.io.PrintStream old = System.out;
+    void versionCommandPrintsTheDescription() {
         java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
-        System.setOut(new java.io.PrintStream(buf, true, java.nio.charset.StandardCharsets.UTF_8));
-        try {
-            Main.main(new String[0]);
-        } finally {
-            System.setOut(old);
-        }
+        java.io.PrintStream out = new java.io.PrintStream(buf, true, java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(Main.run(new String[] {"version"}, out, out, null)).isEqualTo(Main.OK);
         assertThat(buf.toString(java.nio.charset.StandardCharsets.UTF_8)).contains("pgweb");
     }
 }

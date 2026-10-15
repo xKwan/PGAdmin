@@ -17,7 +17,8 @@ An internal web application, similar to DBeaver for everyday workflows, that let
 | Architecture decisions (all Accepted 2026-10-15) | [`docs/adr/`](docs/adr/README.md) |
 | Decision log (stakeholder instructions) | [`docs/decision-log.md`](docs/decision-log.md) |
 | What still has to be proven in the real environment | [`docs/target-environment-checklist.md`](docs/target-environment-checklist.md) |
-| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md) |
+| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md), [`docs/phase-3-status.md`](docs/phase-3-status.md) |
+| Developer setup: build, local audit DB, run, configuration reference | [`docs/dev-setup.md`](docs/dev-setup.md) |
 | Requirements, threat model, audit policy | [`docs/requirements.md`](docs/requirements.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/audit-policy.md`](docs/audit-policy.md) |
 | Environment inventory, compatibility matrix | [`docs/environment-inventory.md`](docs/environment-inventory.md), [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md) |
 | Offline dependency intake | [`offline/README.md`](offline/README.md) |
@@ -27,11 +28,13 @@ An internal web application, similar to DBeaver for everyday workflows, that let
 ## Repository layout
 
 ```
+deploy/sql/           audit database bootstrap for DBAs
 backend/              Java 21 service: plain Jakarta Servlet + Waffle on embedded Tomcat 11, pgJDBC (Maven)
 frontend/             React single-page app (Vite, Vitest), built into the backend JAR
 offline/              air-gap intake: Maven settings, dependency and release bundles, SHA-256 manifests
 scripts/ci/           CI job logic shared by .gitlab-ci.yml and local runs; pipeline gate tests
 scripts/test/         randomised 5x test loop (delivery workflow)
+scripts/dev-db.ps1    local development audit database
 scripts/sonar/        project-local SonarQube start/stop and quality-gate setup
 scripts/toolchain/    install / uninstall / activate project-local software, plus tests
 toolchain/            software manifest (software.json) and pinned versions (software.lock.json)
@@ -125,7 +128,7 @@ Uninstall only ever deletes inside `tools\`, and refuses any recorded path that 
 
 ### Running the application, database and Windows service
 
-These sections are added as each phase is completed: the backend server and its configuration (Phase 3), sign-in (Phase 4), database connections (Phase 6), and Windows service deployment (Phase 12).
+See [`docs/dev-setup.md`](docs/dev-setup.md): a local audit database (`scripts\dev-db.ps1 start`), the `serve`, `check-config`, `migrate` and `verify-audit-chain` commands, and the full `pgweb.properties` reference. Sign-in (Phase 4), database connections (Phase 6) and Windows service deployment (Phase 12) are added as those phases are completed.
 
 ## Testing
 
@@ -147,4 +150,5 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 | 0: Discovery and decisions | Done. All ADRs Accepted 2026-10-15 ([`docs/decision-log.md`](docs/decision-log.md)). Environment facts still to be collected are in [`docs/target-environment-checklist.md`](docs/target-environment-checklist.md). |
 | 1: Feasibility spikes | Done on the workstation (S1–S3, S5–S7); Kerberos, the domain, the runner and a clean VM remain target-environment items ([`docs/phase-1-status.md`](docs/phase-1-status.md)). |
 | 2: Offline baseline, scaffolding, CI, SonarQube | **Done** on the workstation: loop 5/5, gate checks, intake exercise and both Sonar gates passed. A clean VM and the GitLab runner remain target-environment items ([`docs/phase-2-status.md`](docs/phase-2-status.md)). |
-| 3–12 | Not started |
+| 3: Backend foundation | **Done** on the workstation: configuration, secrets, redacted logging, error envelope, audit schema with hash chain, CLI, test-cluster guard ([`docs/phase-3-status.md`](docs/phase-3-status.md)) |
+| 4–12 | Not started |

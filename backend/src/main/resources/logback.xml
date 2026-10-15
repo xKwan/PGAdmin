@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logging (plan Phase 3). Every message and stack trace goes through the redacting converters.
+  pgweb.logDir is set by pgweb.Main from logging.dir before the first log call.
+  Application logs are NOT audit records (docs/audit-policy.md).
+-->
+<configuration>
+  <conversionRule conversionWord="rmsg" class="pgweb.logging.RedactingMessageConverter"/>
+  <conversionRule conversionWord="rex" class="pgweb.logging.RedactingThrowableConverter"/>
+
+  <property name="PATTERN" value="%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] [%X{requestId:-}] %logger{36} - %rmsg%n%rex"/>
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder><pattern>${PATTERN}</pattern><charset>UTF-8</charset></encoder>
+  </appender>
+
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${pgweb.logDir:-logs}/pgweb.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>${pgweb.logDir:-logs}/pgweb-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <maxFileSize>50MB</maxFileSize>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>2GB</totalSizeCap>
+    </rollingPolicy>
+    <encoder><pattern>${PATTERN}</pattern><charset>UTF-8</charset></encoder>
+  </appender>
+
+  <logger name="org.apache.catalina" level="WARN"/>
+  <logger name="org.apache.tomcat" level="WARN"/>
+  <logger name="org.apache.coyote" level="WARN"/>
+  <logger name="org.flywaydb" level="INFO"/>
+  <logger name="com.zaxxer.hikari" level="WARN"/>
+  <logger name="org.postgresql" level="WARN"/>
+  <logger name="waffle" level="WARN"/>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="FILE"/>
+  </root>
+</configuration>
