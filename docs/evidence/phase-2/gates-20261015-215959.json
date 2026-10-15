@@ -1,0 +1,57 @@
+﻿{
+    "tag":  "phase-2",
+    "overall":  "PASS",
+    "when":  "2026-10-15T21:59:59.8818768+08:00",
+    "commit":  "3d893cc",
+    "gates":  [
+                  {
+                      "id":  "G1",
+                      "gate":  "npm ci --offline with an empty cache fails",
+                      "failedAsExpected":  true,
+                      "detail":  "exit 1, ENOTCACHED=True",
+                      "seconds":  1.1
+                  },
+                  {
+                      "id":  "G2",
+                      "gate":  "offline Maven build with an empty repository fails",
+                      "failedAsExpected":  true,
+                      "detail":  "exit 1, jars fetched=0",
+                      "seconds":  1
+                  },
+                  {
+                      "id":  "G3",
+                      "gate":  "dangerouslySetInnerHTML fails ESLint",
+                      "failedAsExpected":  true,
+                      "detail":  "exit 1",
+                      "seconds":  1.2
+                  },
+                  {
+                      "id":  "G4",
+                      "gate":  "backend coverage drop fails mvn verify",
+                      "failedAsExpected":  true,
+                      "detail":  "exit 1",
+                      "seconds":  5.1
+                  },
+                  {
+                      "id":  "G5",
+                      "gate":  "frontend coverage drop fails vitest",
+                      "failedAsExpected":  true,
+                      "detail":  "exit 1",
+                      "seconds":  1.7
+                  },
+                  {
+                      "id":  "G6",
+                      "gate":  "manifest detects modified, missing and extra files",
+                      "failedAsExpected":  true,
+                      "detail":  "modified: clean=0 faulty=1; missing: clean=0 faulty=1; extra: clean=0 faulty=1",
+                      "seconds":  23.9
+                  },
+                  {
+                      "id":  "G7",
+                      "gate":  "toolchain-check reports a version mismatch",
+                      "failedAsExpected":  true,
+                      "detail":  "exit 1",
+                      "seconds":  0.7
+                  }
+              ]
+}

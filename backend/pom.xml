@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  pgweb backend: plain Jakarta Servlet + Waffle on embedded Tomcat 11 (ADR-0001), pgJDBC (ADR-0009).
+  Every version is pinned exactly (ADR-0008); nothing is resolved from a BOM except JUnit's.
+  Builds offline with the project-local repository: mvn -o -B verify
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>pgweb</groupId>
+  <artifactId>pgweb-backend</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <name>pgweb backend</name>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <project.build.outputTimestamp>2026-10-15T00:00:00Z</project.build.outputTimestamp>
+
+    <!-- Runtime -->
+    <tomcat.version>11.0.26</tomcat.version>
+    <waffle.version>3.7.0</waffle.version>
+    <jna.version>5.19.1</jna.version>
+    <pgjdbc.version>42.7.13</pgjdbc.version>
+    <jackson.version>2.22.3</jackson.version>
+    <slf4j.version>2.0.20</slf4j.version>
+    <logback.version>1.6.5</logback.version>
+    <flyway.version>13.9.0</flyway.version>
+    <hikari.version>7.1.0</hikari.version>
+
+    <!-- Test -->
+    <junit.version>6.1.3</junit.version>
+    <assertj.version>3.27.7</assertj.version>
+    <archunit.version>1.5.1</archunit.version>
+    <awaitility.version>4.3.0</awaitility.version>
+
+    <!-- Plugins -->
+    <clean.plugin.version>3.5.0</clean.plugin.version>
+    <resources.plugin.version>3.5.0</resources.plugin.version>
+    <compiler.plugin.version>3.16.0</compiler.plugin.version>
+    <surefire.version>3.6.0</surefire.version>
+    <jar.plugin.version>3.5.1</jar.plugin.version>
+    <dependency.plugin.version>3.11.0</dependency.plugin.version>
+    <install.plugin.version>3.2.0</install.plugin.version>
+    <deploy.plugin.version>3.2.0</deploy.plugin.version>
+    <site.plugin.version>3.22.0</site.plugin.version>
+    <enforcer.plugin.version>3.6.3</enforcer.plugin.version>
+    <jacoco.version>0.8.15</jacoco.version>
+    <cyclonedx.version>2.9.3</cyclonedx.version>
+    <sonar.plugin.version>5.8.0.7211</sonar.plugin.version>
+
+    <!-- Randomised test runs (scripts/test/Invoke-TestLoop.ps1 sets these) -->
+    <pgweb.test.seed>0</pgweb.test.seed>
+    <pgweb.test.pgBin></pgweb.test.pgBin>
+
+    <!-- Coverage thresholds (plan section 8.2): only ever raised -->
+    <coverage.lines>0.85</coverage.lines>
+    <coverage.branches>0.75</coverage.branches>
+    <coverage.critical.lines>0.90</coverage.critical.lines>
+    <coverage.critical.branches>0.85</coverage.critical.branches>
+
+    <!-- SonarQube (plan section 8.3) -->
+    <sonar.projectKey>pgweb-backend</sonar.projectKey>
+    <sonar.projectName>pgweb backend</sonar.projectName>
+    <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco-merged/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+    <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna</artifactId>
+        <version>${jna.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna-platform</artifactId>
+        <version>${jna.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <!-- Annotations only; Waffle (4.2.3) and pgJDBC (3.55.1) disagree. The newer one is used. -->
+      <dependency>
+        <groupId>org.checkerframework</groupId>
+        <artifactId>checker-qual</artifactId>
+        <version>4.2.3</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.tomcat.embed</groupId>
+      <artifactId>tomcat-embed-core</artifactId>
+      <version>${tomcat.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.waffle</groupId>
+      <artifactId>waffle-jna-jakarta</artifactId>
+      <version>${waffle.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna-platform</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${pgjdbc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+      <version>${flyway.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+      <version>${flyway.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>${hikari.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Declared so that offline bundles capture it; Surefire otherwise resolves it at test time (S1 W6). -->
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.tngtech.archunit</groupId>
+      <artifactId>archunit-junit5</artifactId>
+      <version>${archunit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>${awaitility.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin><artifactId>maven-clean-plugin</artifactId><version>${clean.plugin.version}</version></plugin>
+        <plugin><artifactId>maven-resources-plugin</artifactId><version>${resources.plugin.version}</version></plugin>
+        <plugin><artifactId>maven-compiler-plugin</artifactId><version>${compiler.plugin.version}</version></plugin>
+        <plugin><artifactId>maven-surefire-plugin</artifactId><version>${surefire.version}</version></plugin>
+        <plugin><artifactId>maven-failsafe-plugin</artifactId><version>${surefire.version}</version></plugin>
+        <plugin><artifactId>maven-jar-plugin</artifactId><version>${jar.plugin.version}</version></plugin>
+        <plugin><artifactId>maven-dependency-plugin</artifactId><version>${dependency.plugin.version}</version></plugin>
+        <plugin><artifactId>maven-install-plugin</artifactId><version>${install.plugin.version}</version></plugin>
+        <plugin><artifactId>maven-deploy-plugin</artifactId><version>${deploy.plugin.version}</version></plugin>
+        <plugin><artifactId>maven-site-plugin</artifactId><version>${site.plugin.version}</version></plugin>
+        <plugin><artifactId>maven-enforcer-plugin</artifactId><version>${enforcer.plugin.version}</version></plugin>
+        <plugin><groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>${jacoco.version}</version></plugin>
+        <plugin><groupId>org.cyclonedx</groupId><artifactId>cyclonedx-maven-plugin</artifactId><version>${cyclonedx.version}</version></plugin>
+        <plugin><groupId>org.sonarsource.scanner.maven</groupId><artifactId>sonar-maven-plugin</artifactId><version>${sonar.plugin.version}</version></plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-toolchain</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion><version>[21,22)</version></requireJavaVersion>
+                <requireMavenVersion><version>[3.9,4)</version></requireMavenVersion>
+                <requirePluginVersions>
+                  <message>Every plugin must have a pinned version (ADR-0008).</message>
+                </requirePluginVersions>
+                <banDuplicatePomDependencyVersions/>
+                <dependencyConvergence/>
+                <bannedDependencies>
+                  <excludes>
+                    <!-- No Spring (ADR-0001), no Vert.x (ADR-0009), no javax servlet. -->
+                    <exclude>org.springframework*</exclude>
+                    <exclude>io.vertx</exclude>
+                    <exclude>javax.servlet</exclude>
+                  </excludes>
+                </bannedDependencies>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-Xlint:all,-processing,-serial</arg>
+            <arg>-Werror</arg>
+            <arg>-parameters</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>prepare-unit</id>
+            <goals><goal>prepare-agent</goal></goals>
+            <configuration>
+              <destFile>${project.build.directory}/jacoco-unit.exec</destFile>
+              <propertyName>jacocoUnitArgLine</propertyName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>prepare-it</id>
+            <goals><goal>prepare-agent-integration</goal></goals>
+            <configuration>
+              <destFile>${project.build.directory}/jacoco-it.exec</destFile>
+              <propertyName>jacocoItArgLine</propertyName>
+            </configuration>
+          </execution>
+          <execution>
+            <id>merge</id>
+            <phase>post-integration-test</phase>
+            <goals><goal>merge</goal></goals>
+            <configuration>
+              <fileSets>
+                <fileSet>
+                  <directory>${project.build.directory}</directory>
+                  <includes><include>jacoco-unit.exec</include><include>jacoco-it.exec</include></includes>
+                </fileSet>
+              </fileSets>
+              <destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+            </configuration>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>verify</phase>
+            <goals><goal>report</goal></goals>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+              <outputDirectory>${project.build.directory}/site/jacoco-merged</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>check</id>
+            <phase>verify</phase>
+            <goals><goal>check</goal></goals>
+            <configuration>
+              <dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+              <rules>
+                <rule>
+                  <element>BUNDLE</element>
+                  <limits>
+                    <limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>${coverage.lines}</minimum></limit>
+                    <limit><counter>BRANCH</counter><value>COVEREDRATIO</value><minimum>${coverage.branches}</minimum></limit>
+                  </limits>
+                </rule>
+                <rule>
+                  <!-- Security-critical packages (plan section 8.2). -->
+                  <element>PACKAGE</element>
+                  <includes>
+                    <include>pgweb.security*</include>
+                    <include>pgweb.authz*</include>
+                    <include>pgweb.identity*</include>
+                    <include>pgweb.dbsession*</include>
+                    <include>pgweb.execution*</include>
+                    <include>pgweb.audit*</include>
+                  </includes>
+                  <limits>
+                    <limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>${coverage.critical.lines}</minimum></limit>
+                    <limit><counter>BRANCH</counter><value>COVEREDRATIO</value><minimum>${coverage.critical.branches}</minimum></limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>@{jacocoUnitArgLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <systemPropertyVariables>
+            <pgweb.test.seed>${pgweb.test.seed}</pgweb.test.seed>
+            <junit.jupiter.testclass.order.default>org.junit.jupiter.api.ClassOrderer$Random</junit.jupiter.testclass.order.default>
+            <junit.jupiter.testmethod.order.default>org.junit.jupiter.api.MethodOrderer$Random</junit.jupiter.testmethod.order.default>
+            <junit.jupiter.execution.order.random.seed>${pgweb.test.seed}</junit.jupiter.execution.order.random.seed>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals><goal>integration-test</goal><goal>verify</goal></goals>
+          </execution>
+        </executions>
+        <configuration>
+          <argLine>@{jacocoItArgLine} -XX:+EnableDynamicAgentLoading -Xshare:off</argLine>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <systemPropertyVariables>
+            <pgweb.test.seed>${pgweb.test.seed}</pgweb.test.seed>
+            <pgweb.test.pgBin>${pgweb.test.pgBin}</pgweb.test.pgBin>
+            <junit.jupiter.testclass.order.default>org.junit.jupiter.api.ClassOrderer$Random</junit.jupiter.testclass.order.default>
+            <junit.jupiter.testmethod.order.default>org.junit.jupiter.api.MethodOrderer$Random</junit.jupiter.testmethod.order.default>
+            <junit.jupiter.execution.order.random.seed>${pgweb.test.seed}</junit.jupiter.execution.order.random.seed>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>pgweb.Main</mainClass>
+              <addClasspath>true</addClasspath>
+              <classpathPrefix>lib/</classpathPrefix>
+            </manifest>
+            <manifestEntries>
+              <Implementation-Version>${project.version}</Implementation-Version>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-runtime-libs</id>
+            <phase>package</phase>
+            <goals><goal>copy-dependencies</goal></goals>
+            <configuration>
+              <includeScope>runtime</includeScope>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.cyclonedx</groupId>
+        <artifactId>cyclonedx-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>makeBom</goal></goals>
+          </execution>
+        </executions>
+        <configuration>
+          <projectType>application</projectType>
+          <schemaVersion>1.6</schemaVersion>
+          <outputFormat>json</outputFormat>
+          <outputName>pgweb-backend-sbom</outputName>
+          <includeTestScope>false</includeTestScope>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <!-- Release builds: the built SPA (frontend\dist) is served from the JAR's classpath under /static. -->
+    <profile>
+      <id>with-spa</id>
+      <build>
+        <resources>
+          <resource>
+            <directory>src/main/resources</directory>
+          </resource>
+          <resource>
+            <directory>${project.basedir}/../frontend/dist</directory>
+            <targetPath>static</targetPath>
+          </resource>
+        </resources>
+      </build>
+    </profile>
+  </profiles>
+</project>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Air-gap Maven settings (ADR-0008). Used by every CI job: Maven is offline, and even if -o were dropped, every
+  repository is mirrored to a closed local port, so no artifact can be fetched from the network.
+  The mirror id is "central" so artifacts recorded as downloaded from central (_remote.repositories) stay usable.
+  The local repository is given on the command line (MAVEN_ARGS from scripts\toolchain\Use-Toolchain.ps1, or the
+  runner's bundle location).
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+  <offline>true</offline>
+  <interactiveMode>false</interactiveMode>
+  <mirrors>
+    <mirror>
+      <id>central</id>
+      <name>No network repository (air gap)</name>
+      <url>http://127.0.0.1:9/blocked</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors>
+  <profiles>
+    <profile>
+      <id>airgap</id>
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>http://127.0.0.1:9/blocked</url>
+          <releases><checksumPolicy>fail</checksumPolicy></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+          <id>central</id>
+          <url>http://127.0.0.1:9/blocked</url>
+          <releases><checksumPolicy>fail</checksumPolicy></releases>
+          <snapshots><enabled>false</enabled></snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>airgap</activeProfile>
+  </activeProfiles>
+</settings>

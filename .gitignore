@@ -9,3 +9,14 @@ spikes/s2-parser/build/
 node_modules/
 test-results/
 playwright-report/
+
+# Application build and CI output
+ci-logs/
+release/
+frontend/dist/
+frontend/dist-sbom/
+frontend/coverage/
+.scannerwork/
+native/libpg_query/build/
+# Local throwaway dev clusters (scripts/dev-db.ps1)
+.dev-db/

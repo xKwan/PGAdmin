@@ -1,0 +1,146 @@
+# pgweb pipeline (plan section 7.5, ADR-0008).
+#
+# Constraints: self-managed GitLab, Windows runner with the PowerShell shell executor (tag pgweb-ci).
+#   - no remote `include:`, no `image:`/`services:` (no Docker), no external SaaS;
+#   - every job runs offline from the runner's bundle (tools\ with the JDK, Maven repository and npm cache);
+#   - all job logic lives in scripts\ci\Invoke-CiJob.ps1, which developers run locally with the same commands
+#     (scripts\ci\Invoke-LocalPipeline.ps1).
+#
+# Variables expected on the runner or project (masked + protected where secret):
+#   SONAR_HOST_URL   internal SonarQube URL
+#   SONAR_TOKEN      analysis-scoped token (masked, protected)
+
+stages:
+  - verify
+  - lint
+  - test
+  - integration
+  - e2e
+  - analysis
+  - package
+  - deploy
+
+default:
+  tags: [pgweb-ci]
+  interruptible: true
+  before_script:
+    - $ErrorActionPreference = 'Stop'
+    - . .\scripts\toolchain\Use-Toolchain.ps1 -Quiet
+
+variables:
+  GIT_DEPTH: "0"
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+.job:
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths: [ci-logs/]
+
+deps:verify:
+  extends: .job
+  stage: verify
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job deps-verify
+
+toolchain:check:
+  extends: .job
+  stage: verify
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job toolchain-check
+
+lint:frontend:
+  extends: .job
+  stage: lint
+  needs: [deps:verify]
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job lint-frontend
+
+lint:backend:
+  extends: .job
+  stage: lint
+  needs: [deps:verify]
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job lint-backend
+
+test:frontend:
+  extends: .job
+  stage: test
+  needs: [lint:frontend]
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job test-frontend -Seed $CI_PIPELINE_IID
+  artifacts:
+    when: always
+    paths: [ci-logs/, frontend/coverage/]
+
+# Unit + integration (Failsafe, throwaway PostgreSQL clusters) + JaCoCo thresholds in one Maven run.
+test:backend:
+  extends: .job
+  stage: integration
+  needs: [lint:backend]
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job test-backend -Seed $CI_PIPELINE_IID
+  after_script:
+    - Get-ChildItem $env:TEMP -Directory -Filter 'pgweb-*' -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+  artifacts:
+    when: always
+    paths: [ci-logs/, backend/target/site/jacoco-merged/, backend/target/surefire-reports/, backend/target/failsafe-reports/]
+
+test:e2e:
+  extends: .job
+  stage: e2e
+  needs: [test:backend, test:frontend]
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job e2e
+
+# Community Build analyses main only (plan 8.3): a red gate on main blocks the next merge and phase sign-off.
+sonar:backend:
+  extends: .job
+  stage: analysis
+  needs: [test:backend]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job sonar-backend -Seed $CI_PIPELINE_IID
+
+sonar:frontend:
+  extends: .job
+  stage: analysis
+  needs: [test:frontend]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job sonar-frontend -Seed $CI_PIPELINE_IID
+
+package:
+  extends: .job
+  stage: package
+  needs: [test:backend, test:frontend]
+  script:
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job package
+  artifacts:
+    paths: [ci-logs/, release/]
+    expire_in: 90 days
+
+deploy:test:
+  stage: deploy
+  needs: [package]
+  when: manual
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - .\deploy\windows\Install-Pgweb.ps1 -Bundle (Get-ChildItem release\pgweb-*.zip | Select-Object -First 1).FullName -Environment test
+
+# Nightly: concurrency suite x20 to catch flaky tests (plan 7.5); enabled from Phase 9.
+nightly:concurrency:
+  extends: .job
+  stage: integration
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  script:
+    - .\scripts\test\Invoke-TestLoop.ps1 -Suite backend -RequiredConsecutivePasses 20 -Tag nightly

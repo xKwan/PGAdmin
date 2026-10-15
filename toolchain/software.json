@@ -7,7 +7,7 @@
       "resolver": "adoptium",
       "versionSpec": "21",
       "homeCheck": "bin/java.exe",
-      "purpose": "Java runtime and compiler for the Spring Boot backend (ADR-0001). Runs Maven, JUnit tests and the SonarQube Maven scanner."
+      "purpose": "Java runtime and compiler for the backend (ADR-0001: plain Servlet + Waffle on embedded Tomcat). Runs Maven, JUnit tests, the SonarQube server and its Maven scanner."
     },
     {
       "name": "maven",
@@ -26,7 +26,7 @@
       "resolver": "ziglang",
       "versionSpec": "0.17",
       "homeCheck": "zig.exe",
-      "purpose": "Self-contained C compiler (zig cc, clang-based, bundles MinGW-w64 headers) used only to build the libpg_query parser DLL for spike S2 and, if adopted, the parser artefact. Not needed at runtime."
+      "purpose": "Self-contained C compiler (zig cc, clang-based, bundles MinGW-w64 headers) used only to build the libpg_query parser DLL (native/libpg_query). Not needed at runtime."
     },
     {
       "name": "libpg_query-src",
@@ -40,7 +40,21 @@
       "hash": "05ca8a633007479c75b2beebfce301184fb523fa5f34ead62a4335aa3346d0a1",
       "hashSource": "pinned at first download, 2026-10-15 (GitHub publishes no checksum for tag archives; two downloads matched)",
       "homeCheck": "pg_query.h",
-      "purpose": "PostgreSQL 18 parser extracted as a C library (BSD-3-Clause / PostgreSQL licence). Source for the S2 parser spike: statement splitting, classification and literal normalisation (plan section 3.1). Built into a DLL with zig; not used at runtime unless S2 passes."
+      "purpose": "PostgreSQL 18 parser extracted as a C library (BSD-3-Clause / PostgreSQL licence). Built into pg_query.dll by native/libpg_query/Build-PgQuery.ps1 for the single-statement gate and audit masking (ADR-0009, ADR-0005)."
+    },
+    {
+      "name": "sonarqube",
+      "displayName": "SonarQube Community Build",
+      "resolver": "direct",
+      "versionSpec": "26.9.0.129388",
+      "version": "26.9.0.129388",
+      "url": "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-26.9.0.129388.zip",
+      "file": "sonarqube-26.9.0.129388.zip",
+      "hashAlgorithm": "SHA256",
+      "hash": "b7306f5ecfa6806753bc0eb0dc4ea11fe0ddd2c5a346592718814d6ec35b88cb",
+      "hashSource": "binaries.sonarsource.com .sha256 (HTTPS), 2026-10-15",
+      "homeCheck": "conf/sonar.properties",
+      "purpose": "Local code-quality server for the 'pgweb gate' (plan section 8.3, ADR-0008), run project-locally with the project JDK and an embedded H2 database (evaluation mode). Not used at runtime; the organisation's own SonarQube replaces it in CI."
     }
   ],
   "preexisting": [
@@ -93,13 +107,19 @@
       "name": "npm",
       "path": "npm-cache",
       "envVar": "npm_config_cache",
-      "purpose": "npm package cache for the frontend and Playwright (spike S6). Copy it with tools\\ to install JavaScript dependencies offline (npm ci --offline)."
+      "purpose": "npm package cache for the frontend, E2E tests and the Sonar scanner. Copy it with tools\\ to install JavaScript dependencies offline (npm ci --offline)."
     },
     {
       "name": "playwright-browsers",
       "path": "ms-playwright",
       "envVar": "PLAYWRIGHT_BROWSERS_PATH",
       "purpose": "Where Playwright would put downloaded browsers. Kept empty: tests use the installed Microsoft Edge (channel msedge) and PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1."
+    },
+    {
+      "name": "sonar-user-home",
+      "path": "sonar-user-home",
+      "envVar": "SONAR_USER_HOME",
+      "purpose": "SonarScanner cache (scanner engine, JRE and analyser plugins provisioned by the SonarQube server). Kept inside tools\\ instead of %USERPROFILE%\\.sonar."
     }
   ]
 }

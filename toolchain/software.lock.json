@@ -20,7 +20,7 @@
                         "hashAlgorithm":  "SHA256",
                         "hash":  "05CA8A633007479C75B2BEEBFCE301184FB523FA5F34EAD62A4335AA3346D0A1",
                         "hashSource":  "pinned at first download, 2026-10-15 (GitHub publishes no checksum for tag archives; two downloads matched)",
-                        "resolvedAt":  "2026-10-15T01:45:44.1037239Z"
+                        "resolvedAt":  "2026-10-15T13:49:11.9071190Z"
                     },
                     {
                         "name":  "maven",
@@ -32,6 +32,17 @@
                         "hash":  "ED41650D42485CFC243FAD22158CAF9CBB5DC408CE7A09DDB94DD42A019DE929CA43065BFA450612CF12BF78B5CAFA3884B96C090DE326FF590448C933454AF3",
                         "hashSource":  "Maven Central .sha512 (HTTPS)",
                         "resolvedAt":  "2026-10-14T16:47:01.6843715Z"
+                    },
+                    {
+                        "name":  "sonarqube",
+                        "versionSpec":  "26.9.0.129388",
+                        "version":  "26.9.0.129388",
+                        "url":  "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-26.9.0.129388.zip",
+                        "file":  "sonarqube-26.9.0.129388.zip",
+                        "hashAlgorithm":  "SHA256",
+                        "hash":  "B7306F5ECFA6806753BC0EB0DC4EA11FE0DDD2C5A346592718814D6EC35B88CB",
+                        "hashSource":  "binaries.sonarsource.com .sha256 (HTTPS), 2026-10-15",
+                        "resolvedAt":  "2026-10-15T13:49:11.9993324Z"
                     },
                     {
                         "name":  "zig",
