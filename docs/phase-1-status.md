@@ -8,7 +8,7 @@
 
 | Spike | Workstation result | Untested in target environment | Report |
 |---|---|---|---|
-| S1 Waffle | **Partial pass.** NTLM/Negotiate with a local account on Spring Boot 4.1/Security 7 and 3.5/Security 6. SID and groups read; DataAdmin by group SID; rejection cases handled. Two wiring defects found and fixed (W3, W4). | Kerberos and SPN, domain groups, the real DataAdmin source (D1), the existing app's Waffle setup (A1) | `spikes/s1-waffle/REPORT.md` |
+| S1 Waffle | **Partial pass.** Chosen stack (servlet, no Spring): NTLM/Negotiate with a local account on embedded Tomcat 11.0.24 + `waffle-jna-jakarta` 3.7.0. SID and groups read; DataAdmin by group SID; rejection cases, session rotation, cookie flags and the 404 page tested. Waffle defect W8 (Basic/Bearer → 500) mitigated by a scheme filter. Earlier Spring variant (Boot 4.1 and 3.5) also passed; kept as history. | Kerberos and SPN, domain groups, the real DataAdmin source (D1), the existing app's Waffle setup (A1) | `spikes/s1-servlet/REPORT.md`; history: `spikes/s1-waffle/REPORT.md` |
 | S2 Parser | **Pass for PG 18.** libpg_query 18.1.0 built offline with Zig (reproducible DLL); 100% corpus agreement with the server; differential fuzzing clean; p99 ≈ 1 ms. Audit text must use scanner masking, not `pg_query_normalize`. | Production PostgreSQL major, clean air-gapped VM, runner | `spikes/s2-parser/REPORT.md` |
 | S3 Driver | **Pass.** pgJDBC splits scripts on the client. Vert.x `preparedQuery()` makes the server reject multi-statement input. Cancel, row limits and terminate verified. Vert.x defects documented (DDL `rowCount`, empty-query hang). | Target PG majors, TLS, runner | `spikes/s3-driver/REPORT.md` |
 | S4 Offline toolchain | **Partial.** JDK, Maven and Zig install offline from `tools\downloads`. Maven runs offline (`-o`) for all spikes. npm reinstalls with the registry unreachable. | A **clean, network-disabled VM**; SonarQube analysis; GitLab runner | Toolchain tests, `spikes/s6-e2e/REPORT.md` (E5) |
@@ -24,7 +24,7 @@
 | S2 | A native parser running in the backend's process is a new risk, **T31**, and needs an owner and a decision (accept, or isolate out of process / WASM) | `docs/threat-model.md` |
 | S2, S3 | Statement-free input must be rejected before sending: Vert.x never completes it. | ADR-0009 |
 | S2 | Script mode only when the session's `standard_conforming_strings=on` | S2 report P4 |
-| S1 | Waffle must run on the `REQUEST` dispatch only; the security context must be saved to the session explicitly (Phase 4) | ADR-0001 |
+| S1 | Waffle on the `REQUEST` dispatch only; a scheme filter before Waffle (W8); fail-closed session filter with ID rotation; anchored `excludePatterns` if any (Phase 4) | ADR-0001 |
 | S6 | Users must open the app under the exact host name in the browser allowlist GPO | S6 report E3 |
 
 ## Gate position
@@ -34,6 +34,6 @@
 
 ## Needed from the stakeholder
 
-1. **Approve or amend** ADRs 0001–0009, at least D0 (Java/Spring Boot 4.1 + Waffle), D7 (versions), D5 (PostgreSQL majors) and ADR-0009 (driver), before Phase 2.
+1. **Approve or amend** ADRs 0001–0009, at least D7 (versions) and ADR-0001's servlet container sub-decision (D0 stack accepted 2026-10-15: Java + Servlet + Waffle, no Spring), D5 (PostgreSQL majors) and ADR-0009 (driver), before Phase 2.
 2. **Decide on T31:** accept an in-process native parser, or require isolation.
 3. **Environment access** for the open items: a domain-joined host and test accounts (S1/S6), a clean air-gapped VM (S4), the GitLab Windows runner (S4–S6), and the PostgreSQL versions and `pg_hba` methods of 5432/5433 (inventory §2).

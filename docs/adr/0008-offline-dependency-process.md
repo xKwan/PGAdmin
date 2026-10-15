@@ -18,7 +18,7 @@ The environment is air-gapped (Stated, F1). All tools, libraries, plugins and te
 5. Import into the internal artifact repository if one exists, otherwise into the file-based bundle store (`.m2` repository archive, npm cache).
 6. CI job `deps:verify` must pass a clean offline install.
 
-**Pinning:** exact versions; `package-lock.json`; Spring Boot BOM plus explicit pins; Maven Enforcer and `engines` checks. Quarterly update window plus out-of-band security updates.
+**Pinning:** exact versions; `package-lock.json`; explicit pins (no Spring Boot BOM, per ADR-0001); Maven Enforcer and `engines` checks. Quarterly update window plus out-of-band security updates.
 
 **Toolchain (proposed):** Java 21 LTS, Maven 3.9.x, Node 24 LTS (build and test only). Playwright uses the installed Edge; no browser downloads.
 

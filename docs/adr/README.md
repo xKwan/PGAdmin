@@ -7,7 +7,7 @@ An ADR moves to `Accepted` only on explicit stakeholder approval, recorded in th
 
 | ADR | Title | Decision ID | Status |
 |---|---|---|---|
-| [0001](0001-backend-stack.md) | Backend stack: Java, Spring Boot and Waffle | D0, D7 | Proposed |
+| [0001](0001-backend-stack.md) | Backend stack: Java, Jakarta Servlet and Waffle (no Spring) | D0, D7, D14a | **Accepted** 2026-10-15 (stack); servlet container sub-decision and D7 pin Proposed |
 | [0002](0002-internal-identity-model.md) | Internal PostgreSQL identity and DataAdmin source | D1, D3 | Proposed |
 | [0003](0003-external-credential-model.md) | External PostgreSQL credential handling | D2 | Proposed |
 | [0004](0004-db-session-model.md) | DB session model and companion connection | D12, D14b, D14c | Proposed |

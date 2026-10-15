@@ -9,10 +9,15 @@
       1. Deletes node_modules and reinstalls it with `npm ci --offline` from the project-local npm cache
          (tools\npm-cache), with the npm registry pointed at an unreachable address, which proves that the
          JavaScript dependencies install with no network access (partial S4).
-      2. Starts the S1 Waffle service (Spring Boot 4.1 line, compiled offline with Maven) on a random free port.
+      2. Starts the S1 Waffle service on a random free port, compiled offline with Maven: by default the servlet
+         variant (embedded Tomcat 11 + Waffle servlet filter, spikes\s1-servlet); -Server spring selects the
+         Spring Boot 4.1 variant (spikes\s1-waffle) for comparison.
       3. Runs the Playwright tests with system Edge (channel msedge); no browser is ever downloaded.
       4. Stops the service and checks the port is free again.
     Results go to results\s6-<timestamp>.json, including the observations the tests record.
+
+.PARAMETER Server
+    servlet (default; the stack chosen on 2026-10-15) or spring.
 
 .PARAMETER Prepare
     Online, once: fills tools\npm-cache with `npm ci` (or `npm install` if there is no lock file).
@@ -26,6 +31,8 @@ param(
     [int]$MaxRuns = 15,
     [int]$Seed = 0,
     [string]$ResultsDir,
+    [ValidateSet('servlet', 'spring')]
+    [string]$Server = 'servlet',
     [switch]$Prepare,
     [switch]$ContinueOnFailure
 )
@@ -34,7 +41,11 @@ Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $here '..\..')).Path
-$s1 = Join-Path $repoRoot 'spikes\s1-waffle'
+if ($Server -eq 'servlet') {
+    $s1 = Join-Path $repoRoot 'spikes\s1-servlet'; $mvnProfile = ''; $mainClass = 'spike.s1servlet.SpikeServer'; $portArg = '--port='
+} else {
+    $s1 = Join-Path $repoRoot 'spikes\s1-waffle'; $mvnProfile = '-Pboot4'; $mainClass = 'spike.s1.WaffleSpikeApplication'; $portArg = '--server.port='
+}
 if (-not $ResultsDir) { $ResultsDir = Join-Path $here 'results' }
 
 . (Join-Path $repoRoot 'scripts\toolchain\Use-Toolchain.ps1') -Quiet
@@ -68,7 +79,7 @@ if ($Prepare) {
 
 # S1 service: compile offline and get its runtime classpath.
 $cpFile = Join-Path $s1 'target\runtime-cp.txt'
-$rc = Invoke-Cmd -CommandLine "mvn -B -o -q -Pboot4 compile dependency:build-classpath -Dmdep.outputFile=`"$cpFile`" -Dmdep.includeScope=runtime" `
+$rc = Invoke-Cmd -CommandLine "mvn -B -o -q $mvnProfile compile dependency:build-classpath -Dmdep.outputFile=`"$cpFile`" -Dmdep.includeScope=runtime" `
     -Log (Join-Path $target 'mvn-s1-build.log') -WorkDir $s1
 if ($rc -ne 0) { throw "Building the S1 service failed; see target\mvn-s1-build.log" }
 $classpath = (Join-Path $s1 'target\classes') + ';' + (Get-Content -Raw $cpFile).Trim()
@@ -105,8 +116,8 @@ for ($i = 1; $i -le $MaxRuns -and $consecutive -lt $RequiredConsecutivePasses; $
     $observations = @()
     $failedTests = @()
     if ($problems.Count -eq 0) {
-        $app = Start-Process -FilePath $java -ArgumentList @('-cp', "`"$classpath`"", 'spike.s1.WaffleSpikeApplication', "--server.port=$port") `
-            -NoNewWindow -PassThru -RedirectStandardOutput $appLog -RedirectStandardError "$appLog.err"
+        $app = Start-Process -FilePath $java -ArgumentList @('-cp', "`"$classpath`"", $mainClass, "$portArg$port") `
+            -WorkingDirectory $s1 -NoNewWindow -PassThru -RedirectStandardOutput $appLog -RedirectStandardError "$appLog.err"
         $deadline = (Get-Date).AddSeconds(60)
         while (-not (Test-PortOpen $port) -and (Get-Date) -lt $deadline -and -not $app.HasExited) { Start-Sleep -Milliseconds 250 }
         if (-not (Test-PortOpen $port)) { $problems += 'S1 service did not start' }
@@ -171,6 +182,7 @@ $report = [pscustomobject]@{
     domainJoined              = (Get-CimInstance Win32_ComputerSystem).PartOfDomain
     edgeVersion               = $(if ($edge) { $edge.VersionInfo.ProductVersion } else { 'not found' })
     node                      = (& node -v)
+    server                    = $Server
     playwright                = (Get-Content -Raw (Join-Path $here 'package.json') | ConvertFrom-Json).devDependencies.'@playwright/test'
     runs                      = $runs
 }

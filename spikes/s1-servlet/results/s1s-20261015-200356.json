@@ -1,0 +1,553 @@
+﻿{
+    "spike":  "S1 Waffle servlet filter on embedded Tomcat 11, no Spring (partial: workgroup machine)",
+    "overall":  "PASS",
+    "masterSeed":  775144927,
+    "requiredConsecutivePasses":  5,
+    "started":  "2026-10-15T20:03:21.0043641+08:00",
+    "finished":  "2026-10-15T20:03:34.9128058+08:00",
+    "os":  "Microsoft Windows 11 Pro",
+    "java":  "S:\\Code\\PGAdmin\\tools\\jdk-21.0.12.1+1",
+    "domainJoined":  false,
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  1624207955,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  14,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  2.8,
+                     "consecutive":  1,
+                     "findings":  [
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "cookie HttpOnly+SameSite=Strict; session-only request -\u003e 200"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[negotiate/4-\u003e401, negotiate/22-\u003e401, Basic/2364/ntlmssp3-\u003e401, Negotiate/32/ntlmssp2-\u003e401, Negotiate/2642/ntlmssp1-\u003e401, Bearer/1647-\u003e401, Bearer/44-\u003e401, Bearer/1003-\u003e401, Negotiate/1010-\u003e401, Negotiate/55-\u003e401, Negotiate/2176-\u003e401, Bearer/1540-\u003e401, NTLM/48-\u003e401, Basic/15-\u003e401, negotiate/2435-\u003e401, negotiate/840-\u003e401, Negotiate/1672-\u003e401, negotiate/2304-\u003e401, negotiate/42-\u003e401, Bearer/2176-\u003e401, Negotiate/1579-\u003e401, Negotiate/1459-\u003e401, Bearer/2126-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/admin/ping -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "fixation",
+                                          "value":  "planted session ID rotated on authentication; old ID -\u003e 401, new ID -\u003e 200"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "4 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "errors",
+                                          "key":  "not_found",
+                                          "value":  "404 without server version or stack trace"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1624207955,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via NTLM"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  2,
+                     "seed":  1566832394,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  14,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  2.8,
+                     "consecutive":  2,
+                     "findings":  [
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via Negotiate"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "errors",
+                                          "key":  "not_found",
+                                          "value":  "404 without server version or stack trace"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "cookie HttpOnly+SameSite=Strict; session-only request -\u003e 200"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/admin/ping -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[NTLM/174-\u003e401, Bearer/968-\u003e401, Negotiate/64-\u003e401, Bearer/926/ntlmssp3-\u003e401, Bearer/17-\u003e401, Negotiate/2980-\u003e401, Basic/128/ntlmssp1-\u003e401, Negotiate/29/ntlmssp2-\u003e401, negotiate/2631-\u003e401, Negotiate/2835-\u003e401, NTLM/2340/ntlmssp3-\u003e401, Bearer/2664-\u003e401, Negotiate/28-\u003e401, NTLM/16-\u003e401, negotiate/36-\u003e401, Bearer/47-\u003e401, negotiate/20-\u003e401, Basic/18-\u003e401, NTLM/18-\u003e401, Bearer/49/ntlmssp3-\u003e401, Bearer/678-\u003e401, Basic/60-\u003e401, Bearer/1148/ntlmssp2-\u003e401, Negotiate/25-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "6 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  1566832394,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "fixation",
+                                          "value":  "planted session ID rotated on authentication; old ID -\u003e 401, new ID -\u003e 200"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  3,
+                     "seed":  1332825040,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  14,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  2.8,
+                     "consecutive":  3,
+                     "findings":  [
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "cookie HttpOnly+SameSite=Strict; session-only request -\u003e 200"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[NTLM/57-\u003e401, Bearer/12-\u003e401, Bearer/1843-\u003e401, NTLM/32-\u003e401, NTLM/23-\u003e401, Basic/54/ntlmssp2-\u003e401, NTLM/62/ntlmssp1-\u003e401, negotiate/218/ntlmssp3-\u003e401, Basic/2143-\u003e401, negotiate/32-\u003e401, Negotiate/44-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/admin/ping -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "7 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "fixation",
+                                          "value":  "planted session ID rotated on authentication; old ID -\u003e 401, new ID -\u003e 200"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "errors",
+                                          "key":  "not_found",
+                                          "value":  "404 without server version or stack trace"
+                                      },
+                                      {
+                                          "seed":  1332825040,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via NTLM"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  4,
+                     "seed":  870766577,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  14,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  2.7,
+                     "consecutive":  4,
+                     "findings":  [
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via NTLM"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "cookie HttpOnly+SameSite=Strict; session-only request -\u003e 200"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "errors",
+                                          "key":  "not_found",
+                                          "value":  "404 without server version or stack trace"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "5 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[negotiate/58-\u003e401, Basic/1937-\u003e401, Negotiate/1115/ntlmssp3-\u003e401, Basic/2338-\u003e401, NTLM/7-\u003e401, negotiate/46-\u003e401, negotiate/1346/ntlmssp3-\u003e401, negotiate/2908-\u003e401, negotiate/2564-\u003e401, Bearer/60-\u003e401, NTLM/50/ntlmssp1-\u003e401, Basic/2144-\u003e401, Negotiate/2006-\u003e401, Negotiate/25-\u003e401, Basic/28/ntlmssp3-\u003e401, Basic/7-\u003e401, Bearer/409-\u003e401, Bearer/1155-\u003e401, Negotiate/37/ntlmssp2-\u003e401, Basic/2460/ntlmssp3-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "fixation",
+                                          "value":  "planted session ID rotated on authentication; old ID -\u003e 401, new ID -\u003e 200"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  870766577,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  5,
+                     "seed":  2143324730,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  14,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  2.7,
+                     "consecutive":  5,
+                     "findings":  [
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "fixation",
+                                          "value":  "planted session ID rotated on authentication; old ID -\u003e 401, new ID -\u003e 200"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "cookie HttpOnly+SameSite=Strict; session-only request -\u003e 200"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "2 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/admin/ping -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "errors",
+                                          "key":  "not_found",
+                                          "value":  "404 without server version or stack trace"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[Basic/2493/ntlmssp1-\u003e401, NTLM/59-\u003e401, Basic/2412-\u003e401, Basic/18/ntlmssp1-\u003e401, negotiate/9-\u003e401, Negotiate/1124-\u003e401, NTLM/12-\u003e401, Bearer/47-\u003e401, Bearer/49-\u003e401, Bearer/37/ntlmssp1-\u003e401, Negotiate/33-\u003e401, negotiate/35-\u003e401, negotiate/1670-\u003e401, Basic/1901-\u003e401, Negotiate/948/ntlmssp1-\u003e401, Negotiate/30/ntlmssp1-\u003e401, Bearer/42-\u003e401, negotiate/1485/ntlmssp1-\u003e401, Negotiate/26-\u003e401, NTLM/51/ntlmssp2-\u003e401, Bearer/61/ntlmssp3-\u003e401, NTLM/23-\u003e401, negotiate/570-\u003e401, Negotiate/44/ntlmssp2-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  2143324730,
+                                          "stack":  "servlet/Apache Tomcat/11.0.24",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via Negotiate"
+                                      }
+                                  ]
+                 }
+             ]
+}

@@ -35,7 +35,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s6-e2e\Invoke-S6Spike
 
 Each run:
 1. deletes `node_modules` and reinstalls it with `npm ci --offline`, with the registry set to an unreachable address. Any network access would fail the install.
-2. starts the S1 service (Spring Boot 4.1 line) on a random free port.
+2. starts the S1 service on a random free port: by default the servlet service (`spikes\s1-servlet`, embedded Tomcat 11 + Waffle servlet filter); `-Server spring` uses the superseded Spring Boot 4.1 service (`spikes\s1-waffle`).
 3. runs the Playwright tests in headless Edge.
 4. stops the service and checks the port is released.
 
