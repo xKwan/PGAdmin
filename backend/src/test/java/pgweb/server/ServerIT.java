@@ -154,7 +154,7 @@ class ServerIT {
     void unknownPathsGetAJsonEnvelopeWithoutServerDetails() throws Exception {
         Random rnd = Seeds.random("unknown-paths");
         for (int i = 0; i < 5; i++) {
-            String p = List.of("/api/nope", "/x", "/api/test/echo/extra", "/WEB-INF/web.xml", "/%2e%2e/etc").get(rnd.nextInt(5)) + "?q=" + rnd.nextInt();
+            String p = List.of("/api/nope", "/x.bin", "/api/test/echo/extra", "/WEB-INF/web.xml", "/%2e%2e/etc").get(rnd.nextInt(5)) + "?q=" + rnd.nextInt();
             HttpResponse<String> r = get(p);
             assertThat(r.statusCode()).as(p).isIn(400, 404);
             try {

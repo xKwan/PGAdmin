@@ -41,7 +41,7 @@
 
 | ID | Requirement | Phase | Verified by | Status |
 |---|---|---|---|---|
-| FN-01 | Landing page offering internal (DataAdmin only) and external options | P5 | RTL; E2E | Planned |
+| FN-01 | Landing page offering internal (DataAdmin only) and external options | P5 | RTL; E2E | Tested (P5; E2E in P11) |
 | FN-02 | External connection: choose a database from those the user may CONNECT to (no password) | P6 | RTL; integration | Planned |
 | FN-03 | Connection status and session info; multiple sessions; expired/lost handling | P6 | RTL; integration | Planned |
 | FN-04 | SQL editor with PostgreSQL highlighting and practical editing features | P8 | RTL | Planned |

@@ -20,7 +20,7 @@ import pgweb.web.HealthServlet;
 import pgweb.web.Json;
 import pgweb.web.LogoutServlet;
 import pgweb.web.MeServlet;
-import pgweb.web.NotFoundServlet;
+import pgweb.web.StaticContentServlet;
 
 import java.time.Clock;
 import java.util.List;
@@ -89,7 +89,7 @@ public final class Application implements AutoCloseable {
                 .servlet("me", new MeServlet(config), Access.AUTHENTICATED, "/api/me")
                 .servlet("logout", new LogoutServlet(audit), Access.AUTHENTICATED, "/api/logout");
         options.extraRoutes().accept(routes);
-        routes.servlet("default", new NotFoundServlet(), Access.AUTHENTICATED, "/");
+        routes.servlet("default", new StaticContentServlet(), Access.AUTHENTICATED, "/");
 
         AtomicReference<Application> self = new AtomicReference<>();
         boolean tls = config.server().tls().isPresent();
