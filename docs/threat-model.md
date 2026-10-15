@@ -52,6 +52,7 @@
 | T28 | E | Revoked DataAdmin user keeps access | DataAdmin re-checked on every request; absolute session cap (8 h) | P4 | Session-cap test | Planned. Revocation delay up to the session cap is accepted residual risk (D1/D10). |
 | T29 | I | Authorised user reads all data their role permits (bulk exfiltration) | Out of app scope: data owners apply RLS and column grants; audit records the activity | — | — | Accepted risk (owner to be named) |
 | T30 | T | Clickjacking of the UI | `frame-ancestors 'none'` | P4 | Header test | Planned |
+| T31 | D / I | A memory-safety bug in the native SQL parser (libpg_query DLL, which runs inside the backend's process on untrusted SQL text) crashes the backend or leaks process memory into its output. An upstream example was fixed in 18.1.0: GHSA-6ggm-xmc9-8ffg. | Pin a fixed release (≥ 18.1.0); track advisories; use parser output only for splitting, UX and audit (never authorisation); don't use `pg_query_normalize` (S2 N2/N3); input size limit before parsing. Option: run the parser out of process or as WASM in the JVM if the risk isn't accepted. | P1 (S2), P7 | S2 fuzzing (no crash in ~2,500 inputs per 5-run loop); P11 parser fuzz suite | Open: needs a risk decision |
 
 ## 3. Residual risks requiring a named owner
 
@@ -62,3 +63,4 @@
 | T21 tamper-evident only, if audit is co-hosted on 5433 | Security owner | Unresolved (D4) |
 | T10 best-effort clearing of passwords from the Java heap | Security owner | Unresolved |
 | T12 plaintext data if the external server lacks TLS | Security owner / DBA | Unresolved (A10) |
+| T31 native parser in the backend's process (crash or memory leak on crafted SQL) | Security owner | Unresolved (S2 report) |

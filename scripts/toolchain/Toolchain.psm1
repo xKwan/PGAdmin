@@ -181,12 +181,28 @@ function Resolve-ToolchainPackage {
                 hashSource = 'Maven Central .sha512 (HTTPS)'; resolvedAt = $now
             }
         }
+        'ziglang' {
+            # Official release index; SHA256 per artifact is published in the same HTTPS document.
+            $index = (Get-UrlText 'https://ziglang.org/download/index.json') | ConvertFrom-Json
+            $pattern = '^' + [regex]::Escape($Pkg.versionSpec) + '(\.\d+)*$'
+            $version = @($index.PSObject.Properties.Name | Where-Object { $_ -match $pattern } |
+                    Sort-Object { [version]$_ } -Descending)[0]
+            if (-not $version) { throw "No Zig release matches $($Pkg.versionSpec)" }
+            $artifact = $index.$version.'x86_64-windows'
+            if (-not $artifact) { throw "Zig $version has no x86_64-windows build." }
+            return [pscustomobject]@{
+                name = $Pkg.name; versionSpec = $Pkg.versionSpec; version = $version
+                url = $artifact.tarball; file = (Split-Path ([uri]$artifact.tarball).LocalPath -Leaf)
+                hashAlgorithm = 'SHA256'; hash = $artifact.shasum.ToUpperInvariant()
+                hashSource = 'ziglang.org download index (HTTPS)'; resolvedAt = $now
+            }
+        }
         'direct' {
             $file = if ($Pkg.PSObject.Properties['file']) { $Pkg.file } else { Split-Path ([uri]$Pkg.url).LocalPath -Leaf }
             return [pscustomobject]@{
                 name = $Pkg.name; versionSpec = $Pkg.versionSpec; version = $Pkg.version
                 url = $Pkg.url; file = $file; hashAlgorithm = $Pkg.hashAlgorithm.ToUpperInvariant(); hash = $Pkg.hash.ToUpperInvariant()
-                hashSource = 'manifest'; resolvedAt = $now
+                hashSource = $(if ($Pkg.PSObject.Properties['hashSource']) { $Pkg.hashSource } else { 'manifest' }); resolvedAt = $now
             }
         }
         default { throw "Unknown resolver '$($Pkg.resolver)' for package '$($Pkg.name)'." }

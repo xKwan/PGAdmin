@@ -32,7 +32,7 @@ software-list.md           generated: what is installed, versions, purpose, chec
 
 ## Setting up a development machine (Windows 11 or Windows Server)
 
-Everything the project installs goes into `tools\` inside this folder. Nothing is installed system-wide, and nothing changes the registry or the permanent PATH.
+Everything the project installs goes into `tools\` inside this folder. It currently installs Temurin JDK 21, Maven 3.9, Zig 0.17 (a C compiler, used only to build the SQL parser DLL) and the libpg_query 18.1.0 source. The exact list is in `software-list.md`. Nothing is installed system-wide, and nothing changes the registry or the permanent PATH.
 
 ### Prerequisites
 
@@ -96,6 +96,7 @@ Every component is tested with randomised scenarios and must pass **at least 5 c
 |---|---|---|
 | Toolchain scripts | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\toolchain\tests\Test-Toolchain.ps1` | `scripts/toolchain/tests/results/` |
 | Spike S5: throwaway PostgreSQL clusters, concurrency and cancellation | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s5-ephemeral-pg\Invoke-S5Spike.ps1` | [`spikes/s5-ephemeral-pg/REPORT.md`](spikes/s5-ephemeral-pg/REPORT.md) |
+| Spike S2: libpg_query parser built offline with Zig, checked against the server | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s2-parser\Invoke-S2Spike.ps1` | [`spikes/s2-parser/REPORT.md`](spikes/s2-parser/REPORT.md) |
 | Spike S3: driver protocol (pgJDBC vs Vert.x), offline Maven | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s3-driver\Invoke-S3Spike.ps1` | [`spikes/s3-driver/REPORT.md`](spikes/s3-driver/REPORT.md) |
 
 ## Project status
@@ -103,5 +104,5 @@ Every component is tested with randomised scenarios and must pass **at least 5 c
 | Phase | State |
 |---|---|
 | 0: Discovery and decisions | Drafts complete. Awaiting stakeholder decisions and environment facts ([`docs/phase-0-status.md`](docs/phase-0-status.md)). |
-| 1: Feasibility spikes | Toolchain automation done. S5 and S3 passed on the workstation (target PostgreSQL versions, runner and Windows Server still pending). Driver decision drafted (ADR-0009, Proposed). S1, S2, S4 and S6 not started. |
+| 1: Feasibility spikes | Toolchain automation done. S2, S3 and S5 passed on the workstation with PostgreSQL 18; target PostgreSQL versions, the runner and Windows Server are still pending. Driver decision drafted (ADR-0009, Proposed). New risk T31 (native parser in the backend's process) needs a decision. S1, S4 and S6 not started. |
 | 2–12 | Not started |

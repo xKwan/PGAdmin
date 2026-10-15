@@ -77,12 +77,15 @@ function New-FakePackage {
     $path = Join-Path $Sandbox.Source $file
     New-FakeZip -Path $path -TopDir $topDir -EntryNames $entries -Rng $Rng
     $alg = @('SHA256', 'SHA512')[$Rng.Next(0, 2)]
-    [pscustomobject]@{
+    $pkg = [pscustomobject]@{
         name = $Name; displayName = "Fake $Name"; resolver = 'direct'; versionSpec = $Version; version = $Version
         url = ([uri]$path).AbsoluteUri; file = $file; hashAlgorithm = $alg; hash = (Get-FileHash -LiteralPath $path -Algorithm $alg).Hash
         homeCheck = 'bin/tool.cmd'; purpose = "Test package $Name"
         extraProperties = [pscustomobject]@{ 'data.dir' = "data/$Name" }
     }
+    # Half of the packages carry their own hashSource note (e.g. "pinned at first download").
+    if ($Rng.Next(0, 2) -eq 0) { $pkg | Add-Member -NotePropertyName hashSource -NotePropertyValue "pinned at first download (test $($Rng.Next(1000, 9999)))" }
+    return $pkg
 }
 
 function Save-Manifest($Sandbox, [object[]]$Packages) {
@@ -278,6 +281,19 @@ $Scenarios = [ordered]@{
         Assert-True (-not (Test-Path -LiteralPath (Join-Path $S.Ctx.ToolsRoot "$($old.name)-$($old.version)"))) 'old version directory not removed'
         Assert-AllInstalled $S
         "$($old.name): $($old.version) -> $newVersion"
+    }
+
+    'hash-source-recorded' = {
+        param($S, $Rng)
+        $lock = @((Read-JsonFile -Path $S.Ctx.LockPath -Default $null).entries)
+        $list = [IO.File]::ReadAllText((Join-Path $S.Repo 'software-list.md'))
+        foreach ($p in $S.Packages) {
+            $entry = @($lock | Where-Object { $_.name -eq $p.name })[0]
+            $want = if ($p.PSObject.Properties['hashSource']) { $p.hashSource } else { 'manifest' }
+            Assert-True ($entry.hashSource -eq $want) "$($p.name): lock hashSource '$($entry.hashSource)', expected '$want'"
+            Assert-True ($list.Contains("checksum from $want")) "$($p.name): software-list.md does not show the hash source"
+        }
+        "custom=$(@($S.Packages | Where-Object { $_.PSObject.Properties['hashSource'] }).Count)/$($S.Packages.Count)"
     }
 
     'properties-point-at-real-homes' = {

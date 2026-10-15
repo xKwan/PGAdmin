@@ -26,7 +26,8 @@ The ADR stays **Proposed** until the stakeholder approves it and S2 has conclude
    - **Vert.x:**
      - user SQL only via `preparedQuery()`, never `query()` (V3);
      - never display `rowCount()` for non-DML statements (V5);
-     - check transaction status with the fixed simple-protocol probe after each statement (V6).
+     - check transaction status with the fixed simple-protocol probe after each statement (V6);
+     - never send text that contains no statement (empty, only `;` or only comments). Vert.x never completes such a query (S2 V8). Detect it with the scanner first, and put a timeout on every driver call.
    - **Both:**
      - DML with `RETURNING` and a row limit is reported as "output truncated", not as the affected-row count (J7);
      - the app's own wall-clock timer plus cancel is mandatory, because the server-side `statement_timeout` can be overridden by the user (J13).

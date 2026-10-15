@@ -45,7 +45,10 @@ The audit trail records who did what, through this application, against which Po
 
 - The HMAC key is held on the server (DPAPI-protected config) and rotated by runbook. A keyed hash prevents dictionary attacks on short literals while still letting investigators confirm a known statement.
 - Identifiers (schema, table, column names) remain visible in normalised text. **Assumed acceptable; needs confirmation.**
-- Whether normalisation removes comments is **Assumed (A6)** and will be tested in S2. If it doesn't, comments are stripped by another verified method or text is not stored.
+- **Normalisation method (S2, Tested for PG 18):**
+  - libpg_query's `pg_query_normalize` is **not** used. It leaves literals in place in 7 of the 28 statement forms tested (`COMMENT ON`, `COPY … PROGRAM`, `PREPARE`, `EXECUTE`, server `OPTIONS`, column `DEFAULT`, `BEGIN ATOMIC` bodies).
+  - Instead, normalised text is produced with PostgreSQL's **scanner**: comment tokens are removed and every constant token becomes `$n`. That left no literal and no comment in any of the 28 forms (`spikes/s2-parser/REPORT.md`, N2/N3).
+  - The scanner can't be told that `standard_conforming_strings` is off. For sessions where it is off, only the HMAC and metadata are stored.
 
 ## 5. Write path and failure behaviour
 

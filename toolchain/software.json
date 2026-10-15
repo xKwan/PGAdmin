@@ -15,8 +15,32 @@
       "resolver": "maven-central",
       "versionSpec": "3.9",
       "homeCheck": "bin/mvn.cmd",
-      "extraProperties": { "repo.local": "m2/repository" },
+      "extraProperties": {
+        "repo.local": "m2/repository"
+      },
       "purpose": "Backend build tool: dependencies, compilation, unit (Surefire) and integration (Failsafe) tests, JaCoCo coverage, SonarQube analysis (ADR-0008). Its local repository is kept in tools/m2 and becomes the offline Maven bundle."
+    },
+    {
+      "name": "zig",
+      "displayName": "Zig (C compiler toolchain)",
+      "resolver": "ziglang",
+      "versionSpec": "0.17",
+      "homeCheck": "zig.exe",
+      "purpose": "Self-contained C compiler (zig cc, clang-based, bundles MinGW-w64 headers) used only to build the libpg_query parser DLL for spike S2 and, if adopted, the parser artefact. Not needed at runtime."
+    },
+    {
+      "name": "libpg_query-src",
+      "displayName": "libpg_query source (pganalyze)",
+      "resolver": "direct",
+      "versionSpec": "18.1.0",
+      "version": "18.1.0",
+      "url": "https://github.com/pganalyze/libpg_query/archive/refs/tags/18.1.0.zip",
+      "file": "libpg_query-18.1.0.zip",
+      "hashAlgorithm": "SHA256",
+      "hash": "05ca8a633007479c75b2beebfce301184fb523fa5f34ead62a4335aa3346d0a1",
+      "hashSource": "pinned at first download, 2026-10-15 (GitHub publishes no checksum for tag archives; two downloads matched)",
+      "homeCheck": "pg_query.h",
+      "purpose": "PostgreSQL 18 parser extracted as a C library (BSD-3-Clause / PostgreSQL licence). Source for the S2 parser spike: statement splitting, classification and literal normalisation (plan section 3.1). Built into a DLL with zig; not used at runtime unless S2 passes."
     }
   ],
   "preexisting": [
@@ -24,8 +48,12 @@
       "name": "postgresql",
       "displayName": "PostgreSQL (EDB installer)",
       "command": "psql.exe",
-      "searchPaths": [ "%ProgramFiles%\\PostgreSQL\\*\\bin\\psql.exe" ],
-      "versionArgs": [ "--version" ],
+      "searchPaths": [
+        "%ProgramFiles%\\PostgreSQL\\*\\bin\\psql.exe"
+      ],
+      "versionArgs": [
+        "--version"
+      ],
       "versionPattern": "(\\d+(\\.\\d+)+)",
       "purpose": "Local development database and the initdb/pg_ctl binaries for throwaway test clusters (ADR-0007)."
     },
@@ -33,7 +61,9 @@
       "name": "node",
       "displayName": "Node.js",
       "command": "node.exe",
-      "versionArgs": [ "-v" ],
+      "versionArgs": [
+        "-v"
+      ],
       "versionPattern": "v?(\\d+(\\.\\d+)+)",
       "purpose": "Frontend build (Vite) and tests (Vitest) in later phases."
     },
@@ -41,7 +71,9 @@
       "name": "git",
       "displayName": "Git for Windows",
       "command": "git.exe",
-      "versionArgs": [ "--version" ],
+      "versionArgs": [
+        "--version"
+      ],
       "versionPattern": "(\\d+(\\.\\d+)+)",
       "purpose": "Version control."
     },
@@ -49,7 +81,9 @@
       "name": "docker",
       "displayName": "Docker Desktop (CLI)",
       "command": "docker.exe",
-      "versionArgs": [ "--version" ],
+      "versionArgs": [
+        "--version"
+      ],
       "versionPattern": "(\\d+(\\.\\d+)+)",
       "purpose": "Not used by the project (ADR-0007, D6). Listed for transparency only."
     }

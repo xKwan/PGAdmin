@@ -25,7 +25,11 @@ Every SQL execution must be audited with identity, target, outcome and timing, w
 
 ## Open items
 
-All of `docs/audit-policy.md` §8. Comment stripping by the normaliser is Assumed (A6).
+All of `docs/audit-policy.md` §8.
+
+- **S2 (Tested, PG 18, workstation):** normalised text is produced by scanner-based constant masking, because `pg_query_normalize` leaves literals in several utility statements. Comments are removed by the same scanner.
+- For sessions with `standard_conforming_strings=off`, only the HMAC and metadata are stored.
+- Evidence: `spikes/s2-parser/REPORT.md`.
 
 ## Validation
 
