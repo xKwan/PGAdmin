@@ -1,5 +1,7 @@
 # PostgreSQL Web Query Interface: Implementation Plan (v2)
 
+> **Superseded in part (2026-10-15).** Where this plan and an Accepted ADR differ, the ADR wins. Main differences: no Spring Boot (plain Servlet + Waffle on embedded Tomcat, ADR-0001); Kerberos delegation for both PostgreSQL instances with no passwords (ADR-0002, ADR-0003); pgJDBC only, with the parser gate (ADR-0009).
+
 > **Status:** Revised proposal (v2.1), awaiting review and approval. **Nothing in this plan has been verified against the target environment or tested.**
 > **Date:** 2026-10-15 (v2.1); 2026-10-14 (v2)
 > **Supersedes:** `docs/implementation-plan.md` (v1, kept for comparison)

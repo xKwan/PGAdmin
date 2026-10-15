@@ -1,8 +1,8 @@
 # ADR-0007: Integration-test database strategy without Docker
 
-- **Status:** Proposed
+- **Status:** **Accepted**
 - **Decision IDs:** D6
-- **Approval:** _pending_
+- **Approval:** 2026-10-15, stakeholder: "Approve all" of the listed defaults (explicit; recorded in `docs/decision-log.md`).
 
 ## Context
 

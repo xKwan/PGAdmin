@@ -1,8 +1,8 @@
 # ADR-0008: Offline dependency intake and CI platform
 
-- **Status:** Proposed
+- **Status:** **Accepted**
 - **Decision IDs:** D7, D8
-- **Approval:** _pending_
+- **Approval:** 2026-10-15, stakeholder: "Approve all" of the listed defaults (explicit; recorded in `docs/decision-log.md`).
 
 ## Context
 
@@ -28,6 +28,10 @@ The environment is air-gapped (Stated, F1). All tools, libraries, plugins and te
 
 - `npm audit` and online CVE feeds don't work in the air gap; vulnerability status is assessed at intake.
 - Dependency updates have lead time.
+
+## Workstation intake (approved 2026-10-15)
+
+New libraries may be downloaded on the developer workstation from Maven Central and the npm registry. Each is an exact version at least two weeks old, recorded with its checksum, and stored only in the `tools\` caches. A CycloneDX SBOM and an offline-bundle script produce the transfer set for the air gap. SonarQube Community Build runs project-locally from `tools\` (no Docker).
 
 ## Open items
 

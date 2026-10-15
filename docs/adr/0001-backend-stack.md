@@ -1,8 +1,8 @@
 # ADR-0001: Backend stack — Java, Jakarta Servlet and Waffle (no Spring)
 
-- **Status:** **Accepted** (stack: Java + plain Jakarta Servlet + Waffle, no Spring Boot). The servlet container sub-decision below is **Proposed**.
+- **Status:** **Accepted** (stack: Java 21 + plain Jakarta Servlet + Waffle, no Spring Boot; embedded Tomcat 11 executable JAR).
 - **Decision IDs:** D0, D7 (toolchain part), D14a
-- **Approval:** 2026-10-15, stakeholder: "Use Java Servlet with waffle. No springboot." This replaces the earlier proposal (Spring Boot + `waffle-spring-security`), which was never approved. The Spring variant is kept below as history.
+- **Approval:** 2026-10-15, stakeholder: "Use Java Servlet with waffle. No springboot." This replaces the earlier proposal (Spring Boot + `waffle-spring-security`), which was never approved. The Spring variant is kept below as history. Container (embedded Tomcat JAR) and Java 21 were approved explicitly on 2026-10-15, and Kerberos-only production logon was chosen the same day (see ADR-0002).
 
 ## Context
 
@@ -17,17 +17,17 @@ Waffle must remain the authentication entry point (Stated, F5). Waffle is a Java
 
 ## Decision
 
-- **Runtime:** Java 21 LTS. JDK 21.0.12 is project-installed under `tools\`. The exact pin and a possible move to 25 LTS are part of D7, which is still Proposed.
+- **Runtime:** Java 21 LTS (Accepted), Temurin 21.0.12.1+1 project-installed under `tools\`.
 - **Web layer:** Jakarta Servlet 6.1 API only: filters, servlets and listeners. No Spring Boot, Spring MVC or Spring Security.
 - **Windows authentication:** Waffle 3.7.0 `waffle-jna-jakarta`, `waffle.servlet.NegotiateSecurityFilter`, with:
-  - Negotiate and NTLM only;
+  - Negotiate only (Kerberos) in production; NTLM additionally in test configuration only, because the workstation has no domain (ADR-0002);
   - no Basic;
   - no guest login;
-  - no impersonation;
+  - no impersonation by the filter; the DB-session open request impersonates briefly to connect (ADR-0002);
   - mapped to the `REQUEST` dispatch only.
 - **Frontend:** unchanged. React (JavaScript) with Vite and Vitest, served by the same service.
 
-### Servlet container (Proposed sub-decision)
+### Servlet container (Accepted 2026-10-15)
 
 **Default:** Apache Tomcat 11.0.x **embedded** in a single executable JAR, run as a Windows service.
 - Tests and production then use the same filter chain on a real container.

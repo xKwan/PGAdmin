@@ -1,8 +1,8 @@
 # ADR-0006: Execution limits, timeouts and transaction behaviour
 
-- **Status:** Proposed
+- **Status:** **Accepted**
 - **Decision IDs:** D5, D10, D11
-- **Approval:** _pending_
+- **Approval:** 2026-10-15, stakeholder: "Approve all" of the listed defaults (explicit; recorded in `docs/decision-log.md`).
 
 ## Context
 
@@ -28,7 +28,7 @@ Limits must be enforced on the server, outside anything user SQL can change. SQL
 - Single-statement execution only, enforced by a verified parser gate or by the server (S2/S3). **No hand-written splitter.**
 - Multi-statement scripts only if the parser passes 100% of the corpus.
 - Unsupported in MVP: `COPY … FROM STDIN / TO STDOUT`, `LISTEN`, psql meta-commands.
-- Target PostgreSQL major versions: **Unresolved** (inventory §2).
+- Target PostgreSQL major version: **18** (Stated, 2026-10-15) for both instances.
 
 ## Inline editing (D11)
 

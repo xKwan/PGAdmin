@@ -32,8 +32,6 @@
 - **G1 (spikes):** spike work went ahead on the stakeholder's instruction to continue with stand-ins (`docs/decision-log.md`). The ADRs it formally requires (D0, D1, D3, D5, D7) are still **Proposed**.
 - **G2 (application code):** requires S1 and S4 to **pass in the target environment**. Both are only partial here. Starting Phase 2 needs either those environments or an explicit stakeholder decision to build on the workstation results while S1/S4 are completed in parallel.
 
-## Needed from the stakeholder
+## Decisions (2026-10-15)
 
-1. **Approve or amend** ADRs 0001–0009, at least D7 (versions) and ADR-0001's servlet container sub-decision (D0 stack accepted 2026-10-15: Java + Servlet + Waffle, no Spring), D5 (PostgreSQL majors) and ADR-0009 (driver), before Phase 2.
-2. **Decide on T31:** accept an in-process native parser, or require isolation.
-3. **Environment access** for the open items: a domain-joined host and test accounts (S1/S6), a clean air-gapped VM (S4), the GitLab Windows runner (S4–S6), and the PostgreSQL versions and `pg_hba` methods of 5432/5433 (inventory §2).
+All ADRs are Accepted, the stakeholder chose to proceed on workstation evidence, and T31 is accepted (`docs/decision-log.md`). Environment access for the open items is tracked in `docs/target-environment-checklist.md`.

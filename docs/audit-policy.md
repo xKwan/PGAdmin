@@ -1,6 +1,6 @@
 # SQL Audit Policy (draft for approval)
 
-> **Phase:** 0. **Status:** Proposed; every policy choice below is **Unresolved** until approved (decisions D4 and D13).
+> **Phase:** 0. **Status:** **Approved** 2026-10-15 (D4, D13): every §8 item as proposed (`docs/decision-log.md`).
 > **Plan reference:** `docs/implementation-plan-v2.md` §6.
 
 ## 1. Purpose and scope
@@ -15,7 +15,7 @@ The audit trail records who did what, through this application, against which Po
 |---|---|
 | `app_login`, `app_logout` | App session created or ended |
 | `authz_denied` | Any request rejected by authorisation |
-| `db_connect_attempt`, `db_connect_result` | DB session open requested, and its outcome (no password) |
+| `db_connect_attempt`, `db_connect_result` | DB session open requested, and its outcome (Kerberos; no credential recorded) |
 | `db_disconnect`, `session_reaped`, `session_lost` | DB session closed, by the user, a timeout or a failure |
 | `exec_intent` | **Before** SQL is sent to PostgreSQL |
 | `exec_outcome` | After execution ends (success, error, timeout, cancelled, indeterminate) |
@@ -87,10 +87,10 @@ The fail mode is one configuration switch, tested in both positions.
 
 | Item | Proposed | Decision |
 |---|---|---|
-| SQL text mode per profile | Normalised + HMAC; raw text off | Unresolved |
-| Identifiers stored | Yes | Unresolved |
-| Fail mode | Fail-closed, both profiles | Unresolved |
-| Audit DB location | Separate cluster/port | Unresolved |
-| Retention online / archived | 12 months / 7 years | Unresolved |
-| Auditor accounts | Named group | Unresolved |
-| `metadata_browse` events recorded | Yes, object path only | Unresolved |
+| SQL text mode per profile | Normalised + HMAC; raw text off | Approved 2026-10-15 |
+| Identifiers stored | Yes | Approved 2026-10-15 |
+| Fail mode | Fail-closed, both profiles | Approved 2026-10-15 |
+| Audit DB location | Separate cluster/port | Approved 2026-10-15 |
+| Retention online / archived | 12 months / 7 years | Approved 2026-10-15 |
+| Auditor accounts | Named group | Approved 2026-10-15 |
+| `metadata_browse` events recorded | Yes, object path only | Approved 2026-10-15 |

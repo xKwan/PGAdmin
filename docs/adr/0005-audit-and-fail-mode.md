@@ -1,8 +1,8 @@
 # ADR-0005: Audit storage, SQL text policy and fail mode
 
-- **Status:** Proposed
+- **Status:** **Accepted**
 - **Decision IDs:** D4, D13
-- **Approval:** _pending_
+- **Approval:** 2026-10-15, stakeholder: "Approve all" of the listed defaults (explicit; recorded in `docs/decision-log.md`).
 
 ## Context
 
@@ -23,7 +23,11 @@ Every SQL execution must be audited with identity, target, outcome and timing, w
 - An audit DB outage stops SQL execution (fail-closed); the audit DB needs monitoring and a recovery runbook.
 - Application logs and the spool are explicitly **not** audit records.
 
-## Open items
+## Open items (resolved 2026-10-15)
+
+All `docs/audit-policy.md` §8 items were approved as proposed. The audit DB is a separate cluster/port; on the workstation it is a separate throwaway cluster.
+
+## Former open items
 
 All of `docs/audit-policy.md` §8.
 

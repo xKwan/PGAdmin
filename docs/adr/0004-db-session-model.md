@@ -1,8 +1,8 @@
 # ADR-0004: DB session model and companion connection
 
-- **Status:** Proposed
+- **Status:** **Accepted**
 - **Decision IDs:** D12, D14b, D14c
-- **Approval:** _pending_
+- **Approval:** 2026-10-15, stakeholder: "Approve all" of the listed defaults (explicit; recorded in `docs/decision-log.md`).
 
 ## Context
 
@@ -10,7 +10,7 @@ Transactions must span HTTP requests, users must be isolated, and cancellation m
 
 ## Proposed decision
 
-- Each DB session holds **two dedicated connections** opened with the same credentials: a **main** connection for user SQL and a **companion** connection for cancel escalation (`pg_terminate_backend` on its own backend), lock diagnostics (`pg_blocking_pids`) and metadata browsing.
+- Each DB session holds **two dedicated connections**, both opened as the user during the same Kerberos-delegated open request (ADR-0002): a **main** connection for user SQL and a **companion** connection for cancel escalation (`pg_terminate_backend` on its own backend), lock diagnostics (`pg_blocking_pids`) and metadata browsing.
 - Sessions are pinned in the single backend instance, bound to Windows SID + app session; IDs are 128-bit random; foreign IDs return 404.
 - No pooling of user connections. Connections in `BROKEN`, `TERMINATED` or unknown state are closed, never reused.
 - State machine, reaper, heartbeat and cleanup per plan §3.6.
