@@ -136,6 +136,7 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 | Application test loop (frontend lint + Vitest; backend unit + integration + coverage) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-TestLoop.ps1 -Tag <phase>` | `docs/evidence/<phase>/loop-*.json` |
 | Pipeline gates fail when faults are injected | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-PipelineGates.ps1` | `docs/evidence/phase-2/gates-*.json` |
 | Offline intake, end to end | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-OfflineIntake.ps1` | `docs/evidence/phase-2/intake-*.json` |
+| SonarQube gate status as evidence | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sonar\Export-SonarGate.ps1 -Tag <phase>` | `docs/evidence/<phase>/sonar-*.json` |
 | Toolchain scripts | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\toolchain\tests\Test-Toolchain.ps1` | `scripts/toolchain/tests/results/` |
 | Spikes S1–S7 | `spikes\<spike>\Invoke-*.ps1` | `spikes/<spike>/REPORT.md` |
 
@@ -145,5 +146,5 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 |---|---|
 | 0: Discovery and decisions | Done. All ADRs Accepted 2026-10-15 ([`docs/decision-log.md`](docs/decision-log.md)). Environment facts still to be collected are in [`docs/target-environment-checklist.md`](docs/target-environment-checklist.md). |
 | 1: Feasibility spikes | Done on the workstation (S1–S3, S5–S7); Kerberos, the domain, the runner and a clean VM remain target-environment items ([`docs/phase-1-status.md`](docs/phase-1-status.md)). |
-| 2: Offline baseline, scaffolding, CI, SonarQube | See [`docs/phase-2-status.md`](docs/phase-2-status.md) |
+| 2: Offline baseline, scaffolding, CI, SonarQube | **Done** on the workstation: loop 5/5, gate checks, intake exercise and both Sonar gates passed. A clean VM and the GitLab runner remain target-environment items ([`docs/phase-2-status.md`](docs/phase-2-status.md)). |
 | 3–12 | Not started |

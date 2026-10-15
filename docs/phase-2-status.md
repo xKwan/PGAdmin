@@ -45,6 +45,18 @@
 | SBOMs and the SHA-256 manifest are produced | **Tested:** `pgweb-backend-sbom.json`, `pgweb-frontend-sbom.json`, `SHA256SUMS.txt` in the release bundle; the manifest detects modified, missing and extra files | `gates-*.json` G6 |
 | The intake procedure is documented and exercised once | **Tested (workstation):** `offline/README.md`; the bundle was built, verified and imported | `intake-*.json` |
 
+## Test evidence
+
+| Check | Result | File |
+|---|---|---|
+| Randomised loop: frontend lint + Vitest with coverage; backend Enforcer, `-Werror`, tests, JaCoCo | **PASS 5/5**, master seed `392750411` | `docs/evidence/phase-2/loop-20261015-221900.json` |
+| Pipeline gates fail on injected faults (G1–G7) | **PASS** (first run, then rerun after the settings change) | `gates-20261015-215959.json`, `gates-20261015-221828.json` |
+| Intake end to end in a fresh clone | FAIL (P2-5), then **PASS** after the fix | `intake-20261015-221145.json`, `intake-20261015-221705.json` |
+| Local pipeline, all 10 jobs including both Sonar analyses and package | **PASS** (seed `533964708`) | `ci-logs` (not committed) |
+| SonarQube "pgweb gate" | **OK** for both projects; coverage 100% (skeleton code); 0 blocker/high issues | `sonar-20261015-222251.json` |
+
+The Phase 2 code is a skeleton. The loop's 3 frontend and 3 backend tests check the build and gates themselves; the feature test suites start in Phase 3.
+
 ## Findings
 
 | # | Finding | Impact |
@@ -53,3 +65,4 @@
 | P2-2 | `dependency:go-offline` and `resolve-plugins` ask for default-lifecycle plugins that the build doesn't use (`maven-release-plugin`) | `deps-verify` resolves dependencies, then runs an offline `package`, which exercises exactly the plugins the build binds |
 | P2-3 | SonarScanner caches its engine and JRE in `%USERPROFILE%\.sonar` by default | `SONAR_USER_HOME` now points at `tools\sonar-user-home` (a toolchain cache) and is part of the dependency bundle. The scanner gets its JRE from the SonarQube server ("JRE provisioning"), which works in the air gap. |
 | P2-4 | npm 11 skips package install scripts unless approved | None of ours are needed; documented in `offline/README.md` |
+| P2-5 | **CycloneDX `makeBom` declares "requires online" and silently skips under `-o`.** In the working copy, an SBOM left over from the first online build hid this. The first intake exercise in a fresh clone failed at `package` (`intake-20261015-221145.json`). | `maven-settings.xml` no longer sets `<offline>` (CI jobs pass `-o`; the mirror still blocks every download). The package job deletes old SBOMs, runs `makeBom` without `-o`, and fails if either SBOM is missing. The second intake exercise passed (`intake-20261015-221705.json`). |
