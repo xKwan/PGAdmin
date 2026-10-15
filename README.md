@@ -17,7 +17,7 @@ An internal web application, similar to DBeaver for everyday workflows, that let
 | Architecture decisions (all Accepted 2026-10-15) | [`docs/adr/`](docs/adr/README.md) |
 | Decision log (stakeholder instructions) | [`docs/decision-log.md`](docs/decision-log.md) |
 | What still has to be proven in the real environment | [`docs/target-environment-checklist.md`](docs/target-environment-checklist.md) |
-| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md), [`docs/phase-3-status.md`](docs/phase-3-status.md) |
+| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md), [`docs/phase-3-status.md`](docs/phase-3-status.md), [`docs/phase-4-status.md`](docs/phase-4-status.md) |
 | Developer setup: build, local audit DB, run, configuration reference | [`docs/dev-setup.md`](docs/dev-setup.md) |
 | Requirements, threat model, audit policy | [`docs/requirements.md`](docs/requirements.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/audit-policy.md`](docs/audit-policy.md) |
 | Environment inventory, compatibility matrix | [`docs/environment-inventory.md`](docs/environment-inventory.md), [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md) |
@@ -151,4 +151,5 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 | 1: Feasibility spikes | Done on the workstation (S1–S3, S5–S7); Kerberos, the domain, the runner and a clean VM remain target-environment items ([`docs/phase-1-status.md`](docs/phase-1-status.md)). |
 | 2: Offline baseline, scaffolding, CI, SonarQube | **Done** on the workstation: loop 5/5, gate checks, intake exercise and both Sonar gates passed. A clean VM and the GitLab runner remain target-environment items ([`docs/phase-2-status.md`](docs/phase-2-status.md)). |
 | 3: Backend foundation | **Done** on the workstation: configuration, secrets, redacted logging, error envelope, audit schema with hash chain, CLI, test-cluster guard ([`docs/phase-3-status.md`](docs/phase-3-status.md)) |
-| 4–12 | Not started |
+| 4: Sign-in, authorisation, sessions, CSRF, audit service | **Done** on the workstation (NTLM; Kerberos is a target-environment item) ([`docs/phase-4-status.md`](docs/phase-4-status.md)) |
+| 5–12 | Not started |

@@ -34,8 +34,9 @@ public record Config(
                        Duration sessionIdle, Duration sessionAbsolute) {
     }
 
+    /** @param failClosed refuse audited operations when their record can't be written (D4, default true) */
     public record Audit(String jdbcUrl, String user, Secret password, Secret hmacKey, Path spoolDir,
-                        Optional<String> migratorUser, Optional<Secret> migratorPassword) {
+                        Optional<String> migratorUser, Optional<Secret> migratorPassword, boolean failClosed) {
     }
 
     /**

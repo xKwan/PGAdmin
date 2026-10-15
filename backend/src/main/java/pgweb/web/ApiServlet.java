@@ -68,6 +68,8 @@ public abstract class ApiServlet extends HttpServlet {
             }
         } catch (ApiException e) {
             ErrorEnvelope.write(resp, e.status(), e.code(), e.getMessage());
+        } catch (pgweb.audit.AuditUnavailableException e) {
+            ErrorEnvelope.write(resp, 503, "AUDIT_UNAVAILABLE", "The audit database is unavailable; the operation was not performed");
         } catch (RuntimeException e) {
             LOG.error("unhandled error in {} {}", req.getMethod(), req.getRequestURI(), e);
             ErrorEnvelope.write(resp, 500, "INTERNAL", "Internal error");

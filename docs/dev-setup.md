@@ -70,12 +70,19 @@ Unknown keys are errors, so a misspelt setting can't silently fall back to a def
 | `audit.hmacKey` | — (required) | At least 32 bytes; keys the SQL text HMAC |
 | `audit.spoolDir` | — (required) | Local folder for audit outcomes that couldn't be written |
 | `audit.migrator.user`, `audit.migrator.password` | — | Only for `migrate` and `verify-audit-chain` |
+| `audit.failMode` | `closed` | `closed`: an operation whose audit record can't be written is refused (503 `AUDIT_UNAVAILABLE`). `open`: the record is spooled and the operation continues (not recommended, D4). |
 | `profile.internal.*`, `profile.external.*` | — | `host` (a DNS name, never an IP: S7-3), `port` (5433/5432), `sslMode` (`verify-full` in prod, `disable` in test), `sslRootCert`, `maintenanceDb` (`postgres`), `requiresDataAdmin` (always true for internal), `displayName`, `statementTimeoutSeconds` (300/60) |
 | `execution.enabled` | `false` | SQL execution kill switch (EXE-01) |
 | `limits.*` | ADR-0006 | `maxRows` 1000, `maxResponseBytes` 10 MB, `maxCellBytes` 64 KB, `maxSqlBytes` 1 MB, `cancelGraceSeconds` 5, `idleSessionMinutes` 15, `idleInTransactionMinutes` 10 (warning at 8), `maxTransactionAgeMinutes` 60, `heartbeatAbandonSeconds` 120, `sessionsPerUser` 3, `sessionsGlobal` 50, `failedOpensPerWindow` 5 per `failedOpenWindowMinutes` 5 |
 | `logging.dir` | `logs` | Rolling `pgweb.log` (50 MB × 30 days, 2 GB cap). Messages and stack traces are redacted. |
 
-## 5. Security notes for developers
+## 5. Signing in locally
+
+The workstation has no domain, so test mode allows NTLM (`auth.protocols=Negotiate NTLM`, `auth.kerberosOnly=false`). Edge signs in automatically to `http://localhost:8080` with your Windows account. `GET /api/me` shows the account, SID, DataAdmin flag, mechanism and CSRF token. `.dev-db\pgweb.properties` sets `auth.dataAdminSid=S-1-5-32-545` (BUILTIN\Users), so you are DataAdmin locally; set any other SID to see the non-DataAdmin view.
+
+State-changing requests (POST, PUT, DELETE) need the `X-CSRF-Token` header from `/api/me` and an own-origin `Origin` header.
+
+## 6. Security notes for developers
 
 - **Heap dumps:** the JVM default (`-XX:-HeapDumpOnOutOfMemoryError`) is kept. Don't enable heap dumps on servers: a dump can contain the audit HMAC key, the audit DB password and query results (threat T10/T27). The service wrapper configuration (Phase 12) leaves them off.
 - **Logs** are not audit records. The redactor masks `password=`, `token`, `secret`, `hmacKey` and `Authorization` values, but code must still never log secrets on purpose.

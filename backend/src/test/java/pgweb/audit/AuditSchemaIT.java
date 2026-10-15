@@ -337,7 +337,7 @@ class AuditSchemaIT {
         String db = freshDb();
         pgweb.config.Config.Audit cfg = new pgweb.config.Config.Audit(pg.jdbcUrl(db), "pgweb_app",
                 new pgweb.config.Secret(pg.appPassword().getBytes(java.nio.charset.StandardCharsets.UTF_8)),
-                new pgweb.config.Secret(new byte[32]), java.nio.file.Path.of("spool"), java.util.Optional.empty(), java.util.Optional.empty());
+                new pgweb.config.Secret(new byte[32]), java.nio.file.Path.of("spool"), java.util.Optional.empty(), java.util.Optional.empty(), true);
         try (AuditDatabase a = new AuditDatabase(cfg)) {
             assertThat(a.ping()).isTrue();
             assertThat(a.ensurePartitions(12)).isZero();
@@ -347,7 +347,7 @@ class AuditSchemaIT {
         }
         pgweb.config.Config.Audit wrong = new pgweb.config.Config.Audit(pg.jdbcUrl(db), "pgweb_app",
                 new pgweb.config.Secret("wrong".getBytes(java.nio.charset.StandardCharsets.UTF_8)),
-                new pgweb.config.Secret(new byte[32]), java.nio.file.Path.of("spool"), java.util.Optional.empty(), java.util.Optional.empty());
+                new pgweb.config.Secret(new byte[32]), java.nio.file.Path.of("spool"), java.util.Optional.empty(), java.util.Optional.empty(), true);
         try (AuditDatabase a = new AuditDatabase(wrong)) {
             assertThat(a.ping()).isFalse();
         }

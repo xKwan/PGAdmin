@@ -143,7 +143,7 @@ class MainIT {
         var cfg = TestConfig.load(TestConfig.base(tmp));
         try (Application app = Application.start(cfg)) {
             assertThat(app.port()).isPositive();
-            assertThat(app.audit().ping()).isFalse();
+            assertThat(app.auditDatabase().ping()).isFalse();
             assertThat(app.config()).isSameAs(cfg);
         }
         Files.createDirectories(tmp.resolve("logs"));

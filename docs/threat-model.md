@@ -22,11 +22,11 @@
 
 | ID | STRIDE | Threat | Mitigation (plan ref) | Phase | Verifying test | Status |
 |---|---|---|---|---|---|---|
-| T01 | S | Client claims a different identity via request fields | Identity only from the Waffle security context; identity/role fields rejected (§2.4) | P4 | Forged-field authorisation tests | Planned |
+| T01 | S | Client claims a different identity via request fields | Identity only from the Waffle security context; identity/role fields rejected (§2.4) | P4 | Forged-field authorisation tests | Tested (P4): forged headers, query and body fields ignored (`AuthorizationMatrixIT`) |
 | T02 | S | NTLM relay or downgrade instead of Kerberos | SPN registered; HTTPS; no reverse proxy; Kerberos confirmed in S1 | P1, P12 | S1 report; deployment check | Planned / Unresolved (A3) |
-| T03 | S, E | Non-DataAdmin user reaches internal PostgreSQL by calling the API directly | Server-side DataAdmin check on every internal request (§5) | P4, P6 | Direct-API authorisation matrix | Planned |
+| T03 | S, E | Non-DataAdmin user reaches internal PostgreSQL by calling the API directly | Server-side DataAdmin check on every internal request (§5) | P4, P6 | Direct-API authorisation matrix | Tested (P4) for the access framework; internal endpoints arrive in P6 under the same matrix |
 | T04 | S | User connects to internal PostgreSQL as another user's role | Role name fixed by the server-side mapper; `session_user` checked after connecting (§2.4) | P6 | Mapping and `session_user` tests | Planned |
-| T05 | T, E | Cross-site request forges a state change using ambient Negotiate credentials | CSRF token, Origin/`Sec-Fetch-Site` check, `SameSite=Strict`, side-effect-free GET (§5) | P4 | CSRF and cross-origin tests | Planned |
+| T05 | T, E | Cross-site request forges a state change using ambient Negotiate credentials | CSRF token, Origin/`Sec-Fetch-Site` check, `SameSite=Strict`, side-effect-free GET (§5) | P4 | CSRF and cross-origin tests | Tested (P4): Origin + synchronizer token; 8 forged variants refused and audited (`CsrfIT`) |
 | T06 | I, E | One user uses another user's DB session | Random 128-bit IDs bound to SID and app session; 404 on mismatch (§4) | P6 | Cross-user session tests | Planned |
 | T07 | E | Shared login plus `SET ROLE` lets users `RESET ROLE` to higher privileges | Not used; users' own credentials only (§2.4, D3) | P6 | Design review; role tests | Planned |
 | T08 | E | Superuser session bypasses all app controls (`COPY … PROGRAM`, audit tampering) | Superuser sessions refused by default (D14c) | P6 | Superuser refusal test | Planned |
@@ -47,11 +47,11 @@
 | T23 | I | Audit records expose secrets or personal data contained in SQL literals | Normalised text plus HMAC; no raw text by default (§6) | P7 | Literal-absence assertions | Planned / Assumed (A6 comment stripping) |
 | T24 | I | Unauthorised reading of audit records | `pgweb_audit_reader` granted to named auditors only; spool ACLs | P3, P12 | Privilege-verification SQL | Planned |
 | T25 | T | Malicious or vulnerable dependency enters through the air-gap intake | SBOM; vulnerability scan at intake; SHA-256 manifest; second-person check; lockfile integrity (§7.1) | P2 | `deps:verify`; intake record | Planned |
-| T26 | E | Mock authentication provider enabled in production | Test/dev-only module, not packaged; startup refusal under `prod` | P4 | Startup-refusal test | Planned |
+| T26 | E | Mock authentication provider enabled in production | Test/dev-only module, not packaged; startup refusal under `prod` | P4 | Startup-refusal test | Tested (P4): auth override refused in prod; mock provider in test scope only |
 | T27 | I | App secrets (HMAC key, `pgweb_app` password, TLS key) exposed on the server | NTFS ACLs; DPAPI encryption; never in the repo | P3, P12 | Config review; secret-grep of repo | Planned |
-| T28 | E | Revoked DataAdmin user keeps access | DataAdmin re-checked on every request; absolute session cap (8 h) | P4 | Session-cap test | Planned. Revocation delay up to the session cap is accepted residual risk (D1/D10). |
+| T28 | E | Revoked DataAdmin user keeps access | DataAdmin re-checked on every request; absolute session cap (8 h) | P4 | Session-cap test | Tested (P4): DataAdmin evaluated per request; 8 h absolute session lifetime. Revocation delay up to the session cap is accepted residual risk. |
 | T29 | I | Authorised user reads all data their role permits (bulk exfiltration) | Out of app scope: data owners apply RLS and column grants; audit records the activity | — | — | Accepted risk (owner: stakeholder) |
-| T30 | T | Clickjacking of the UI | `frame-ancestors 'none'` | P4 | Header test | Planned |
+| T30 | T | Clickjacking of the UI | `frame-ancestors 'none'` | P4 | Header test | Tested (P4): `frame-ancestors 'none'` and `X-Frame-Options: DENY` |
 | T33 | E | Delegated Kerberos credentials misused: the service account could act toward PostgreSQL as any user who logs on | Constrained delegation limited to `POSTGRES/<host>` SPNs; impersonation only during connect and reverted in `finally`; token never stored; SID of the open handshake must match the session (ADR-0002) | P6 | Impersonation-scope and SID-mismatch tests | Planned |
 | T31 | D / I | A memory-safety bug in the native SQL parser (libpg_query DLL, which runs inside the backend's process on untrusted SQL text) crashes the backend or leaks process memory into its output. An upstream example was fixed in 18.1.0: GHSA-6ggm-xmc9-8ffg. | Pin a fixed release (≥ 18.1.0); track advisories; use parser output only for splitting, UX and audit (never authorisation); don't use `pg_query_normalize` (S2 N2/N3); input size limit before parsing. Option: run the parser out of process or as WASM in the JVM if the risk isn't accepted. | P1 (S2), P7 | S2 fuzzing (no crash in ~2,500 inputs per 5-run loop); P11 parser fuzz suite | Accepted risk (in-process), owner: stakeholder |
 

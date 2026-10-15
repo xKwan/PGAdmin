@@ -42,7 +42,7 @@ public final class ConfigLoader {
             "auth.protocols", "auth.kerberosOnly", "auth.dataAdminSid", "auth.allowedDomains",
             "auth.session.idleMinutes", "auth.session.absoluteHours",
             "audit.jdbcUrl", "audit.user", "audit.password", "audit.hmacKey", "audit.spoolDir",
-            "audit.migrator.user", "audit.migrator.password",
+            "audit.migrator.user", "audit.migrator.password", "audit.failMode",
             "execution.enabled",
             "limits.maxRows", "limits.maxResponseBytes", "limits.maxCellBytes", "limits.maxSqlBytes",
             "limits.cancelGraceSeconds", "limits.idleSessionMinutes", "limits.idleInTransactionMinutes",
@@ -230,7 +230,12 @@ public final class ConfigLoader {
             if (migUser.isPresent()) {
                 migPw = Optional.ofNullable(secret("audit.migrator.password"));
             }
-            return new Config.Audit(url, user, password, hmac, spool == null ? null : Path.of(spool), migUser, migPw);
+            String failMode = str("audit.failMode", "closed").toLowerCase(Locale.ROOT);
+            if (!failMode.equals("closed") && !failMode.equals("open")) {
+                problems.add("audit.failMode must be closed or open, not " + failMode);
+            }
+            return new Config.Audit(url, user, password, hmac, spool == null ? null : Path.of(spool), migUser, migPw,
+                    !failMode.equals("open"));
         }
 
         private Map<String, Config.DbProfile> profiles(boolean prod) {

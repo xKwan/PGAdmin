@@ -11,6 +11,7 @@ import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.apache.tomcat.util.http.Rfc6265CookieProcessor;
 import org.apache.tomcat.util.net.SSLHostConfig;
 import org.apache.tomcat.util.net.SSLHostConfigCertificate;
+import pgweb.authz.Access;
 import pgweb.config.Config;
 import pgweb.web.JsonErrorReportValve;
 import pgweb.web.RequestIdFilter;
@@ -34,7 +35,11 @@ public final class WebServer implements AutoCloseable {
         private record F(String name, Filter filter, Map<String, String> params, List<String> patterns) {
         }
 
-        private record S(String name, HttpServlet servlet, List<String> patterns) {
+        private record S(String name, HttpServlet servlet, Access access, List<String> patterns) {
+        }
+
+        /** One registered endpoint: the authorisation-matrix test iterates these. */
+        public record Route(String name, Access access, List<String> patterns) {
         }
 
         private final List<F> filters = new ArrayList<>();
@@ -45,9 +50,25 @@ public final class WebServer implements AutoCloseable {
             return this;
         }
 
-        public Routes servlet(String name, HttpServlet servlet, String... patterns) {
-            servlets.add(new S(name, servlet, List.of(patterns)));
+        /** @param access who may call it; {@code null} is allowed only to prove that undeclared routes are denied */
+        public Routes servlet(String name, HttpServlet servlet, Access access, String... patterns) {
+            servlets.add(new S(name, servlet, access, List.of(patterns)));
             return this;
+        }
+
+        /** Declared access per servlet name (routes registered with {@code null} access are left out: denied). */
+        public Map<String, Access> accessByServlet() {
+            Map<String, Access> m = new java.util.HashMap<>();
+            for (S s : servlets) {
+                if (s.access != null) {
+                    m.put(s.name, s.access);
+                }
+            }
+            return m;
+        }
+
+        public List<Route> inventory() {
+            return servlets.stream().map(s -> new Route(s.name, s.access, s.patterns)).toList();
         }
     }
 

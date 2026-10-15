@@ -9,6 +9,7 @@ import pgweb.Application;
 import pgweb.audit.AuditMigrator;
 import pgweb.config.Config;
 import pgweb.testsupport.LogCapture;
+import pgweb.testsupport.MockAuthFilter;
 import pgweb.testsupport.PgTestCluster;
 import pgweb.testsupport.Seeds;
 import pgweb.testsupport.TestConfig;
@@ -54,7 +55,7 @@ class ServerIT {
         AuditMigrator.migrate(pg.jdbcUrl("pgweb_audit"), "pgweb_migrator", pg.migratorPassword(), "pgweb_app");
         Config cfg = TestConfig.load(TestConfig.forCluster(pg, "pgweb_audit", tmp));
         secretInError = "Sx" + Long.toHexString(Seeds.random("server-secret").nextLong());
-        app = Application.start(cfg, routes -> routes
+        app = Application.start(cfg, new Application.Options(new MockAuthFilter(), routes -> routes
                 .servlet("echo", new ApiServlet() {
                     private static final long serialVersionUID = 1L;
 
@@ -63,7 +64,7 @@ class ServerIT {
                         Echo e = body(req, Echo.class);
                         return Map.of("name", e.name(), "count", e.count());
                     }
-                }, "/api/test/echo")
+                }, pgweb.authz.Access.AUTHENTICATED, "/api/test/echo")
                 .servlet("boom", new ApiServlet() {
                     private static final long serialVersionUID = 1L;
 
@@ -71,8 +72,10 @@ class ServerIT {
                     protected Object get(HttpServletRequest req) {
                         throw new IllegalStateException("database password=" + secretInError + " at host internal-db");
                     }
-                }, "/api/test/boom"));
-        http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+                }, pgweb.authz.Access.AUTHENTICATED, "/api/test/boom"), java.time.Clock.systemUTC()));
+        http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).cookieHandler(new java.net.CookieManager()).build();
+        HttpResponse<String> me = http.send(withUser(HttpRequest.newBuilder(uri("/api/me"))).GET().build(), HttpResponse.BodyHandlers.ofString());
+        csrf = Json.mapper().readTree(me.body()).path("csrfToken").asText();
     }
 
     @AfterAll
@@ -89,12 +92,23 @@ class ServerIT {
         return URI.create("http://127.0.0.1:" + app.port() + path);
     }
 
+    static String csrf;
+
+    /** Every request acts as one test user (the mock provider stands in for Waffle) with the session's CSRF token. */
+    static HttpRequest.Builder withUser(HttpRequest.Builder b) {
+        return b.header(MockAuthFilter.HEADER, MockAuthFilter.header("TEST\srv-user", "S-1-5-21-1-2-3-1001", "S-1-5-32-545"));
+    }
+
+    static HttpRequest.Builder unsafe(HttpRequest.Builder b) {
+        return withUser(b).header("Origin", "http://localhost:" + app.port()).header("X-CSRF-Token", csrf);
+    }
+
     static HttpResponse<String> get(String path) throws Exception {
-        return http.send(HttpRequest.newBuilder(uri(path)).GET().timeout(Duration.ofSeconds(20)).build(), HttpResponse.BodyHandlers.ofString());
+        return http.send(withUser(HttpRequest.newBuilder(uri(path))).GET().timeout(Duration.ofSeconds(20)).build(), HttpResponse.BodyHandlers.ofString());
     }
 
     static HttpResponse<String> post(String path, String contentType, String body) throws Exception {
-        HttpRequest.Builder b = HttpRequest.newBuilder(uri(path)).POST(HttpRequest.BodyPublishers.ofString(body)).timeout(Duration.ofSeconds(20));
+        HttpRequest.Builder b = unsafe(HttpRequest.newBuilder(uri(path))).POST(HttpRequest.BodyPublishers.ofString(body)).timeout(Duration.ofSeconds(20));
         if (contentType != null) {
             b.header("Content-Type", contentType);
         }
@@ -155,7 +169,7 @@ class ServerIT {
     @Test
     void wrongMethodIs405Envelope() throws Exception {
         assertEnvelope(post("/api/health", "application/json", "{}"), 405, "METHOD_NOT_ALLOWED");
-        HttpResponse<String> del = http.send(HttpRequest.newBuilder(uri("/api/health")).DELETE().build(), HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> del = http.send(unsafe(HttpRequest.newBuilder(uri("/api/me"))).DELETE().build(), HttpResponse.BodyHandlers.ofString());
         assertEnvelope(del, 405, "METHOD_NOT_ALLOWED");
     }
 
@@ -188,7 +202,7 @@ class ServerIT {
     @Test
     void chunkedBodyOverTheLimitIsRejected() throws Exception {
         byte[] big = ("{\"name\":\"" + "y".repeat(80_000) + "\",\"count\":1}").getBytes(java.nio.charset.StandardCharsets.UTF_8);
-        HttpRequest req = HttpRequest.newBuilder(uri("/api/test/echo")).header("Content-Type", "application/json")
+        HttpRequest req = unsafe(HttpRequest.newBuilder(uri("/api/test/echo"))).header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofInputStream(() -> new java.io.ByteArrayInputStream(big))).build();
         HttpResponse<String> r = http.send(req, HttpResponse.BodyHandlers.ofString());
         assertThat(r.statusCode()).isIn(400, 413);
