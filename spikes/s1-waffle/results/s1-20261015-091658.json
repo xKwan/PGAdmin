@@ -1,0 +1,869 @@
+{
+    "spike":  "S1 Waffle + Spring Security (partial: workgroup machine)",
+    "overall":  "PASS",
+    "masterSeed":  702227710,
+    "requiredConsecutivePasses":  5,
+    "started":  "2026-10-15T09:15:39.8589944+08:00",
+    "finished":  "2026-10-15T09:16:37.0967137+08:00",
+    "machine":  "KWAN-DESKTOP",
+    "os":  "Microsoft Windows 11 Pro",
+    "java":  "S:\\Code\\PGAdmin\\tools\\jdk-21.0.12.1+1",
+    "domainJoined":  false,
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  1622012832,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  24,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  11.7,
+                     "consecutive":  1,
+                     "findings":  [
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "7 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami?r=364102 -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[Bearer/63-\u003e401, negotiate/1053-\u003e401, Negotiate/4-\u003e401, negotiate/13-\u003e401, Basic/59-\u003e401, negotiate/2983-\u003e401, Negotiate/2826-\u003e401, Bearer/1975-\u003e401, negotiate/2389-\u003e401, Basic/2381-\u003e401, negotiate/2254-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via Negotiate"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "7 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami?r=364102 -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[Bearer/63-\u003e401, negotiate/1053-\u003e401, Negotiate/4-\u003e401, negotiate/13-\u003e401, Basic/59-\u003e401, negotiate/2983-\u003e401, Negotiate/2826-\u003e401, Bearer/1975-\u003e401, negotiate/2389-\u003e401, Basic/2381-\u003e401, negotiate/2254-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1622012832,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via Negotiate"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  2,
+                     "seed":  1371377064,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  24,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  12.3,
+                     "consecutive":  2,
+                     "findings":  [
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via NTLM"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[Negotiate/8-\u003e401, Negotiate/960-\u003e401, NTLM/90-\u003e401, Basic/11-\u003e401, Basic/33-\u003e401, Basic/55-\u003e401, Basic/31-\u003e401, Bearer/214-\u003e401, NTLM/15-\u003e401, Basic/35-\u003e401, negotiate/21-\u003e401, negotiate/64-\u003e401, Negotiate/37-\u003e401, Bearer/1312-\u003e401, Basic/21-\u003e401, NTLM/13-\u003e401, negotiate/34-\u003e401, Basic/63-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami?r=59881 -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "5 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via NTLM"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[Negotiate/8-\u003e401, Negotiate/960-\u003e401, NTLM/90-\u003e401, Basic/11-\u003e401, Basic/33-\u003e401, Basic/55-\u003e401, Basic/31-\u003e401, Bearer/214-\u003e401, NTLM/15-\u003e401, Basic/35-\u003e401, negotiate/21-\u003e401, negotiate/64-\u003e401, Negotiate/37-\u003e401, Bearer/1312-\u003e401, Basic/21-\u003e401, NTLM/13-\u003e401, negotiate/34-\u003e401, Basic/63-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami?r=59881 -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "5 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1371377064,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  3,
+                     "seed":  728384700,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  24,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  11.1,
+                     "consecutive":  3,
+                     "findings":  [
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via Negotiate"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "3 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami?r=304697 -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[negotiate/2755-\u003e401, negotiate/57-\u003e401, Bearer/2624-\u003e401, Basic/61-\u003e401, Negotiate/1515-\u003e401, Negotiate/523-\u003e401, Negotiate/51-\u003e401, Basic/1161-\u003e401, Negotiate/1177-\u003e401, Negotiate/895-\u003e401, NTLM/607-\u003e401, Negotiate/28-\u003e401, Basic/39-\u003e401, NTLM/2770-\u003e401, negotiate/1793-\u003e401, NTLM/6-\u003e401, Bearer/1592-\u003e401, NTLM/2336-\u003e401, NTLM/56-\u003e401, negotiate/29-\u003e401, Bearer/1730-\u003e401, Negotiate/48-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via Negotiate"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "3 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami?r=304697 -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[negotiate/2755-\u003e401, negotiate/57-\u003e401, Bearer/2624-\u003e401, Basic/61-\u003e401, Negotiate/1515-\u003e401, Negotiate/523-\u003e401, Negotiate/51-\u003e401, Basic/1161-\u003e401, Negotiate/1177-\u003e401, Negotiate/895-\u003e401, NTLM/607-\u003e401, Negotiate/28-\u003e401, Basic/39-\u003e401, NTLM/2770-\u003e401, negotiate/1793-\u003e401, NTLM/6-\u003e401, Bearer/1592-\u003e401, NTLM/2336-\u003e401, NTLM/56-\u003e401, negotiate/29-\u003e401, Bearer/1730-\u003e401, Negotiate/48-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  728384700,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  4,
+                     "seed":  1296478955,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  24,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  11.1,
+                     "consecutive":  4,
+                     "findings":  [
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via NTLM"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "3 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[Bearer/1044-\u003e401, Negotiate/895-\u003e401, negotiate/20-\u003e401, Basic/2384-\u003e401, Basic/6-\u003e401, negotiate/1950-\u003e401, Negotiate/17-\u003e401, Negotiate/68-\u003e401, Negotiate/54-\u003e401, Negotiate/9-\u003e401, Negotiate/53-\u003e401, Negotiate/49-\u003e401, Basic/732-\u003e401, NTLM/8-\u003e401, Negotiate/12-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via NTLM"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "3 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  1296478955,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[Bearer/1044-\u003e401, Negotiate/895-\u003e401, negotiate/20-\u003e401, Basic/2384-\u003e401, Basic/6-\u003e401, negotiate/1950-\u003e401, Negotiate/17-\u003e401, Negotiate/68-\u003e401, Negotiate/54-\u003e401, Negotiate/9-\u003e401, Negotiate/53-\u003e401, Negotiate/49-\u003e401, Basic/732-\u003e401, NTLM/8-\u003e401, Negotiate/12-\u003e401]"
+                                      }
+                                  ]
+                 },
+                 {
+                     "run":  5,
+                     "seed":  425360207,
+                     "pass":  true,
+                     "exitCode":  0,
+                     "tests":  24,
+                     "failures":  0,
+                     "errors":  0,
+                     "failed":  [
+
+                                ],
+                     "leftovers":  0,
+                     "seconds":  10.8,
+                     "consecutive":  5,
+                     "findings":  [
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via Negotiate"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "5 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[Bearer/40-\u003e401, Basic/1783-\u003e401, Basic/282-\u003e401, negotiate/460-\u003e401, NTLM/44-\u003e401, NTLM/1245-\u003e401, Basic/31-\u003e401, NTLM/37-\u003e401, Bearer/23-\u003e401, Bearer/1191-\u003e401, Negotiate/1076-\u003e401, Bearer/1445-\u003e401, Bearer/873-\u003e401, Bearer/2725-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "4.1.1",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "authz",
+                                          "key":  "data_admin_denied",
+                                          "value":  "dataAdminSid=\u003crandom foreign SID\u003e /admin/ping -\u003e 403 via Negotiate"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "concurrent",
+                                          "value":  "5 parallel handshakes, all 200"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_Negotiate",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "split_connection_NTLM",
+                                          "value":  "second leg on new connection -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "challenge",
+                                          "value":  "/whoami -\u003e 401 [Negotiate, NTLM]"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "session",
+                                          "key":  "after_handshake",
+                                          "value":  "Set-Cookie=[]; no session cookie issued"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_Negotiate",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "replay_NTLM",
+                                          "value":  "legs=2 replay -\u003e 401"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "garbage_tokens",
+                                          "value":  "[Bearer/40-\u003e401, Basic/1783-\u003e401, Basic/282-\u003e401, negotiate/460-\u003e401, NTLM/44-\u003e401, NTLM/1245-\u003e401, Basic/31-\u003e401, NTLM/37-\u003e401, Bearer/23-\u003e401, Bearer/1191-\u003e401, Negotiate/1076-\u003e401, Bearer/1445-\u003e401, Bearer/873-\u003e401, Bearer/2725-\u003e401]"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_Negotiate",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      },
+                                      {
+                                          "seed":  425360207,
+                                          "springBoot":  "3.5.16",
+                                          "area":  "auth",
+                                          "key":  "handshake_NTLM",
+                                          "value":  "status=200 legs=2 mechanism=NTLM"
+                                      }
+                                  ]
+                 }
+             ]
+}

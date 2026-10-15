@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Spike S1 (partial): Waffle Negotiate/NTLM authentication with Spring Security (plan §2.3, Phase 1).
+  Throwaway code; never merged to main.
+
+  Two Spring lines are tested with the same code:
+    -Pboot4 (default): Spring Boot 4.1.x, Spring Security 7, waffle-spring-security7
+    -Pboot3          : Spring Boot 3.5.x, Spring Security 6, waffle-spring-security6
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>pgweb.spike</groupId>
+  <artifactId>s1-waffle</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <waffle.version>3.7.0</waffle.version>
+    <!-- Overridden by Invoke-S1Spike.ps1 for each randomised run. -->
+    <s1.seed>0</s1.seed>
+  </properties>
+
+  <profiles>
+    <profile>
+      <id>boot4</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <spring-boot.version>4.1.1</spring-boot.version>
+        <waffle.spring.artifact>waffle-spring-security7</waffle.spring.artifact>
+      </properties>
+    </profile>
+    <profile>
+      <id>boot3</id>
+      <properties>
+        <spring-boot.version>3.5.16</spring-boot.version>
+        <waffle.spring.artifact>waffle-spring-security6</waffle.spring.artifact>
+      </properties>
+    </profile>
+  </profiles>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.waffle</groupId>
+      <artifactId>${waffle.spring.artifact}</artifactId>
+      <version>${waffle.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Declared so that dependency:go-offline captures it; Surefire otherwise resolves it at test time. -->
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.16.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.6.0</version>
+        <configuration>
+          <systemPropertyVariables>
+            <s1.seed>${s1.seed}</s1.seed>
+            <junit.jupiter.testclass.order.default>org.junit.jupiter.api.ClassOrderer$Random</junit.jupiter.testclass.order.default>
+            <junit.jupiter.testmethod.order.default>org.junit.jupiter.api.MethodOrderer$Random</junit.jupiter.testmethod.order.default>
+            <junit.jupiter.execution.order.random.seed>${s1.seed}</junit.jupiter.execution.order.random.seed>
+          </systemPropertyVariables>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
