@@ -1,0 +1,66 @@
+﻿{
+    "tag":  "phase-2",
+    "overall":  "FAIL",
+    "started":  "2026-10-15T22:02:43.2866764+08:00",
+    "finished":  "2026-10-15T22:11:45.9235907+08:00",
+    "commit":  "e2160b8",
+    "bundleMB":  2186,
+    "steps":  [
+                  {
+                      "step":  "bundle",
+                      "ok":  true,
+                      "seconds":  95.8
+                  },
+                  {
+                      "step":  "verify-manifest",
+                      "ok":  true,
+                      "seconds":  14.7
+                  },
+                  {
+                      "step":  "clone",
+                      "ok":  true,
+                      "seconds":  2
+                  },
+                  {
+                      "step":  "import",
+                      "ok":  true,
+                      "seconds":  233
+                  },
+                  {
+                      "step":  "job:deps-verify",
+                      "ok":  true,
+                      "seconds":  181.4
+                  },
+                  {
+                      "step":  "job:toolchain-check",
+                      "ok":  true,
+                      "seconds":  0.7
+                  },
+                  {
+                      "step":  "job:lint-frontend",
+                      "ok":  true,
+                      "seconds":  1.5
+                  },
+                  {
+                      "step":  "job:lint-backend",
+                      "ok":  true,
+                      "seconds":  1.9
+                  },
+                  {
+                      "step":  "job:test-frontend",
+                      "ok":  true,
+                      "seconds":  1.7
+                  },
+                  {
+                      "step":  "job:test-backend",
+                      "ok":  true,
+                      "seconds":  4.3
+                  },
+                  {
+                      "step":  "job:package",
+                      "ok":  false,
+                      "seconds":  4.5
+                  }
+              ],
+    "note":  "Same machine, tools forced offline; not a clean network-disabled VM (S4 proper remains open)."
+}

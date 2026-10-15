@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Air-gap Maven settings (ADR-0008). Used by every CI job: Maven is offline, and even if -o were dropped, every
-  repository is mirrored to a closed local port, so no artifact can be fetched from the network.
+  Air-gap Maven settings (ADR-0008). Used by every CI job. Every repository is mirrored to a closed local port, so no
+  artifact can be fetched from the network. CI jobs also pass -o. The one exception is the SBOM step
+  (cyclonedx:makeBom declares "requires online" and silently skips under -o, finding P2-5): it runs without -o, and
+  the blocked mirror still prevents any download.
   The mirror id is "central" so artifacts recorded as downloaded from central (_remote.repositories) stay usable.
   The local repository is given on the command line (MAVEN_ARGS from scripts\toolchain\Use-Toolchain.ps1, or the
   runner's bundle location).
@@ -9,7 +11,6 @@
 <settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
-  <offline>true</offline>
   <interactiveMode>false</interactiveMode>
   <mirrors>
     <mirror>

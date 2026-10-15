@@ -1,40 +1,55 @@
-# PGAdmin — Browser-based PostgreSQL query interface
+# PGAdmin (pgweb): browser-based PostgreSQL query interface
 
-An internal web application, similar to DBeaver for everyday workflows, that lets Windows-authenticated users run SQL against authorised PostgreSQL databases with server-side authorisation, limits and auditing. Built for **air-gapped Windows Server and Windows 11** environments.
+An internal web application, similar to DBeaver for everyday workflows, that lets Windows-domain users run SQL against the PostgreSQL databases they are allowed to use. Authorisation, limits and auditing are enforced on the server. Built for **air-gapped Windows Server and Windows 11**.
 
-> **Status:** planning and Phase 0/1 foundations. The application itself is not built yet. See [Project status](#project-status).
+- **Sign-in:** Windows integrated authentication (Waffle; Kerberos in production).
+- **Database access:** as the user's own PostgreSQL role, through Kerberos constrained delegation. **No database passwords anywhere** (ADR-0002).
+- **Internal PostgreSQL (5433):** members of the DataAdmin AD group only.
+- **External PostgreSQL (5432):** every user, limited to databases they own or that are shared with them (ADR-0003).
+
+> **Status:** see [Project status](#project-status).
 
 ## Documentation
 
 | Topic | Document |
 |---|---|
-| Implementation plan (architecture, phases, decision register) | [`docs/implementation-plan-v2.md`](docs/implementation-plan-v2.md) |
-| Architecture decisions | [`docs/adr/`](docs/adr/README.md) |
+| Implementation plan (architecture, phases, decision register) | [`docs/implementation-plan-v2.md`](docs/implementation-plan-v2.md). Where it differs from an Accepted ADR, the ADR wins. |
+| Architecture decisions (all Accepted 2026-10-15) | [`docs/adr/`](docs/adr/README.md) |
 | Decision log (stakeholder instructions) | [`docs/decision-log.md`](docs/decision-log.md) |
-| Phase 1 spike status and what is still needed | [`docs/phase-1-status.md`](docs/phase-1-status.md) |
-| Requirements (MVP vs deferred) | [`docs/requirements.md`](docs/requirements.md) |
-| Threat model | [`docs/threat-model.md`](docs/threat-model.md) |
-| SQL audit policy | [`docs/audit-policy.md`](docs/audit-policy.md) |
-| Environment inventory | [`docs/environment-inventory.md`](docs/environment-inventory.md) |
-| Compatibility matrix | [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md) |
+| What still has to be proven in the real environment | [`docs/target-environment-checklist.md`](docs/target-environment-checklist.md) |
+| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md) |
+| Requirements, threat model, audit policy | [`docs/requirements.md`](docs/requirements.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/audit-policy.md`](docs/audit-policy.md) |
+| Environment inventory, compatibility matrix | [`docs/environment-inventory.md`](docs/environment-inventory.md), [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md) |
+| Offline dependency intake | [`offline/README.md`](offline/README.md) |
+| How to contribute (branches, merge rules, test loop) | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Installed software (generated) | [`software-list.md`](software-list.md), [`configuration.properties`](configuration.properties) |
 
 ## Repository layout
 
 ```
-docs/                 plan, ADRs, requirements, threat model, audit policy, inventory
+backend/              Java 21 service: plain Jakarta Servlet + Waffle on embedded Tomcat 11, pgJDBC (Maven)
+frontend/             React single-page app (Vite, Vitest), built into the backend JAR
+offline/              air-gap intake: Maven settings, dependency and release bundles, SHA-256 manifests
+scripts/ci/           CI job logic shared by .gitlab-ci.yml and local runs; pipeline gate tests
+scripts/test/         randomised 5x test loop (delivery workflow)
+scripts/sonar/        project-local SonarQube start/stop and quality-gate setup
 scripts/toolchain/    install / uninstall / activate project-local software, plus tests
 toolchain/            software manifest (software.json) and pinned versions (software.lock.json)
-spikes/               feasibility spikes with their evidence reports
-tools/                project-local software (NOT committed; created by the install script)
-configuration.properties   generated: where the project's software is installed
-software-list.md           generated: what is installed, versions, purpose, checksums
+docs/                 plan, ADRs, requirements, threat model, audit policy, evidence/ (test-loop reports)
+spikes/               feasibility spikes with their evidence reports (never built into the app)
+tools/                project-local software and caches (NOT committed; created by the install script)
+.gitlab-ci.yml        GitLab pipeline (Windows runner, PowerShell, offline)
 ```
 
 ## Setting up a development machine (Windows 11 or Windows Server)
 
-Everything the project installs goes into `tools\` inside this folder. It currently installs Temurin JDK 21, Maven 3.9, Zig 0.17 (a C compiler, used only to build the SQL parser DLL) and the libpg_query 18.1.0 source. Dependency caches also live there: `tools\m2` (Maven) and `tools
-pm-cache` (npm). The exact list is in `software-list.md`. Nothing is installed system-wide, and nothing changes the registry or the permanent PATH.
+Everything the project installs goes into `tools\` inside this folder:
+- Temurin JDK 21 and Maven 3.9;
+- Zig 0.17, a C compiler used only to build the SQL parser DLL;
+- the libpg_query 18.1.0 source;
+- SonarQube Community Build 26.9.
+
+The dependency caches also live there: `tools\m2` (Maven), `tools\npm-cache` (npm) and `tools\sonar-user-home` (SonarScanner). Nothing is installed system-wide, and nothing changes the registry or the permanent PATH. The exact list is in `software-list.md`.
 
 ### Prerequisites
 
@@ -43,7 +58,9 @@ pm-cache` (npm). The exact list is in `software-list.md`. Nothing is installed s
 | Windows 11 or Windows Server 2016+ (x64) | |
 | Windows PowerShell 5.1 | Built in |
 | Git for Windows | To clone the repository |
-| PostgreSQL (EDB installer) | Same major version as the production servers. Only its `bin` folder is needed for tests; the running service is never modified. |
+| Node.js 24 LTS | Build and test only; **not** needed on production servers |
+| PostgreSQL 18 (EDB installer) | Same major version as the production servers. Only its `bin` folder is used, for throwaway test clusters; the installed service is never touched. |
+| Microsoft Edge | End-to-end tests (Playwright `msedge` channel; no browser download) |
 
 ### 1. Install the project toolchain
 
@@ -53,18 +70,9 @@ pm-cache` (npm). The exact list is in `software-list.md`. Nothing is installed s
 powershell -ExecutionPolicy Bypass -File scripts\toolchain\Install-Toolchain.ps1
 ```
 
-This downloads the pinned JDK and Maven (versions in `toolchain\software.lock.json`), verifies their checksums, extracts them into `tools\`, checks that they run, and regenerates `configuration.properties` and `software-list.md`.
+This downloads the pinned archives (versions and checksums in `toolchain\software.lock.json`), verifies them, extracts them into `tools\`, checks that they run, and regenerates `configuration.properties` and `software-list.md`.
 
-**Air-gapped machine:**
-
-1. On a connected machine, run the install above once.
-2. Copy the repository **and** the `tools\downloads\`, `tools\m2\` and `tools
-pm-cache\` folders to the air-gapped machine (through your approved transfer process).
-3. Run:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\toolchain\Install-Toolchain.ps1 -Offline
-   ```
-   Offline mode never uses the network. It fails clearly if an archive is missing or its checksum doesn't match the lock file.
+**Air-gapped machine:** follow [`offline/README.md`](offline/README.md). In short, build a dependency bundle on a connected machine with `offline\New-DependencyBundle.ps1`, transfer it, then run `offline\Import-DependencyBundle.ps1 -Bundle <path>`. The import verifies every file's SHA-256 and installs the toolchain with `-Offline`.
 
 ### 2. Use the tools in a PowerShell session
 
@@ -74,41 +82,68 @@ java -version
 mvn -v
 ```
 
-This sets `JAVA_HOME`, `MAVEN_HOME`, `MAVEN_ARGS` (Maven repository inside `tools\m2`), `npm_config_cache` (`tools
-pm-cache`), `PLAYWRIGHT_BROWSERS_PATH`/`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` and `PATH` **for the current session only**.
+This sets the following **for the current session only**:
+- `JAVA_HOME` and `MAVEN_HOME`;
+- `MAVEN_ARGS`, which points the Maven repository at `tools\m2`;
+- `npm_config_cache` (`tools\npm-cache`) and `SONAR_USER_HOME` (`tools\sonar-user-home`);
+- the Playwright variables;
+- `PATH`.
 
-### 3. Remove what the project installed
+### 3. Build and test
 
 ```powershell
-# One package
-powershell -ExecutionPolicy Bypass -File scripts\toolchain\Uninstall-Toolchain.ps1 -Name maven
-# Everything, including downloads and the Maven repository (deletes tools\)
-powershell -ExecutionPolicy Bypass -File scripts\toolchain\Uninstall-Toolchain.ps1 -All -Purge
+# Frontend (first time on a connected machine: npm ci; afterwards: npm ci --offline)
+cd frontend; npm ci --offline; npm run lint; npm run test:coverage; npm run build; cd ..
+# Backend: Enforcer, -Werror compile, unit + integration tests, JaCoCo thresholds
+cd backend; mvn -B -o -s ..\offline\maven-settings.xml verify; cd ..
+# The whole pipeline, as GitLab runs it (all jobs offline)
+powershell -ExecutionPolicy Bypass -File scripts\ci\Invoke-LocalPipeline.ps1 -Package
+```
+
+The package job writes `release\pgweb-<version>.zip`. It contains the backend JAR with the SPA inside, the runtime libraries, CycloneDX SBOMs and `SHA256SUMS.txt`.
+
+### 4. SonarQube (local)
+
+```powershell
+. .\scripts\sonar\Start-LocalSonar.ps1        # starts tools\sonarqube-*, applies the "pgweb gate", sets SONAR_TOKEN
+powershell -ExecutionPolicy Bypass -File scripts\ci\Invoke-LocalPipeline.ps1 -Sonar
+powershell -ExecutionPolicy Bypass -File scripts\sonar\Stop-LocalSonar.ps1
+```
+
+- On first start, the admin password is replaced with a random one. It is stored, with the analysis token, in `tools\sonar-local.json`, which is never committed.
+- The dashboard is at http://localhost:9000.
+- In CI, the organisation's SonarQube is used instead, through the `SONAR_HOST_URL` and `SONAR_TOKEN` variables.
+
+### 5. Remove what the project installed
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\toolchain\Uninstall-Toolchain.ps1 -Name sonarqube   # one package
+powershell -ExecutionPolicy Bypass -File scripts\toolchain\Uninstall-Toolchain.ps1 -All -Purge       # everything (deletes tools\)
 ```
 
 Uninstall only ever deletes inside `tools\`, and refuses any recorded path that points elsewhere.
 
-### Backend, frontend and database setup
+### Running the application, database and Windows service
 
-These sections will be added as each phase is completed: the Spring Boot backend, the React frontend, the audit database, and Windows service deployment.
+These sections are added as each phase is completed: the backend server and its configuration (Phase 3), sign-in (Phase 4), database connections (Phase 6), and Windows service deployment (Phase 12).
 
 ## Testing
 
-Every component is tested with randomised scenarios and must pass **at least 5 consecutive runs**. Any failure resets the count to 0. Reports record the seeds, so any run can be replayed.
+Every phase's suites must pass **at least 5 consecutive runs**, each with fresh random seeds. Any failure, and any code change, resets the count to 0. Reports record the seeds, so any run can be replayed.
 
 | Suite | Command | Evidence |
 |---|---|---|
+| Application test loop (frontend lint + Vitest; backend unit + integration + coverage) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-TestLoop.ps1 -Tag <phase>` | `docs/evidence/<phase>/loop-*.json` |
+| Pipeline gates fail when faults are injected | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-PipelineGates.ps1` | `docs/evidence/phase-2/gates-*.json` |
+| Offline intake, end to end | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-OfflineIntake.ps1` | `docs/evidence/phase-2/intake-*.json` |
 | Toolchain scripts | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\toolchain\tests\Test-Toolchain.ps1` | `scripts/toolchain/tests/results/` |
-| Spike S5: throwaway PostgreSQL clusters, concurrency and cancellation | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s5-ephemeral-pg\Invoke-S5Spike.ps1` | [`spikes/s5-ephemeral-pg/REPORT.md`](spikes/s5-ephemeral-pg/REPORT.md) |
-| Spike S1 (partial): Waffle Negotiate/NTLM with Spring Boot 4.1 and 3.5 | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s1-waffle\Invoke-S1Spike.ps1` | [`spikes/s1-waffle/REPORT.md`](spikes/s1-waffle/REPORT.md) |
-| Spike S6 (partial) + S4 npm: Edge via Playwright with Windows logon; offline npm reinstall | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s6-e2e\Invoke-S6Spike.ps1` (first time on a connected machine: add `-Prepare`) | [`spikes/s6-e2e/REPORT.md`](spikes/s6-e2e/REPORT.md) |
-| Spike S2: libpg_query parser built offline with Zig, checked against the server | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s2-parser\Invoke-S2Spike.ps1` | [`spikes/s2-parser/REPORT.md`](spikes/s2-parser/REPORT.md) |
-| Spike S3: driver protocol (pgJDBC vs Vert.x), offline Maven | `powershell -NoProfile -ExecutionPolicy Bypass -File spikes\s3-driver\Invoke-S3Spike.ps1` | [`spikes/s3-driver/REPORT.md`](spikes/s3-driver/REPORT.md) |
+| Spikes S1–S7 | `spikes\<spike>\Invoke-*.ps1` | `spikes/<spike>/REPORT.md` |
 
 ## Project status
 
 | Phase | State |
 |---|---|
-| 0: Discovery and decisions | Drafts complete. Awaiting stakeholder decisions and environment facts ([`docs/phase-0-status.md`](docs/phase-0-status.md)). |
-| 1: Feasibility spikes | Toolchain automation done. S2, S3 and S5 passed on the workstation with PostgreSQL 18; target PostgreSQL versions, the runner and Windows Server are still pending. S1 partly passed: Waffle works with Spring Boot 4.1/Security 7 and 3.5/Security 6 using NTLM with a local account; Kerberos and domain groups need a domain-joined host. Driver decision drafted (ADR-0009, Proposed). New risk T31 (native parser in the backend's process) needs a decision. S6 partly passed: Edge logs on automatically through the allowlist, with no browser download. The npm offline reinstall works; S4 proper needs a clean, air-gapped VM. |
-| 2–12 | Not started |
+| 0: Discovery and decisions | Done. All ADRs Accepted 2026-10-15 ([`docs/decision-log.md`](docs/decision-log.md)). Environment facts still to be collected are in [`docs/target-environment-checklist.md`](docs/target-environment-checklist.md). |
+| 1: Feasibility spikes | Done on the workstation (S1–S3, S5–S7); Kerberos, the domain, the runner and a clean VM remain target-environment items ([`docs/phase-1-status.md`](docs/phase-1-status.md)). |
+| 2: Offline baseline, scaffolding, CI, SonarQube | See [`docs/phase-2-status.md`](docs/phase-2-status.md) |
+| 3–12 | Not started |

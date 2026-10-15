@@ -37,10 +37,17 @@ function Run([string]$Name, [string]$CommandLine, [string]$WorkDir) {
     Write-Host "  ok  package/$Name"
 }
 
+$beSbom = Join-Path $backend 'target\pgweb-backend-sbom.json'
+$feSbom = Join-Path $frontend 'dist-sbom\pgweb-frontend-sbom.json'
+foreach ($old in $beSbom, $feSbom) { if (Test-Path $old) { Remove-Item -Force $old } }   # never ship a stale SBOM
+
 Run 'spa-build' 'npm run build' $frontend
 Run 'spa-sbom' 'npm run sbom' $frontend
 $settings = Join-Path $repoRoot 'offline\maven-settings.xml'
 Run 'jar' "mvn -B -o -q -s `"$settings`" -Pwith-spa -DskipTests package" $backend
+# makeBom skips itself under -o ("requires online"); without -o the blocked mirror still prevents any download.
+Run 'jar-sbom' "mvn -B -q -s `"$settings`" org.cyclonedx:cyclonedx-maven-plugin:makeBom" $backend
+foreach ($s in $beSbom, $feSbom) { if (-not (Test-Path $s)) { throw "SBOM was not generated: $s" } }
 
 [xml]$pom = Get-Content -Raw (Join-Path $backend 'pom.xml')
 $version = $pom.project.version
