@@ -11,12 +11,15 @@
       backend   mvn -o verify: Enforcer, -Werror compile, unit (Surefire) + integration (Failsafe, throwaway
                 PostgreSQL clusters) tests in random order, JaCoCo thresholds (-Dpgweb.test.seed)
     A run passes only if every suite passes and no throwaway cluster directory (%TEMP%\pgweb-*) is left behind.
+    -ItFilter runs only the matching integration tests (no unit tests, no coverage check): the nightly concurrency
+    repetition (plan section 8.1, Phase 9: zero flaky failures across 20 runs).
     The report (seeds, counts, failures, durations) goes to docs\evidence\<Tag>\loop-<timestamp>.json, so any run can
     be replayed with -Seed.
 
 .EXAMPLE
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-TestLoop.ps1 -Tag phase-2
     powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-TestLoop.ps1 -Suite backend -Seed 42 -RequiredConsecutivePasses 1
+    powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-TestLoop.ps1 -Suite backend -ItFilter 'ConcurrencyIT,ProcessKillIT' -RequiredConsecutivePasses 20 -MaxRuns 20 -Tag nightly
 #>
 [CmdletBinding()]
 param(
@@ -25,6 +28,7 @@ param(
     [int]$MaxRuns = 15,
     [int]$Seed = 0,
     [string]$Tag = 'adhoc',
+    [string]$ItFilter,
     [switch]$ContinueOnFailure
 )
 
@@ -106,7 +110,8 @@ for ($i = 1; $i -le $MaxRuns -and $consecutive -lt $RequiredConsecutivePasses; $
             if (Test-Path $p) { Remove-Item -Recurse -Force $p }
         }
         $beLog = Join-Path $logRoot "run-$i-backend.log"
-        $beRc = Invoke-LoggedCommand -CommandLine "mvn -B -o -s `"$settings`" verify -Dpgweb.test.seed=$runSeed" -Log $beLog -WorkDir $backend
+        $filter = if ($ItFilter) { " -Dit.test=$ItFilter -Dtest=none -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true" } else { '' }
+        $beRc = Invoke-LoggedCommand -CommandLine "mvn -B -o -s `"$settings`" verify -Dpgweb.test.seed=$runSeed$filter" -Log $beLog -WorkDir $backend
         $unit = Read-JUnit (Join-Path $backend 'target\surefire-reports') 'backend-unit'
         $it = Read-JUnit (Join-Path $backend 'target\failsafe-reports') 'backend-it'
         $cov = $null

@@ -124,6 +124,39 @@ test('a long statement shows a timer and can be cancelled', async ({ page }) => 
   expect(await problems()).toEqual([]);
 });
 
+test('manual transactions roll back and commit; destructive statements ask first', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const results = page.getByRole('region', { name: 'Results' });
+  const id = 100000 + Math.floor(rng('tx')() * 100000);
+
+  await page.getByRole('checkbox', { name: 'Manual commit' }).check();
+  await page.getByRole('combobox', { name: 'Isolation' }).selectOption('repeatable read');
+  await run(page, editor, `INSERT INTO items VALUES (${id}, 'pending')`);
+  await expect(page.getByLabel('Transaction')).toContainText('Transaction open');
+  await expect(page.getByLabel('Transaction')).toContainText('repeatable read');
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect(page.getByLabel('Transaction')).toContainText('No transaction');
+  await run(page, editor, `SELECT count(*) AS n FROM items WHERE id = ${id}`);
+  await expect(results.locator('td').nth(1)).toHaveText('0');
+  // That SELECT began a new transaction (manual mode); commit it, then insert and commit.
+  await page.getByRole('button', { name: 'Commit' }).click();
+  await run(page, editor, `INSERT INTO items VALUES (${id}, 'kept')`);
+  await page.getByRole('button', { name: 'Commit' }).click();
+  await expect(page.getByLabel('Transaction')).toContainText('No transaction');
+  await page.getByRole('checkbox', { name: 'Manual commit' }).uncheck();
+
+  await run(page, editor, `DELETE FROM items WHERE id = ${id}`); // has WHERE: no question
+  await expect(results.getByRole('status')).toHaveText('Completed. 1 row affected.');
+  await run(page, editor, 'DELETE FROM items');
+  const dialog = page.getByRole('dialog', { name: 'Run this statement?' });
+  await expect(dialog).toContainText('without a WHERE clause');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await run(page, editor, 'SELECT count(*) FROM items');
+  await expect(results.locator('td').nth(1)).toHaveText('2500');
+  expect(await problems()).toEqual([]);
+});
+
 test('the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling', async ({ page }) => {
   for (const size of [{ width: 1366, height: 768 }, { width: 1920, height: 1080 }]) {
     await page.setViewportSize(size);

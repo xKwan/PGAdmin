@@ -145,11 +145,17 @@ deploy:test:
   script:
     - .\deploy\windows\Install-Pgweb.ps1 -Bundle (Get-ChildItem release\pgweb-*.zip | Select-Object -First 1).FullName -Environment test
 
-# Nightly: concurrency suite x20 to catch flaky tests (plan 7.5); enabled from Phase 9.
+# Nightly (scheduled pipelines): the concurrency suite 20 times in a row with new seeds, to catch flaky
+# behaviour (plan 7.5, section 8.1, Phase 9).
 nightly:concurrency:
   extends: .job
   stage: integration
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
   script:
-    - .\scripts\test\Invoke-TestLoop.ps1 -Suite backend -RequiredConsecutivePasses 20 -Tag nightly
+    - .\scripts\test\Invoke-TestLoop.ps1 -Suite backend -ItFilter 'ConcurrencyIT,ProcessKillIT' -RequiredConsecutivePasses 20 -MaxRuns 20 -Tag nightly -Seed $CI_PIPELINE_IID
+  after_script:
+    - Get-ChildItem $env:TEMP -Directory -Filter 'pgweb-*' -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+  artifacts:
+    when: always
+    paths: [ci-logs/, docs/evidence/nightly/]

@@ -53,11 +53,15 @@ public record Config(
     /**
      * A server-side PostgreSQL target (ADR-0003: never chosen by the client).
      *
-     * @param requiresDataAdmin true for the internal instance (5433)
+     * @param requiresDataAdmin  true for the internal instance (5433)
+     * @param confirmDestructive ask before DDL, DCL, DROP, TRUNCATE, DML without WHERE and DO blocks (a UX safeguard,
+     *                           not a security control: privileges decide what a role may do)
+     * @param bannerText         optional banner shown in the workspace (for example "PRODUCTION")
+     * @param bannerTone         info, warn or danger
      */
     public record DbProfile(String name, String displayName, String host, int port, String sslMode,
                             Optional<Path> sslRootCert, String maintenanceDb, boolean requiresDataAdmin,
-                            Duration statementTimeout) {
+                            Duration statementTimeout, boolean confirmDestructive, Optional<String> bannerText, String bannerTone) {
     }
 
     /** Execution and session limits (ADR-0006). All are enforced on the server. */

@@ -129,3 +129,16 @@ h1 { font-size: 1.4rem; margin: 0 0 0.75rem; }
 .null-marker { color: var(--muted); font-style: italic; font-size: 0.85em; border: 1px dashed var(--line); border-radius: 3px; padding: 0 0.2rem; }
 .cell-cut { color: var(--warn); }
 .pager { display: flex; align-items: center; gap: 0.75rem; padding: 0.35rem 0.5rem; border-top: 1px solid var(--line); }
+
+/* Phase 9: transactions */
+.tx-bar { display: flex; align-items: center; gap: 0.75rem; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tx-field { display: inline-flex; align-items: center; gap: 0.35rem; }
+.tx-field select { font: inherit; }
+.lifetime-warning { margin: 0; padding: 0.4rem 0.6rem; background: #fffaf0; color: var(--warn); border-bottom: 1px solid var(--line); }
+.result-notice { margin: 0.5rem 0.75rem; padding: 0.4rem 0.6rem; border-left: 4px solid var(--warn); background: #fffaf0; }
+.result-error-explain { font-weight: 600; }
+.result-snapshot { margin: 0.25rem 0.75rem; }
+.profile-banner { padding: 0.25rem 0.75rem; font-weight: 700; text-align: center; letter-spacing: 0.05em; color: #fff; }
+.profile-banner-info { background: var(--info); }
+.profile-banner-warn { background: var(--warn); }
+.profile-banner-danger { background: var(--danger); }

@@ -48,8 +48,8 @@
 | FN-05 | Execute selection or current statement; cancel; running timer | P8 | RTL; E2E | Tested (P8): Ctrl+Enter runs the selection or the statement at the cursor; running timer; Cancel; RTL and E2E |
 | FN-06 | Bounded, locally sortable, paginated results with NULL and type-aware display | P8 | RTL | Tested (P8): virtualised grid, type names, NULL vs '' vs 'NULL', truncation markers, local sort (labelled), pages of 200; RTL and E2E |
 | FN-07 | Affected-row counts and command completion display | P8 | RTL; integration | Tested (P8): affected-row counts and "Completed."; RTL and E2E |
-| FN-08 | Auto-commit and manual transactions; isolation-level choice; transaction state shown | P9 | Integration; RTL | Planned |
-| FN-09 | Lock waits, deadlocks, serialization failures and aborted transactions reported clearly | P9 | Concurrency suite | Planned |
+| FN-08 | Auto-commit and manual transactions; isolation-level choice; transaction state shown | P9 | Integration; RTL | Tested (P9): auto-commit and manual mode, Begin with isolation level and read-only (a convenience), Commit, Rollback; state as PostgreSQL reports it; API, RTL and E2E |
+| FN-09 | Lock waits, deadlocks, serialization failures and aborted transactions reported clearly | P9 | Concurrency suite | Tested (P9): lock waits shown; 55P03, 40P01, 40001, 25P02, 25001, 23xxx explained; real-PostgreSQL concurrency suite (20 consecutive runs) |
 | FN-10 | Results labelled as snapshots ("Retrieved at"); refresh re-runs the statement | P8 | RTL | Tested (P8): "Retrieved at" and Refresh (runs the same text again); RTL |
 | FN-11 | Metadata browser for accessible databases, schemas and objects | P10 | Integration; RTL | Planned |
 | FN-12 | Usable at 1366×768 and 1920×1080 | P5, P11 | Playwright layout check | Tested (P8, E2E): no page-level horizontal scrolling at 1366×768 and 1920×1080 in the workspace; the full layout check is Phase 11 |

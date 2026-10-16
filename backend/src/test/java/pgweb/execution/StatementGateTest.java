@@ -97,6 +97,44 @@ class StatementGateTest {
         assertThat(gate.check("WITH d AS (DELETE FROM t RETURNING *) SELECT * FROM d", true).statementClass()).isEqualTo("select");
     }
 
+    static List<String> reasons(String sql) {
+        return StatementGate.destructiveReasons(gate.check(sql, true).statement());
+    }
+
+    @Test
+    void destructiveStatementsAreRecognisedFromTheParseTree() {
+        assertThat(reasons("SELECT 1")).isEmpty();
+        assertThat(reasons("INSERT INTO t VALUES (1)")).isEmpty();
+        assertThat(reasons("UPDATE t SET a = 1 WHERE b = 2")).isEmpty();
+        assertThat(reasons("DELETE FROM t WHERE id = 1")).isEmpty();
+        assertThat(reasons("UPDATE t SET a = 1")).containsExactly("no_where");
+        assertThat(reasons("DELETE FROM t")).containsExactly("no_where");
+        assertThat(reasons("WITH d AS (DELETE FROM t RETURNING *) SELECT * FROM d")).containsExactly("no_where");
+        assertThat(reasons("WITH d AS (UPDATE t SET a = 1 WHERE a = 2 RETURNING *) SELECT * FROM d")).isEmpty();
+        assertThat(reasons("DROP TABLE t")).containsExactly("drop");
+        assertThat(reasons("DROP SCHEMA s CASCADE")).containsExactly("drop");
+        assertThat(reasons("TRUNCATE t")).containsExactly("truncate");
+        assertThat(reasons("GRANT SELECT ON t TO r")).containsExactly("privileges");
+        assertThat(reasons("REVOKE r FROM u")).containsExactly("privileges");
+        assertThat(reasons("CREATE TABLE t2 (a int)")).containsExactly("ddl");
+        assertThat(reasons("ALTER TABLE t ADD COLUMN b int")).containsExactly("ddl");
+        assertThat(reasons("DO $$ BEGIN DELETE FROM t; END $$")).containsExactly("procedural");
+        assertThat(StatementGate.isCommit(gate.check("COMMIT", true).statement())).isTrue();
+        assertThat(StatementGate.isCommit(gate.check("END", true).statement())).isTrue();
+        assertThat(StatementGate.isCommit(gate.check("ROLLBACK", true).statement())).isFalse();
+        assertThat(StatementGate.isCommit(gate.check("SELECT 1", true).statement())).isFalse();
+    }
+
+    @Test
+    void isolationLevelsComeFromAnAllowList() {
+        assertThat(ExecutionEngine.isolationClause(null)).isEmpty();
+        assertThat(ExecutionEngine.isolationClause(" ")).isEmpty();
+        assertThat(ExecutionEngine.isolationClause("Serializable")).isEqualTo(" ISOLATION LEVEL SERIALIZABLE");
+        assertThat(ExecutionEngine.isolationClause("repeatable read")).isEqualTo(" ISOLATION LEVEL REPEATABLE READ");
+        assertThat(ExecutionEngine.isolationClause("read committed")).isEqualTo(" ISOLATION LEVEL READ COMMITTED");
+        assertThatThrownBy(() -> ExecutionEngine.isolationClause("read uncommitted")).hasMessageContaining("isolation must be");
+    }
+
     @Test
     void auditTextHasNoLiteralsOrComments() {
         String masked = gate.auditText("SELECT 'secret', 42, 4.2, E'\\x41', B'101', X'ff', $$dollar$$ /* c secret */ -- tail secret\n FROM t");

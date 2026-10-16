@@ -1,26 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { closeSession, heartbeat } from '../../api/dbsessions.js';
-import { StatusBadge } from '../../components/common/index.jsx';
+import { ConfirmDialog, StatusBadge } from '../../components/common/index.jsx';
 
 const HEARTBEAT_MS = 30_000;
 
 /**
  * The connected session's status (FN-03): database, role, server version, backend PID, companion state.
  * Sends a heartbeat every 30 s while shown (the server ends abandoned transactions without them) and reports a lost
- * or expired session.
+ * or expired session. `onHeartbeat` receives each heartbeat answer (transaction state, when the server would close
+ * the session). With `transactionOpen`, Disconnect asks first: closing rolls the transaction back.
  */
-export default function SessionBar({ session, onClosed, heartbeatMs = HEARTBEAT_MS }) {
+export default function SessionBar({ session, onClosed, onHeartbeat, transactionOpen = false, heartbeatMs = HEARTBEAT_MS }) {
   const [lost, setLost] = useState(null);
   const [closing, setClosing] = useState(false);
+  const [asking, setAsking] = useState(false);
   const onClosedRef = useRef(onClosed);
+  const onHeartbeatRef = useRef(onHeartbeat);
   useEffect(() => {
     onClosedRef.current = onClosed;
+    onHeartbeatRef.current = onHeartbeat;
   });
 
   useEffect(() => {
     const timer = setInterval(async () => {
       try {
-        await heartbeat(session.id);
+        const hb = await heartbeat(session.id);
+        onHeartbeatRef.current?.(hb);
       } catch (e) {
         if (e.status === 404 || e.status === 410) {
           setLost(e.status === 410 ? e.message : 'The database session has ended.');
@@ -32,6 +37,7 @@ export default function SessionBar({ session, onClosed, heartbeatMs = HEARTBEAT_
   }, [session.id, heartbeatMs]);
 
   const disconnect = async () => {
+    setAsking(false);
     setClosing(true);
     try {
       await closeSession(session.id);
@@ -64,9 +70,12 @@ export default function SessionBar({ session, onClosed, heartbeatMs = HEARTBEAT_
           Limited
         </StatusBadge>
       )}
-      <button type="button" className="btn" onClick={disconnect} disabled={closing}>
+      <button type="button" className="btn" onClick={transactionOpen ? () => setAsking(true) : disconnect} disabled={closing}>
         {closing ? 'Disconnecting…' : 'Disconnect'}
       </button>
+      <ConfirmDialog open={asking} title="Disconnect with an open transaction?" confirmLabel="Disconnect and roll back" danger onConfirm={disconnect} onCancel={() => setAsking(false)}>
+        Disconnecting rolls back everything in the open transaction that has not been committed.
+      </ConfirmDialog>
     </div>
   );
 }

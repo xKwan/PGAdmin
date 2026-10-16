@@ -40,6 +40,8 @@ public final class DbSessionManager implements AutoCloseable {
     private static final String EV_DISCONNECT = "db_disconnect";
     private static final String OUTCOME_FAILURE = "failure";
     private static final String REASON = "reason";
+    /** How long before a non-idle-transaction close the heartbeat starts warning. */
+    private static final Duration WARN_BEFORE = Duration.ofMinutes(2);
     private static final String CONNECT_FAILED = "Could not connect to the database. Check that you have access to it, or ask the administrator.";
 
     private final Config config;
@@ -204,6 +206,16 @@ public final class DbSessionManager implements AutoCloseable {
             throw new ApiException(410, "SESSION_LOST", "The database session has ended (" + s.closeReason() + ").");
         }
         profileFor(user, s.profile()); // internal sessions: DataAdmin is checked again on every use
+        return s;
+    }
+
+    /**
+     * Like {@link #get}, and counts as activity for the idle and idle-in-transaction rules. Only running SQL is
+     * activity: viewing a session, heartbeats and activity polls are not, or an open page would keep an idle
+     * transaction (and its locks) alive forever (finding P9-1).
+     */
+    public DbSession use(UserContext user, String id) {
+        DbSession s = get(user, id);
         s.touch(clock.instant());
         return s;
     }
@@ -223,6 +235,45 @@ public final class DbSessionManager implements AutoCloseable {
             throw new ApiException(410, "SESSION_LOST", "The connection to the database was lost.");
         }
         return s;
+    }
+
+    /**
+     * When the reaper will close the session if nothing else happens, why, and whether the user should be warned
+     * now (plan §3.6, §4: idle-in-transaction warning at 8 of 10 minutes; maximum transaction age; idle session).
+     */
+    public Map<String, Object> lifetime(DbSession s) {
+        Instant now = clock.instant();
+        Config.Limits l = config.limits();
+        boolean inTx = !"IDLE".equals(s.transactionState());
+        Instant closesAt;
+        Instant warnAt;
+        String reason;
+        if (inTx) {
+            Instant idleTx = s.lastActivity().plus(l.idleInTransaction());
+            Instant started = s.transactionStartedAt();
+            Instant age = started == null ? null : started.plus(l.maxTransactionAge());
+            if (age != null && age.isBefore(idleTx)) {
+                closesAt = age;
+                reason = "max_transaction_age";
+                warnAt = age.minus(WARN_BEFORE);
+            } else {
+                closesAt = idleTx;
+                reason = "idle_in_transaction";
+                warnAt = s.lastActivity().plus(l.idleInTransactionWarning());
+            }
+        } else {
+            closesAt = s.lastActivity().plus(l.idleSession());
+            reason = "idle";
+            warnAt = closesAt.minus(WARN_BEFORE);
+        }
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("closesAt", closesAt.toString());
+        m.put("closeReason", reason);
+        m.put("warning", !now.isBefore(warnAt));
+        if (s.transactionStartedAt() != null) {
+            m.put("transactionStartedAt", s.transactionStartedAt().toString());
+        }
+        return m;
     }
 
     public void close(UserContext user, String id) {
@@ -294,9 +345,14 @@ public final class DbSessionManager implements AutoCloseable {
                 .target(s.profile(), s.database(), s.role(), s.mainPid(), s.id()).detail(REASON, reason));
     }
 
-    /** The execution engine reports the transaction state it saw after a statement (for the reaper's age rules). */
+    /**
+     * The execution engine reports the transaction state it saw after a statement (for the reaper's age rules). The
+     * end of a statement is activity too: idleness is counted from here.
+     */
     public void transactionObserved(DbSession s, boolean inTransaction) {
-        s.transactionObserved(inTransaction, clock.instant());
+        Instant now = clock.instant();
+        s.transactionObserved(inTransaction, now);
+        s.touch(now);
     }
 
     /**

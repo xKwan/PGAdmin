@@ -26,6 +26,7 @@ import java.util.Map;
  *   POST   /api/db-sessions/{id}/execute          run one statement: {"sql": "..."}  (plan Phase 7)
  *   POST   /api/db-sessions/{id}/cancel           cancel the running statement
  *   GET    /api/db-sessions/{id}/activity         is a statement running, and is it waiting for a lock (Phase 8)
+ *   POST   /api/db-sessions/{id}/transaction      {"action": "begin"|"commit"|"rollback", "isolation", "readOnly"} (Phase 9)
  * </pre>
  */
 public final class DbSessionServlets {
@@ -37,8 +38,12 @@ public final class DbSessionServlets {
     public record OpenRequest(String database) {
     }
 
-    /** Body of an execute request. */
-    public record ExecuteRequest(String sql) {
+    /** Body of an execute request; {@code confirmed} answers a CONFIRMATION_REQUIRED for a destructive statement. */
+    public record ExecuteRequest(String sql, Boolean confirmed) {
+    }
+
+    /** Body of a transaction request: {@code action} begin, commit or rollback. */
+    public record TransactionRequest(String action, String isolation, Boolean readOnly) {
     }
 
     static UserContext user(HttpServletRequest req) {
@@ -78,6 +83,11 @@ public final class DbSessionServlets {
                         m.put("name", p.name());
                         m.put("displayName", p.displayName());
                         m.put("requiresDataAdmin", p.requiresDataAdmin());
+                        m.put("confirmDestructive", p.confirmDestructive());
+                        p.bannerText().ifPresent(b -> {
+                            m.put("bannerText", b);
+                            m.put("bannerTone", p.bannerTone());
+                        });
                         return m;
                     }).toList();
             return Map.of("profiles", out);
@@ -171,11 +181,19 @@ public final class DbSessionServlets {
             String[] p = path(req);
             if (p.length == 2 && p[1].equals("heartbeat")) {
                 DbSession s = manager.heartbeat(user(req), p[0]);
-                return Map.of("state", s.state().name(), "transaction", s.transactionState());
+                Map<String, Object> out = new LinkedHashMap<>();
+                out.put("state", s.state().name());
+                out.put("transaction", s.transactionState());
+                out.putAll(manager.lifetime(s));
+                return out;
             }
             if (p.length == 2 && p[1].equals("execute")) {
                 ExecuteRequest body = body(req, ExecuteRequest.class);
-                return runner.execute(user(req), p[0], body.sql(), requestId(req));
+                return runner.execute(user(req), p[0], body.sql(), Boolean.TRUE.equals(body.confirmed()), requestId(req));
+            }
+            if (p.length == 2 && p[1].equals("transaction")) {
+                TransactionRequest body = body(req, TransactionRequest.class);
+                return runner.transaction(user(req), p[0], body.action(), body.isolation(), Boolean.TRUE.equals(body.readOnly()), requestId(req));
             }
             if (p.length == 2 && p[1].equals("cancel")) {
                 return runner.cancel(user(req), p[0]);
@@ -189,6 +207,7 @@ public final class DbSessionServlets {
             if (p.length != 1) {
                 throw ApiException.notFound();
             }
+            runner.stopIfRunning(user(req), p[0]);
             manager.close(user(req), p[0]);
             return null;
         }

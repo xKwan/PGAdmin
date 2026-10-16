@@ -114,15 +114,71 @@ must open a new session.
 Known limitation: pgJDBC reads up to `maxRows + 1` rows into memory before pgweb applies the byte limits. Memory per
 running statement is therefore bounded by `maxRows + 1` times the row size, not by `maxResponseBytes`. Keep
 `maxRows` moderate. Rows with huge values are the case to watch: 1001 rows of 100 MB values would be about 100 GB.
-Streaming with a cursor (`setFetchSize`) needs an open transaction and is planned with transaction support
-(Phase 9).
+Streaming with a cursor (`setFetchSize`) needs the JDBC connection in non-autocommit mode, which would change how
+every statement is wrapped. It is therefore a post-MVP item (Phase 9, finding P9-3).
 
 ## 5. Transactions
 
 The session keeps PostgreSQL's normal behaviour. Each statement commits on its own (autocommit) unless the user runs
 `BEGIN`. After `BEGIN`, the state stays `OPEN` across requests until `COMMIT` or `ROLLBACK`. After an error inside a
-transaction it is `FAILED`, and PostgreSQL rejects everything except `ROLLBACK` with `25P02`. The reaper ends
-sessions idle in a transaction (Phase 6 rules); PostgreSQL rolls back.
+transaction it is `FAILED`, and PostgreSQL rejects everything except `ROLLBACK` with `25P02`.
+
+**Controls (Phase 9).** `POST /api/db-sessions/{id}/transaction` with `{"action": "begin" | "commit" | "rollback",
+"isolation": "read committed" | "repeatable read" | "serializable", "readOnly": true}`. The server builds the
+statement (`BEGIN ISOLATION LEVEL … READ ONLY`) from these allow-listed values only. It then runs like any other
+statement: gate, audit and limits. In the browser:
+
+- **Manual commit** mode: the next statement outside a transaction first begins one with the chosen isolation level
+  and read-only option. **Commit** and **Rollback** act on the session's transaction, also one the user began by
+  typing `BEGIN`.
+- **Read-only is a convenience, not a security control.** Privileges decide what a role may change.
+- While the transaction is `FAILED`, Run is disabled until Rollback. `COMMIT` on a failed transaction is turned into
+  a rollback by PostgreSQL without an error; the result says so ("COMMIT rolled it back. Nothing was saved.").
+- Inside a `REPEATABLE READ` or `SERIALIZABLE` transaction, Refresh shows the same snapshot, and the UI says so.
+- Disconnecting with an open transaction asks first, because it rolls the transaction back.
+
+**Ending abandoned transactions (ADR-0006, plan §3.6).** Only running SQL counts as activity. Viewing a session,
+heartbeats and activity polls don't, so an open page can't keep an idle transaction and its locks alive (finding
+P9-1). The heartbeat answer carries `closesAt`, `closeReason` (`idle`, `idle_in_transaction`,
+`max_transaction_age`) and `warning`. The UI warns at 8 of the 10 idle-in-transaction minutes, and 2 minutes before
+the other limits. When a limit is reached, the session is closed and PostgreSQL rolls back.
+
+**Concurrency is PostgreSQL's job.** The app adds no data locking; it reports what PostgreSQL decides:
+
+| Situation | What PostgreSQL does | What the user sees |
+|---|---|---|
+| Same row updated by another session | The statement waits, then proceeds after the other commits | Timer and "Waiting for a lock held by another session" |
+| `lock_timeout` reached | `55P03` | "Could not obtain a lock in time. This statement changed nothing." |
+| Deadlock | `40P01`: one transaction is aborted | "Deadlock detected. PostgreSQL rolled back the transaction; roll back here too, then try again." |
+| Concurrent change under REPEATABLE READ / SERIALIZABLE | `40001` | "…conflicted with a concurrent change. Roll back and try again; nothing is retried automatically." |
+| Constraint violated | `23xxx` | The constraint's name, PostgreSQL's message and detail |
+| Statement in an aborted transaction | `25P02` | "The transaction is aborted. Roll back to continue." |
+| Statement that can't run in a transaction (`VACUUM`, `CREATE DATABASE`, …) | `25001` | "…cannot run inside a transaction. Commit or roll back first." |
+| Cancel inside a transaction | The statement ends; the transaction is aborted | "Cancelled"; state `FAILED` |
+| Session closed while a statement runs | The app cancels it first, then closes | "Cancelled" |
+| The pgweb process dies | The sockets close; PostgreSQL rolls back and releases the locks | The user reconnects |
+
+## 5a. Confirmations for destructive statements
+
+With `profile.<name>.confirmDestructive=true` (the default), the server refuses these statements with
+`409 CONFIRMATION_REQUIRED` until they are sent again with `"confirmed": true`. The browser shows a dialog with the
+reason:
+
+| Reason | Statements (from PostgreSQL's parse tree) |
+|---|---|
+| `drop` | `DROP …` |
+| `truncate` | `TRUNCATE` |
+| `privileges` | `GRANT`, `REVOKE`, `ALTER DEFAULT PRIVILEGES` |
+| `ddl` | Other `CREATE`, `ALTER`, `COMMENT`, … |
+| `no_where` | An `UPDATE` or `DELETE` without `WHERE` anywhere in the statement, including inside a `WITH` |
+| `procedural` | `DO` blocks (they can do anything) |
+
+**This is a safeguard against mistakes, not a security control.** The user can always confirm, and functions or
+procedures can do the same things without asking. Privileges decide what a role may do. Each refusal is audited as
+`exec_rejected` (`parse_status = confirmation_required`).
+
+A profile can also show a banner in the workspace (`profile.<name>.bannerText`, for example `PRODUCTION`, with
+`bannerTone` `info`, `warn` or `danger`).
 
 ## 6. Audit (docs/audit-policy.md)
 

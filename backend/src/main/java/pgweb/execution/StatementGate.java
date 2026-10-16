@@ -1,11 +1,13 @@
 package pgweb.execution;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.postgresql.core.NativeQuery;
 import org.postgresql.core.Parser;
 import pgweb.sqlparse.SqlParser;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -92,6 +94,64 @@ public final class StatementGate {
     /** Audit text for an approved statement: comments removed, constants masked (only with standard_conforming_strings on). */
     public String auditText(String statement) {
         return parser.auditText(statement);
+    }
+
+    /**
+     * Why a statement deserves a confirmation before it runs (plan Phase 9): {@code drop}, {@code truncate},
+     * {@code privileges} (GRANT/REVOKEâ€¦), {@code ddl}, {@code no_where} (an UPDATE or DELETE without WHERE anywhere
+     * in the statement, including in a CTE) and {@code procedural} (a DO block can do anything). Empty: none.
+     * <p>A UX safeguard against mistakes, <b>not a security control</b>: the user's PostgreSQL privileges decide what
+     * the statement may do, and the user can always confirm.
+     */
+    public static List<String> destructiveReasons(SqlParser.Statement s) {
+        List<String> reasons = new ArrayList<>();
+        String kind = s.kind();
+        String cls = classify(kind);
+        if (kind.startsWith("Drop")) {
+            reasons.add("drop");
+        } else if (kind.equals("TruncateStmt")) {
+            reasons.add("truncate");
+        } else if (cls.equals("dcl")) {
+            reasons.add("privileges");
+        } else if (cls.equals("ddl")) {
+            reasons.add("ddl");
+        } else if (kind.equals("DoStmt")) {
+            reasons.add("procedural");
+        }
+        if (modifiesWithoutWhere(s.node()) || modifiesWithoutWhere(kind, s.node())) {
+            reasons.add("no_where");
+        }
+        return List.copyOf(reasons);
+    }
+
+    private static boolean modifiesWithoutWhere(String kind, JsonNode node) {
+        return (kind.equals("UpdateStmt") || kind.equals("DeleteStmt")) && !node.has("whereClause");
+    }
+
+    /** Any UpdateStmt or DeleteStmt below {@code node} that has no WHERE clause. */
+    private static boolean modifiesWithoutWhere(JsonNode node) {
+        if (node == null || !node.isContainerNode()) {
+            return false;
+        }
+        if (node.isArray()) {
+            for (JsonNode child : node) {
+                if (modifiesWithoutWhere(child)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        for (Map.Entry<String, JsonNode> f : node.properties()) {
+            if (modifiesWithoutWhere(f.getKey(), f.getValue()) || modifiesWithoutWhere(f.getValue())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** True for COMMIT (and END): in a failed transaction PostgreSQL turns it into a rollback without an error. */
+    static boolean isCommit(SqlParser.Statement s) {
+        return s.kind().equals("TransactionStmt") && "TRANS_STMT_COMMIT".equals(s.node().path("kind").asText());
     }
 
     /** UX and audit metadata only (S2 P6: a data-modifying CTE is a SelectStmt); never used to allow or deny. */

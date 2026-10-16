@@ -5,9 +5,46 @@ import { api } from './client.js';
 
 const base = (sessionId) => `/api/db-sessions/${encodeURIComponent(sessionId)}`;
 
-/** Runs one statement; resolves with the result document (docs/sql-execution-behaviour.md §4). */
-export function execute(sessionId, sql) {
-  return api(`${base(sessionId)}/execute`, { method: 'POST', body: { sql } });
+/**
+ * Runs one statement; resolves with the result document (docs/sql-execution-behaviour.md §4). A destructive
+ * statement is refused with CONFIRMATION_REQUIRED until it is sent again with `confirmed`.
+ */
+export function execute(sessionId, sql, confirmed = false) {
+  return api(`${base(sessionId)}/execute`, { method: 'POST', body: confirmed ? { sql, confirmed: true } : { sql } });
+}
+
+/** Begin (optionally with an isolation level and read-only), commit or rollback. Resolves with a result document. */
+export function transaction(sessionId, action, { isolation, readOnly = false } = {}) {
+  const body = { action, readOnly };
+  if (isolation) body.isolation = isolation;
+  return api(`${base(sessionId)}/transaction`, { method: 'POST', body });
+}
+
+const REASONS = {
+  drop: 'drops an object',
+  truncate: 'empties a table',
+  privileges: 'changes privileges',
+  ddl: 'changes the database structure',
+  no_where: 'updates or deletes rows without a WHERE clause',
+  procedural: 'runs procedural code (DO)',
+};
+
+/** Why a statement asks for confirmation, in words. */
+export function describeReasons(reasons = []) {
+  return reasons.map((r) => REASONS[r] || r);
+}
+
+/** Plain-language explanation of common PostgreSQL error codes (plan section 4); null if there is none. */
+export function explainSqlstate(sqlstate, error = {}) {
+  if (!sqlstate) return null;
+  if (sqlstate === '55P03') return 'Could not obtain a lock in time. This statement changed nothing.';
+  if (sqlstate === '40P01') return 'Deadlock detected. PostgreSQL rolled back the transaction; roll back here too, then try again.';
+  if (sqlstate === '40001') return 'The transaction conflicted with a concurrent change. Roll back and try again; nothing is retried automatically.';
+  if (sqlstate === '25P02') return 'The transaction is aborted. Roll back to continue.';
+  if (sqlstate === '25001') return 'This statement cannot run inside a transaction. Commit or roll back first.';
+  if (sqlstate === '25006') return 'The transaction is read-only.';
+  if (sqlstate.startsWith('23')) return error.constraint ? `A constraint was violated: ${error.constraint}.` : 'A constraint was violated.';
+  return null;
 }
 
 export function cancel(sessionId) {
@@ -41,6 +78,11 @@ export function describeExecutionError(error) {
     case 'SESSION_LOST':
     case 'NOT_FOUND':
       return 'The database session has ended. Connect again.';
+    case 'CONFIRMATION_REQUIRED':
+      return `This statement ${describeReasons(error.details?.reasons).join(' and ') || 'needs a confirmation'}. It was not run.`;
+    case 'INVALID_ACTION':
+    case 'INVALID_ISOLATION':
+      return error.message;
     default:
       return error?.message || 'The statement could not be run.';
   }

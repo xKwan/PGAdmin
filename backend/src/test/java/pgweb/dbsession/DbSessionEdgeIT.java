@@ -136,9 +136,11 @@ class DbSessionEdgeIT {
         s.transactionObserved(true, t0);
         s.transactionObserved(true, t0.plusSeconds(5)); // keeps the original start
         assertThat(s.transactionStartedAt()).isEqualTo(t0);
-        // Stay active and heartbeating for 61 minutes: only the transaction-age rule applies.
+        // Stay active (as if running statements; heartbeats alone are not activity: P9-1) and heartbeating for 61
+        // minutes: only the transaction-age rule applies.
         for (int i = 0; i < 61; i++) {
             clock.advance(Duration.ofMinutes(1));
+            s.touch(clock.instant());
             b.post("/api/db-sessions/" + id + "/heartbeat", "{}");
         }
         assertThat(m.reap()).isEqualTo(1);
@@ -189,7 +191,7 @@ class DbSessionEdgeIT {
     @Test
     void theProductionConnectorNeedsADelegatedIdentityAndUsesTheProfileSettings() throws Exception {
         Path ca = Files.writeString(tmp.resolve("ca.pem"), "x");
-        Config.DbProfile p = new Config.DbProfile("external", "X", "pg.corp.example", 5432, "verify-full", Optional.of(ca), "postgres", false, Duration.ofSeconds(60));
+        Config.DbProfile p = new Config.DbProfile("external", "X", "pg.corp.example", 5432, "verify-full", Optional.of(ca), "postgres", false, Duration.ofSeconds(60), true, Optional.empty(), "warn");
         assertThatThrownBy(() -> new SspiDelegatingConnector().open(null, p, "db", "ann", "pgweb"))
                 .isInstanceOfSatisfying(SQLException.class, e -> assertThat(e.getSQLState()).isEqualTo("28000"));
         var props = SspiDelegatingConnector.baseProperties(p, "ann", "pgweb");

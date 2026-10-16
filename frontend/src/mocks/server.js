@@ -15,7 +15,17 @@ export function envelope(status, code, message, requestId = '0123456789abcdef') 
   return HttpResponse.json({ error: { code, message, requestId } }, { status });
 }
 
-export const handlers = [http.get('/api/me', () => HttpResponse.json(meBody()))];
+export const handlers = [
+  http.get('/api/me', () => HttpResponse.json(meBody())),
+  http.get('/api/profiles', () =>
+    HttpResponse.json({
+      profiles: [
+        { name: 'external', displayName: 'External PostgreSQL', requiresDataAdmin: false, confirmDestructive: true },
+        { name: 'internal', displayName: 'Internal PostgreSQL', requiresDataAdmin: true, confirmDestructive: true },
+      ],
+    }),
+  ),
+];
 
 export const server = setupServer(...handlers);
 export { http, HttpResponse };

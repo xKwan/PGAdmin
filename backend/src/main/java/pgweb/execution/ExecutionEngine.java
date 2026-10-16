@@ -68,6 +68,9 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
     private static final String INDETERMINATE = "indeterminate";
     private static final String ERROR = "error";
     private static final String EXECUTION_ID = "executionId";
+    private static final String REASON = "reason";
+    private static final String CANCEL_REQUESTED = "cancel_requested";
+    private static final String REQUEST_ID = "requestId";
     /** admin_shutdown, crash_shutdown, cannot_connect_now: the backend is gone. */
     private static final Set<String> TERMINATED = Set.of("57P01", "57P02", "57P03");
 
@@ -112,24 +115,78 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         }
     }
 
-    /** Executes {@code sql} on the user's session and returns the result document (see {@link ResultBuilder}). */
+    /**
+     * Executes {@code sql} on the user's session and returns the result document (see {@link ResultBuilder}).
+     * @param confirmed the user confirmed a destructive statement (see {@link StatementGate#destructiveReasons})
+     */
     @Override
-    public Map<String, Object> execute(UserContext user, String sessionId, String sql, String requestId) {
+    public Map<String, Object> execute(UserContext user, String sessionId, String sql, boolean confirmed, String requestId) {
         if (!config.executionEnabled()) {
             throw ApiException.forbidden("EXECUTION_DISABLED", "Running SQL is switched off by the administrator");
         }
-        DbSession s = sessions.get(user, sessionId);
+        DbSession s = sessions.use(user, sessionId);
         if (!s.lock().tryLock()) {
             throw ApiException.conflict("SESSION_BUSY", "A statement is already running in this session; wait for it or cancel it");
         }
         try {
-            return executeLocked(user, s, sql, requestId);
+            return executeLocked(user, s, sql, confirmed, requestId);
         } finally {
             s.lock().unlock();
         }
     }
 
-    private Map<String, Object> executeLocked(UserContext user, DbSession s, String sql, String requestId) {
+    /**
+     * Begin (with an isolation level and read-only option), commit or rollback: the plan's manual-transaction
+     * controls (section 4). The statement text is built here from allow-listed values only, and then runs like any
+     * other statement: gate, audit, limits.
+     */
+    @Override
+    public Map<String, Object> transaction(UserContext user, String sessionId, String action, String isolation, boolean readOnly, String requestId) {
+        String sql = switch (action == null ? "" : action) {
+            case "begin" -> "BEGIN" + isolationClause(isolation) + (readOnly ? " READ ONLY" : "");
+            case "commit" -> "COMMIT";
+            case "rollback" -> "ROLLBACK";
+            default -> throw ApiException.badRequest("INVALID_ACTION", "action must be begin, commit or rollback");
+        };
+        return execute(user, sessionId, sql, true, requestId);
+    }
+
+    static String isolationClause(String isolation) {
+        if (isolation == null || isolation.isBlank()) {
+            return "";
+        }
+        return switch (isolation.toLowerCase(Locale.ROOT)) {
+            case "read committed" -> " ISOLATION LEVEL READ COMMITTED";
+            case "repeatable read" -> " ISOLATION LEVEL REPEATABLE READ";
+            case "serializable" -> " ISOLATION LEVEL SERIALIZABLE";
+            default -> throw ApiException.badRequest("INVALID_ISOLATION", "isolation must be read committed, repeatable read or serializable");
+        };
+    }
+
+    /**
+     * Before a session is closed while a statement runs: cancel it and wait (up to the cancel grace period plus a
+     * second) for it to end, so the close doesn't cut the connection under a running statement.
+     */
+    @Override
+    public void stopIfRunning(UserContext user, String sessionId) {
+        DbSession s = sessions.get(user, sessionId);
+        Running run = running.get(s.id());
+        if (run == null) {
+            return;
+        }
+        audit.record(AuditEvent.of(CANCEL_REQUESTED).user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
+                .execution(run.executionId, null).detail(REASON, "session_close"));
+        stop(s, run, "cancelled");
+        try {
+            if (s.lock().tryLock(config.limits().cancelGrace().toMillis() + 1000, TimeUnit.MILLISECONDS)) {
+                s.lock().unlock();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private Map<String, Object> executeLocked(UserContext user, DbSession s, String sql, boolean confirmed, String requestId) {
         Connection main = s.main();
         boolean scs = standardConformingStrings(main);
         StatementGate.Verdict v = gate.check(sql, scs);
@@ -137,6 +194,14 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         int length = sql == null ? 0 : sql.length();
         if (!v.approved()) {
             throw rejected(user, s, v, hmac, length, requestId);
+        }
+        List<String> reasons = !confirmed && config.profiles().get(s.profile()).confirmDestructive()
+                ? StatementGate.destructiveReasons(v.statement()) : List.of();
+        if (!reasons.isEmpty()) {
+            audit.record(AuditEvent.of("exec_rejected").user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
+                    .statement(v.statementClass(), null, hmac, length, "confirmation_required").detail("reasons", reasons).detail(REQUEST_ID, requestId));
+            throw new ApiException(409, "CONFIRMATION_REQUIRED", "This statement can change or remove data or objects. Confirm to run it.",
+                    Map.of("reasons", reasons, "statementClass", v.statementClass()));
         }
         String txBefore = s.transactionState();
         String normalised = scs ? gateText(v.statement().text()) : null;
@@ -147,7 +212,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         try {
             audit.require(AuditEvent.of("exec_intent").user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
                     .execution(run.executionId, null).statement(v.statementClass(), normalised, hmac, length, scs ? "ok" : "ok_no_text")
-                    .transaction(txBefore, null).times(start, null).detail("requestId", requestId));
+                    .transaction(txBefore, null).times(start, null).detail(REQUEST_ID, requestId));
         } catch (RuntimeException e) {
             closeQuietly(st);
             throw e;
@@ -157,6 +222,9 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         Instant end = clock.instant();
         String txAfter = s.transactionState();
         sessions.transactionObserved(s, !"IDLE".equals(txAfter));
+        if ("FAILED".equals(txBefore) && "IDLE".equals(txAfter) && StatementGate.isCommit(v.statement())) {
+            result.notice("The transaction had failed, so COMMIT rolled it back. Nothing was saved.");
+        }
         result.finish(txAfter, Duration.between(start, end).toMillis(), end);
         audit.record(AuditEvent.of(EV_OUTCOME).user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
                 .execution(run.executionId, run.executionId).statement(v.statementClass(), null, hmac, length, null)
@@ -177,7 +245,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
 
     private ApiException rejected(UserContext user, DbSession s, StatementGate.Verdict v, String hmac, int length, String requestId) {
         audit.record(AuditEvent.of("exec_rejected").user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
-                .statement(null, null, hmac, length, v.rejection().name().toLowerCase(Locale.ROOT)).detail("requestId", requestId));
+                .statement(null, null, hmac, length, v.rejection().name().toLowerCase(Locale.ROOT)).detail(REQUEST_ID, requestId));
         int status = v.rejection() == StatementGate.Rejection.TOO_LARGE ? 413 : 400;
         Map<String, Object> err = v.position() > 0 ? Map.of("position", v.position()) : Map.of();
         return new ApiException(status, v.rejection().name(), v.message(), err);
@@ -238,10 +306,10 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         if (run == null) {
             throw ApiException.conflict("NOT_RUNNING", "No statement is running in this session");
         }
-        audit.record(AuditEvent.of("cancel_requested").user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
+        audit.record(AuditEvent.of(CANCEL_REQUESTED).user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
                 .execution(run.executionId, null));
         stop(s, run, "cancelled");
-        return Map.of(EXECUTION_ID, run.executionId.toString(), "status", "cancel_requested");
+        return Map.of(EXECUTION_ID, run.executionId.toString(), "status", CANCEL_REQUESTED);
     }
 
     /**
@@ -547,6 +615,10 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
                 }
                 putIfPresent(err, "detail", m.getDetail());
                 putIfPresent(err, "hint", m.getHint());
+                putIfPresent(err, "constraint", m.getConstraint());
+                putIfPresent(err, "schema", m.getSchema());
+                putIfPresent(err, "table", m.getTable());
+                putIfPresent(err, "column", m.getColumn());
                 putIfPresent(err, "severity", m.getSeverity());
             }
             err.put("message", message);
@@ -564,6 +636,11 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         void indeterminate() {
             doc.put("kind", INDETERMINATE);
             doc.put("message", "The connection was lost while the statement ran. It may or may not have taken effect.");
+        }
+
+        /** A note from the app about what happened (for example COMMIT on a failed transaction). */
+        void notice(String text) {
+            doc.put("notice", text);
         }
 
         void sessionEnded() {

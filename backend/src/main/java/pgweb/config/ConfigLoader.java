@@ -53,7 +53,9 @@ public final class ConfigLoader {
             "limits.sessionsPerUser", "limits.sessionsGlobal", "limits.failedOpensPerWindow", "limits.failedOpenWindowMinutes",
             "logging.dir", "identity.roleCase", "identity.roleOverrides", "parser.library");
     private static final Set<String> PROFILE_KEYS = Set.of(
-            "displayName", "host", "port", "sslMode", "sslRootCert", "maintenanceDb", "requiresDataAdmin", "statementTimeoutSeconds");
+            "displayName", "host", "port", "sslMode", "sslRootCert", "maintenanceDb", "requiresDataAdmin", "statementTimeoutSeconds",
+            "confirmDestructive", "bannerText", "bannerTone");
+    private static final Set<String> BANNER_TONES = Set.of("info", "warn", "danger");
 
     private ConfigLoader() {
     }
@@ -281,7 +283,16 @@ public final class ConfigLoader {
             }
             String display = str(prefix + "displayName", internal ? "Internal PostgreSQL" : "External PostgreSQL");
             Duration st = Duration.ofSeconds(intRange(prefix + "statementTimeoutSeconds", internal ? 300 : 60, 1, 24 * 3600));
-            return new Config.DbProfile(name, display, host, port, ssl, root, maint, dataAdmin, st);
+            boolean confirm = bool(prefix + "confirmDestructive", true);
+            Optional<String> banner = Optional.ofNullable(str(prefix + "bannerText", null));
+            if (banner.isPresent() && banner.get().length() > 80) {
+                problems.add(prefix + "bannerText is longer than 80 characters");
+            }
+            String tone = str(prefix + "bannerTone", "warn").toLowerCase(Locale.ROOT);
+            if (!BANNER_TONES.contains(tone)) {
+                problems.add(prefix + "bannerTone must be one of " + new TreeSet<>(BANNER_TONES));
+            }
+            return new Config.DbProfile(name, display, host, port, ssl, root, maint, dataAdmin, st, confirm, banner, tone);
         }
 
         private String sslMode(String prefix, boolean prod) {

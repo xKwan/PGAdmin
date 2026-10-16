@@ -10,7 +10,13 @@ import java.util.Map;
  */
 public interface StatementRunner {
 
-    Map<String, Object> execute(UserContext user, String sessionId, String sql, String requestId);
+    Map<String, Object> execute(UserContext user, String sessionId, String sql, boolean confirmed, String requestId);
+
+    /** Begin, commit or rollback (manual-transaction controls). */
+    Map<String, Object> transaction(UserContext user, String sessionId, String action, String isolation, boolean readOnly, String requestId);
+
+    /** Cancels a running statement and waits briefly for it to end (before the session is closed). */
+    void stopIfRunning(UserContext user, String sessionId);
 
     Map<String, Object> cancel(UserContext user, String sessionId);
 

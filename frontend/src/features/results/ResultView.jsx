@@ -1,4 +1,4 @@
-import { describeCancelOutcome, describeExecutionError } from '../../api/execution.js';
+import { describeCancelOutcome, describeExecutionError, explainSqlstate } from '../../api/execution.js';
 import { EmptyState, StatusBadge } from '../../components/common/index.jsx';
 import ResultGrid from './ResultGrid.jsx';
 
@@ -54,6 +54,7 @@ function ServerError({ error, onShowPosition }) {
       <h3>
         PostgreSQL error <code>{error.sqlstate}</code>
       </h3>
+      {explainSqlstate(error.sqlstate, error) ? <p className="result-error-explain">{explainSqlstate(error.sqlstate, error)}</p> : null}
       <p className="result-error-message">{error.message}</p>
       {error.detail ? <p>Detail: {error.detail}</p> : null}
       {error.hint ? <p>Hint: {error.hint}</p> : null}
@@ -116,23 +117,30 @@ function Outcome({ result, onShowPosition }) {
  * docs/sql-execution-behaviour.md §4, "retrieved at" and Refresh (runs the same text again).
  */
 export default function ResultView({ execution, onCancel, onRefresh, onShowPosition }) {
-  const { running, result, error, elapsedMs, lockWait, waitEvent, cancelling, lastText } = execution;
+  const { running, result, error, elapsedMs, lockWait, waitEvent, cancelling, lastText, tx } = execution;
+  const snapshot = tx?.begunWith && tx.state === 'OPEN' && /repeatable|serializable/.test(tx.begunWith.isolation);
   if (running) return <Running elapsedMs={elapsedMs} lockWait={lockWait} waitEvent={waitEvent} cancelling={cancelling} onCancel={onCancel} />;
   if (error) return <Refused error={error} onShowPosition={onShowPosition} />;
   if (!result) return <EmptyState title="No results yet">Run a statement with Ctrl+Enter.</EmptyState>;
-  const tx = TX_LABEL[result.transaction];
+  const txLabel = TX_LABEL[result.transaction];
   return (
     <div className="result-view">
       <div className="result-toolbar">
         <span className="muted">
           Retrieved at {time(result.retrievedAt)} · {result.durationMs} ms · {result.statementClass}
         </span>
-        {tx ? <StatusBadge tone={result.transaction === 'FAILED' ? 'danger' : 'warn'}>{tx}</StatusBadge> : null}
+        {txLabel ? <StatusBadge tone={result.transaction === 'FAILED' ? 'danger' : 'warn'}>{txLabel}</StatusBadge> : null}
         {result.sessionEnded ? <StatusBadge tone="danger">Session closed</StatusBadge> : null}
         <button type="button" className="btn" onClick={onRefresh} disabled={!lastText || result.sessionEnded} title="Run the same statement again">
           Refresh
         </button>
       </div>
+      {result.notice ? (
+        <p className="result-notice" role="status">
+          {result.notice}
+        </p>
+      ) : null}
+      {snapshot ? <p className="muted result-snapshot">Inside this {tx.begunWith.isolation} transaction, Refresh shows the same snapshot.</p> : null}
       <Outcome result={result} onShowPosition={onShowPosition} />
     </div>
   );

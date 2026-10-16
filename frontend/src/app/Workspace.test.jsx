@@ -74,7 +74,7 @@ describe('Workspace execution', () => {
     expect(await screen.findByText('42', { selector: 'td' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(await screen.findByText('Stopped: the time limit was reached')).toBeInTheDocument();
-    expect(screen.getByText('The database session was closed by the server.')).toBeInTheDocument();
+    expect(screen.getByText(/closed by the server. Anything not committed was rolled back/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Connect again' }));
     expect(await screen.findByRole('button', { name: 'Show my databases' })).toBeInTheDocument();
   });
@@ -83,7 +83,7 @@ describe('Workspace execution', () => {
     server.use(http.post(`/api/db-sessions/${SESSION.id}/execute`, () => envelope(410, 'SESSION_LOST', 'The database session has ended (lost).')));
     await connect();
     await userEvent.click(screen.getByRole('button', { name: 'Run' }));
-    expect(await screen.findByText('The database session was closed by the server.')).toBeInTheDocument();
+    expect(await screen.findByText(/closed by the server. Anything not committed was rolled back/)).toBeInTheDocument();
     expect(screen.getByText('The database session has ended. Connect again.')).toBeInTheDocument();
   });
 

@@ -1,0 +1,61 @@
+﻿{
+    "tag":  "phase-9",
+    "when":  "2026-10-16T10:33:32.1341490+08:00",
+    "masterSeed":  1203022876,
+    "repeat":  5,
+    "overall":  "PASS",
+    "edge":  "155.0.4283.45",
+    "commit":  "1ec820e",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  1497349202,
+                     "ok":  true,
+                     "passed":  4,
+                     "failed":  [
+
+                                ],
+                     "seconds":  7.2
+                 },
+                 {
+                     "run":  2,
+                     "seed":  48239582,
+                     "ok":  true,
+                     "passed":  4,
+                     "failed":  [
+
+                                ],
+                     "seconds":  7.1
+                 },
+                 {
+                     "run":  3,
+                     "seed":  777012249,
+                     "ok":  true,
+                     "passed":  4,
+                     "failed":  [
+
+                                ],
+                     "seconds":  6.2
+                 },
+                 {
+                     "run":  4,
+                     "seed":  1659858843,
+                     "ok":  true,
+                     "passed":  4,
+                     "failed":  [
+
+                                ],
+                     "seconds":  6.7
+                 },
+                 {
+                     "run":  5,
+                     "seed":  712216266,
+                     "ok":  true,
+                     "passed":  4,
+                     "failed":  [
+
+                                ],
+                     "seconds":  6.7
+                 }
+             ]
+}

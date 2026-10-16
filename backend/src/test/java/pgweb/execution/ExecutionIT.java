@@ -101,8 +101,22 @@ class ExecutionIT {
     }
 
     record Session(MockClient client, String id) {
+        /** Runs {@code sql} with destructive statements already confirmed (these tests are about execution itself). */
         HttpResponse<String> run(String sql) throws Exception {
+            return client.post("/api/db-sessions/" + id + "/execute", Json.write(Map.of("sql", sql, "confirmed", true)));
+        }
+
+        /** Runs {@code sql} as the editor first sends it: without a confirmation. */
+        HttpResponse<String> runUnconfirmed(String sql) throws Exception {
             return client.post("/api/db-sessions/" + id + "/execute", Json.write(Map.of("sql", sql)));
+        }
+
+        HttpResponse<String> tx(String action, String isolation, boolean readOnly) throws Exception {
+            Map<String, Object> body = new java.util.HashMap<>(Map.of("action", action, "readOnly", readOnly));
+            if (isolation != null) {
+                body.put("isolation", isolation);
+            }
+            return client.post("/api/db-sessions/" + id + "/transaction", Json.write(body));
         }
 
         JsonNode ok(String sql) throws Exception {
