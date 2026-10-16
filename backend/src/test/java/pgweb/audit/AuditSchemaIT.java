@@ -360,6 +360,6 @@ class AuditSchemaIT {
         assertThatThrownBy(() -> AuditMigrator.quoteIdent("")).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> AuditMigrator.quoteIdent("x".repeat(64))).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> AuditMigrator.quoteIdent(null)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> AuditMigrator.quoteIdent("a b")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> AuditMigrator.quoteIdent("a\u0000b")).isInstanceOf(IllegalArgumentException.class);
     }
 }

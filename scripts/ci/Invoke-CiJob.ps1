@@ -71,24 +71,34 @@ switch ($Job) {
         if ($LASTEXITCODE -ne 0) { throw 'toolchain-check failed' }
     }
     'lint-frontend' { Step 'eslint' 'npm run lint' $frontend }
-    'lint-backend' { Step 'compile' "$mvn -q test-compile" $backend }
+    'lint-backend' {
+        Step 'text' "powershell -NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $repoRoot 'scripts\ci\Test-TextFiles.ps1')`"" $repoRoot
+        Step 'compile' "$mvn -q test-compile" $backend
+    }
     'test-frontend' {
         $env:PGWEB_TEST_SEED = "$Seed"
         Step 'vitest' 'npm run test:coverage' $frontend
     }
-    'test-backend' { Step 'verify' "$mvn verify -Dpgweb.test.seed=$Seed" $backend }
+    'test-backend' {
+        Assert-SqlParser -RepoRoot $repoRoot -Log (Join-Path $LogDir "$Job-parser.log")
+        Step 'verify' "$mvn verify -Dpgweb.test.seed=$Seed" $backend
+    }
     'sonar-backend' {
         Assert-SonarToken
+        Assert-SqlParser -RepoRoot $repoRoot -Log (Join-Path $LogDir "$Job-parser.log")
         Step 'verify' "$mvn verify -Dpgweb.test.seed=$Seed" $backend
         Step 'sonar' "$mvn sonar:sonar" $backend
+        Set-Content -Path (Join-Path $LogDir 'sonar-pgweb-backend.sources') -Value (Get-SourceHash -RepoRoot $repoRoot -Dir 'backend/src') -Encoding ASCII
     }
     'sonar-frontend' {
         Assert-SonarToken
         $env:PGWEB_TEST_SEED = "$Seed"
         Step 'vitest' 'npm run test:coverage' $frontend
         Step 'sonar' 'node sonar-project.js' $frontend
+        Set-Content -Path (Join-Path $LogDir 'sonar-pgweb-frontend.sources') -Value (Get-SourceHash -RepoRoot $repoRoot -Dir 'frontend/src') -Encoding ASCII
     }
     'package' {
+        Assert-SqlParser -RepoRoot $repoRoot -Log (Join-Path $LogDir "$Job-parser.log")
         & (Join-Path $repoRoot 'offline\New-ReleaseBundle.ps1') -LogDir $LogDir
         if ($LASTEXITCODE -ne 0) { throw 'package failed' }
     }

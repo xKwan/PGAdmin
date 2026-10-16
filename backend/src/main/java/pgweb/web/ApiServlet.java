@@ -67,7 +67,7 @@ public abstract class ApiServlet extends HttpServlet {
                 resp.getOutputStream().write(Json.write(result).getBytes(StandardCharsets.UTF_8));
             }
         } catch (ApiException e) {
-            ErrorEnvelope.write(resp, e.status(), e.code(), e.getMessage());
+            ErrorEnvelope.write(resp, e.status(), e.code(), e.getMessage(), e.details());
         } catch (pgweb.audit.AuditUnavailableException e) {
             ErrorEnvelope.write(resp, 503, "AUDIT_UNAVAILABLE", "The audit database is unavailable; the operation was not performed");
         } catch (RuntimeException e) {

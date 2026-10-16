@@ -8,7 +8,7 @@
     Output: release\pgweb-<version>\
               pgweb.jar            backend (Main-Class pgweb.Main, Class-Path lib/*)
               lib\                 runtime dependencies
-              native\              pg_query.dll when built (native\libpg_query)
+              native\              pg_query.dll and its expected SHA256 (built by native\libpg_query\Build-PgQuery.ps1)
               deploy\              Windows service scripts and config templates (when present)
               sbom\                pgweb-backend-sbom.json, pgweb-frontend-sbom.json
               SHA256SUMS.txt       one line per file: <sha256>  <relative path>
@@ -62,10 +62,11 @@ Copy-Item (Join-Path $backend 'target\lib') (Join-Path $stage 'lib') -Recurse
 Copy-Item (Join-Path $backend 'target\pgweb-backend-sbom.json') (Join-Path $stage 'sbom')
 Copy-Item (Join-Path $frontend 'dist-sbom\pgweb-frontend-sbom.json') (Join-Path $stage 'sbom')
 $dll = Join-Path $repoRoot 'native\libpg_query\build\pg_query.dll'
-if (Test-Path $dll) {
-    New-Item -ItemType Directory -Force -Path (Join-Path $stage 'native') | Out-Null
-    Copy-Item $dll (Join-Path $stage 'native')
-}
+# Required: execution can't be enabled without it (ADR-0009). Invoke-CiJob's package job builds and verifies it.
+if (-not (Test-Path $dll)) { throw "pg_query.dll missing: run native\libpg_query\Build-PgQuery.ps1 (or the package CI job)." }
+New-Item -ItemType Directory -Force -Path (Join-Path $stage 'native') | Out-Null
+Copy-Item $dll (Join-Path $stage 'native')
+Copy-Item (Join-Path $repoRoot 'native\libpg_query\pg_query.dll.sha256') (Join-Path $stage 'native')
 $deploy = Join-Path $repoRoot 'deploy'
 if (Test-Path $deploy) { Copy-Item $deploy (Join-Path $stage 'deploy') -Recurse }
 

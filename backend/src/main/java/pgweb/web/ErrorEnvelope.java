@@ -18,7 +18,12 @@ public final class ErrorEnvelope {
     }
 
     public static Map<String, Object> body(String code, String message) {
-        Map<String, Object> err = new LinkedHashMap<>();
+        return body(code, message, Map.of());
+    }
+
+    /** {@code details} are extra fields; they never replace code, message or requestId. */
+    public static Map<String, Object> body(String code, String message, Map<String, Object> details) {
+        Map<String, Object> err = new LinkedHashMap<>(details);
         err.put("code", code);
         err.put("message", message);
         String rid = MDC.get(RequestIdFilter.MDC_KEY);
@@ -29,13 +34,17 @@ public final class ErrorEnvelope {
     }
 
     public static void write(HttpServletResponse resp, int status, String code, String message) throws IOException {
+        write(resp, status, code, message, Map.of());
+    }
+
+    public static void write(HttpServletResponse resp, int status, String code, String message, Map<String, Object> details) throws IOException {
         if (resp.isCommitted()) {
             return;
         }
         resp.resetBuffer();
         resp.setStatus(status);
         Responses.json(resp);
-        resp.getOutputStream().write(Json.write(body(code, message)).getBytes(StandardCharsets.UTF_8));
+        resp.getOutputStream().write(Json.write(body(code, message, details)).getBytes(StandardCharsets.UTF_8));
     }
 
     /** Default code for a status that an error page (not a servlet) produced. */

@@ -11,6 +11,14 @@ mvn -B -o -s ..\offline\maven-settings.xml verify      # compile (-Werror), unit
 mvn -B -o -s ..\offline\maven-settings.xml package -DskipTests   # just the JAR: target\pgweb-backend-<version>.jar + target\lib\
 ```
 
+Backend tests and execution need PostgreSQL's parser as a DLL (ADR-0009). Build it once from the pinned libpg_query sources with the project-local Zig compiler. This takes 5–10 minutes, needs no network, and is reproducible: the result must match `native/libpg_query/pg_query.dll.sha256`.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File native\libpg_query\Build-PgQuery.ps1   # -> native\libpg_query\build\pg_query.dll
+```
+
+The CI jobs and `Invoke-TestLoop.ps1` build it when it is missing and refuse a DLL with any other hash (`Assert-SqlParser`). On an air-gapped machine, copy `pg_query.dll` from the release bundle's `native\` folder instead, and check its SHA256 against the `.sha256` file next to it.
+
 The integration tests create throwaway PostgreSQL 18 clusters under `%TEMP%\pgweb-it-*` from the installed binaries. They look in `%ProgramFiles%\PostgreSQL\18\bin`, unless `PGWEB_PG_BIN` or `-Dpgweb.test.pgBin` points elsewhere. The clusters listen on localhost only, and a safety guard refuses any server the harness didn't create.
 
 ## 2. A local audit database
@@ -73,8 +81,9 @@ Unknown keys are errors, so a misspelt setting can't silently fall back to a def
 | `audit.failMode` | `closed` | `closed`: an operation whose audit record can't be written is refused (503 `AUDIT_UNAVAILABLE`). `open`: the record is spooled and the operation continues (not recommended, D4). |
 | `profile.internal.*`, `profile.external.*` | — | `host` (a DNS name, never an IP: S7-3), `port` (5433/5432), `sslMode` (`verify-full` in prod, `disable` in test), `sslRootCert`, `maintenanceDb` (`postgres`), `requiresDataAdmin` (always true for internal), `displayName`, `statementTimeoutSeconds` (300/60) |
 | `identity.roleCase` | `lower` | `lower`: the PostgreSQL role is the lower-cased `sAMAccountName`; `asis`: keep its case |
-| `identity.roleOverrides` | — | `DOMAINccount=role` entries separated by `;`, for accounts whose role doesn't follow the rule. The server's `pg_ident.conf` must agree. |
-| `execution.enabled` | `false` | SQL execution kill switch (EXE-01) |
+| `identity.roleOverrides` | — | `DOMAIN\account=role` entries separated by `;`, for accounts whose role doesn't follow the rule. The server's `pg_ident.conf` must agree. |
+| `execution.enabled` | `false` | SQL execution kill switch (EXE-01). When `true`, the parser library must load or pgweb doesn't start. Behaviour: [`sql-execution-behaviour.md`](sql-execution-behaviour.md) |
+| `parser.library` | `native/pg_query.dll` | Path to the libpg_query DLL (relative to the working directory); loaded only when execution is enabled |
 | `limits.*` | ADR-0006 | `maxRows` 1000, `maxResponseBytes` 10 MB, `maxCellBytes` 64 KB, `maxSqlBytes` 1 MB, `cancelGraceSeconds` 5, `idleSessionMinutes` 15, `idleInTransactionMinutes` 10 (warning at 8), `maxTransactionAgeMinutes` 60, `heartbeatAbandonSeconds` 120, `sessionsPerUser` 3, `sessionsGlobal` 50, `failedOpensPerWindow` 5 per `failedOpenWindowMinutes` 5 |
 | `logging.dir` | `logs` | Rolling `pgweb.log` (50 MB × 30 days, 2 GB cap). Messages and stack traces are redacted. |
 

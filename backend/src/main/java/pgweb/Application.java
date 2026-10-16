@@ -15,6 +15,9 @@ import pgweb.dbsession.DbConnector;
 import pgweb.dbsession.DbSessionManager;
 import pgweb.dbsession.DbSessionServlets;
 import pgweb.dbsession.SspiDelegatingConnector;
+import pgweb.execution.ExecutionEngine;
+import pgweb.execution.StatementGate;
+import pgweb.sqlparse.SqlParser;
 import pgweb.identity.RoleMapper;
 import pgweb.security.FreshNegotiateFilter;
 import pgweb.security.PassThroughFilter;
@@ -48,15 +51,21 @@ public final class Application implements AutoCloseable {
 
     /**
      * Test hooks. {@code authOverride} replaces Waffle (the mock provider in tests); it is refused in prod mode
-     * (threat T26). {@code extraRoutes} adds test-only endpoints; {@code clock} drives session lifetimes.
+     * (threat T26). {@code extraRoutes} adds test-only endpoints; {@code clock} drives session lifetimes;
+     * {@code connector} replaces Kerberos delegation and {@code canceller} the statement cancel (both refused in prod).
      */
-    public record Options(Filter authOverride, Consumer<WebServer.Routes> extraRoutes, Clock clock, DbConnector connector) {
+    public record Options(Filter authOverride, Consumer<WebServer.Routes> extraRoutes, Clock clock, DbConnector connector,
+                          ExecutionEngine.Canceller canceller) {
+        public Options(Filter authOverride, Consumer<WebServer.Routes> extraRoutes, Clock clock, DbConnector connector) {
+            this(authOverride, extraRoutes, clock, connector, null);
+        }
+
         public Options(Filter authOverride, Consumer<WebServer.Routes> extraRoutes, Clock clock) {
-            this(authOverride, extraRoutes, clock, null);
+            this(authOverride, extraRoutes, clock, null, null);
         }
 
         public static Options defaults() {
-            return new Options(null, r -> { }, Clock.systemUTC(), null);
+            return new Options(null, r -> { }, Clock.systemUTC(), null, null);
         }
     }
 
@@ -66,16 +75,18 @@ public final class Application implements AutoCloseable {
     private final AuditDatabase auditDb;
     private final AuditService audit;
     private final DbSessionManager sessions;
+    private final ExecutionEngine engine;
     private final WebServer server;
     private final List<WebServer.Routes.Route> inventory;
     private volatile boolean closed;
 
-    private Application(Config config, AuditDatabase auditDb, AuditService audit, DbSessionManager sessions, WebServer.Routes routes)
-            throws java.io.IOException {
+    private Application(Config config, AuditDatabase auditDb, AuditService audit, DbSessionManager sessions, ExecutionEngine engine,
+                        WebServer.Routes routes) throws java.io.IOException {
         this.config = config;
         this.auditDb = auditDb;
         this.audit = audit;
         this.sessions = sessions;
+        this.engine = engine;
         this.inventory = routes.inventory();
         this.server = new WebServer(config, routes); // owned by this application; released by close()
     }
@@ -85,9 +96,12 @@ public final class Application implements AutoCloseable {
     }
 
     public static Application start(Config config, Options options) throws Exception {
-        if (config.mode() == Mode.PROD && (options.authOverride() != null || options.connector() != null)) {
-            throw new IllegalStateException("an authentication or connector override is refused with pgweb.mode=prod (threat T26)");
+        if (config.mode() == Mode.PROD && (options.authOverride() != null || options.connector() != null || options.canceller() != null)) {
+            throw new IllegalStateException("an authentication, connector or cancel override is refused with pgweb.mode=prod (threat T26)");
         }
+        // Execution can't be switched on without PostgreSQL's parser: the single-statement gate depends on it (ADR-0009).
+        StatementGate gate = config.executionEnabled()
+                ? new StatementGate(SqlParser.load(config.parserLibrary()), config.limits().maxSqlBytes()) : null;
         AuditDatabase auditDb = new AuditDatabase(config.audit());
         AuditService audit;
         try {
@@ -102,6 +116,7 @@ public final class Application implements AutoCloseable {
         boolean production = options.connector() == null;
         DbSessionManager sessions = new DbSessionManager(config, production ? new SspiDelegatingConnector() : options.connector(),
                 new RoleMapper(config.identity().lowerCase(), config.identity().overrides()), audit, options.clock(), true);
+        ExecutionEngine engine = new ExecutionEngine(config, sessions, gate, audit, options.clock(), options.canceller());
 
         WebServer.Routes routes = new WebServer.Routes()
                 .listener(new AppSessionListener(sessions, audit))
@@ -114,7 +129,7 @@ public final class Application implements AutoCloseable {
                 .servlet("databasesExternal", new DbSessionServlets.Databases(sessions, "external"), Access.AUTHENTICATED, "/api/profiles/external/*")
                 .servlet("openInternal", new DbSessionServlets.Open(sessions, "internal"), Access.DATA_ADMIN, "/api/db-sessions/internal")
                 .servlet("openExternal", new DbSessionServlets.Open(sessions, "external"), Access.AUTHENTICATED, "/api/db-sessions/external")
-                .servlet("dbSessions", new DbSessionServlets.Sessions(sessions), Access.AUTHENTICATED, "/api/db-sessions", "/api/db-sessions/*");
+                .servlet("dbSessions", new DbSessionServlets.Sessions(sessions, engine, config.limits().maxSqlBytes()), Access.AUTHENTICATED, "/api/db-sessions", "/api/db-sessions/*");
         options.extraRoutes().accept(routes);
         routes.servlet("default", new StaticContentServlet(), Access.AUTHENTICATED, "/");
 
@@ -138,8 +153,9 @@ public final class Application implements AutoCloseable {
 
         Application app;
         try {
-            app = new Application(config, auditDb, audit, sessions, routes);
+            app = new Application(config, auditDb, audit, sessions, engine, routes);
         } catch (Exception e) {
+            engine.close();
             sessions.close();
             audit.close();
             auditDb.close();
@@ -200,6 +216,7 @@ public final class Application implements AutoCloseable {
         closed = true;
         LOG.info("pgweb shutting down");
         server.close();
+        engine.close();
         sessions.close();
         audit.close();
         auditDb.close();

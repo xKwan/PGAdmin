@@ -1,5 +1,7 @@
 package pgweb.web;
 
+import java.util.Map;
+
 /**
  * An expected API failure with a status, a stable machine-readable code and a message that is safe to show to the
  * user (plan §3.8). Never put internal details, SQL, host names or stack traces in the message.
@@ -10,11 +12,22 @@ public final class ApiException extends RuntimeException {
 
     private final int status;
     private final String code;
+    private final transient Map<String, Object> details;
 
     public ApiException(int status, String code, String message) {
+        this(status, code, message, Map.of());
+    }
+
+    /** With extra, safe-to-show fields for the error object (for example a syntax error's position). */
+    public ApiException(int status, String code, String message, Map<String, Object> details) {
         super(message, null, false, false);
         this.status = status;
         this.code = code;
+        this.details = Map.copyOf(details);
+    }
+
+    public Map<String, Object> details() {
+        return details;
     }
 
     public int status() {

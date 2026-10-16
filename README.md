@@ -17,7 +17,8 @@ An internal web application, similar to DBeaver for everyday workflows, that let
 | Architecture decisions (all Accepted 2026-10-15) | [`docs/adr/`](docs/adr/README.md) |
 | Decision log (stakeholder instructions) | [`docs/decision-log.md`](docs/decision-log.md) |
 | What still has to be proven in the real environment | [`docs/target-environment-checklist.md`](docs/target-environment-checklist.md) |
-| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md), [`docs/phase-3-status.md`](docs/phase-3-status.md), [`docs/phase-4-status.md`](docs/phase-4-status.md), [`docs/phase-5-status.md`](docs/phase-5-status.md), [`docs/phase-6-status.md`](docs/phase-6-status.md) |
+| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md), [`docs/phase-3-status.md`](docs/phase-3-status.md), [`docs/phase-4-status.md`](docs/phase-4-status.md), [`docs/phase-5-status.md`](docs/phase-5-status.md), [`docs/phase-6-status.md`](docs/phase-6-status.md), [`docs/phase-7-status.md`](docs/phase-7-status.md) |
+| SQL execution behaviour (gate, limits, timeout, cancel, outcomes, audit) | [`docs/sql-execution-behaviour.md`](docs/sql-execution-behaviour.md) |
 | Developer setup: build, local audit DB, run, configuration reference | [`docs/dev-setup.md`](docs/dev-setup.md) |
 | Requirements, threat model, audit policy | [`docs/requirements.md`](docs/requirements.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/audit-policy.md`](docs/audit-policy.md) |
 | Environment inventory, compatibility matrix | [`docs/environment-inventory.md`](docs/environment-inventory.md), [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md) |
@@ -139,7 +140,7 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 | Application test loop (frontend lint + Vitest; backend unit + integration + coverage) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-TestLoop.ps1 -Tag <phase>` | `docs/evidence/<phase>/loop-*.json` |
 | Pipeline gates fail when faults are injected | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-PipelineGates.ps1` | `docs/evidence/phase-2/gates-*.json` |
 | Offline intake, end to end | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-OfflineIntake.ps1` | `docs/evidence/phase-2/intake-*.json` |
-| SonarQube gate status as evidence | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sonar\Export-SonarGate.ps1 -Tag <phase>` | `docs/evidence/<phase>/sonar-*.json` |
+| SonarQube gate status as evidence (run the `sonar-backend` and `sonar-frontend` jobs first: the export refuses a gate whose analysis doesn't cover the current sources) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sonar\Export-SonarGate.ps1 -Tag <phase>` | `docs/evidence/<phase>/sonar-*.json` |
 | Toolchain scripts | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\toolchain\tests\Test-Toolchain.ps1` | `scripts/toolchain/tests/results/` |
 | Spikes S1–S7 | `spikes\<spike>\Invoke-*.ps1` | `spikes/<spike>/REPORT.md` |
 
@@ -154,4 +155,5 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 | 4: Sign-in, authorisation, sessions, CSRF, audit service | **Done** on the workstation (NTLM; Kerberos is a target-environment item) ([`docs/phase-4-status.md`](docs/phase-4-status.md)) |
 | 5: Frontend shell, landing page, components | **Done** ([`docs/phase-5-status.md`](docs/phase-5-status.md)) |
 | 6: Database connections and sessions (Kerberos delegation, no passwords) | **Done** on the workstation; cross-host delegation is a target-environment item ([`docs/phase-6-status.md`](docs/phase-6-status.md)) |
-| 7–12 | Not started |
+| 7: SQL execution engine (API only; off by default) | **Done** on the workstation: single-statement gate on PostgreSQL's own parser, limits, timeout, cancel and escalation, fail-closed audit ([`docs/phase-7-status.md`](docs/phase-7-status.md)) |
+| 8–12 | Not started |

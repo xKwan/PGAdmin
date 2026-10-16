@@ -16,7 +16,8 @@ public record Config(
         Limits limits,
         boolean executionEnabled,
         Path logDir,
-        Identity identity) {
+        Identity identity,
+        Path parserLibrary) {
 
     /**
      * How a Windows account maps to its PostgreSQL role (ADR-0002).

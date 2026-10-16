@@ -294,6 +294,19 @@ public final class DbSessionManager implements AutoCloseable {
                 .target(s.profile(), s.database(), s.role(), s.mainPid(), s.id()).detail(REASON, reason));
     }
 
+    /** The execution engine reports the transaction state it saw after a statement (for the reaper's age rules). */
+    public void transactionObserved(DbSession s, boolean inTransaction) {
+        s.transactionObserved(inTransaction, clock.instant());
+    }
+
+    /**
+     * Closes a session that can't be trusted any more (its backend was terminated, or the connection was lost while a
+     * statement ran: EXE-07). It is never reused.
+     */
+    public void quarantine(DbSession s, String reason) {
+        close(s, reason, "session_quarantined");
+    }
+
     public int count() {
         return sessions.size();
     }

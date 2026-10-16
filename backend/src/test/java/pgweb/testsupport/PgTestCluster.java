@@ -107,7 +107,9 @@ public final class PgTestCluster implements AutoCloseable {
             port = freePort();
             String opts = "-p " + port + " -c listen_addresses=127.0.0.1,::1 -c pgweb.test_run_token=" + token
                     + " -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=200"
-                    + " -c logging_collector=on -c log_directory=log -c log_filename=pg.log -c log_connections=on";
+                    + " -c logging_collector=on -c log_directory=log -c log_filename=pg.log -c log_connections=on"
+                    // Every statement the server receives is logged, so tests can prove rejected text was never sent.
+                    + " -c log_statement=all";
             try {
                 run(Duration.ofSeconds(90), "pgctl-start", Map.of(), exe("pg_ctl"), "start", "-D", data,
                         "-l", root.resolve("pgctl.log"), "-w", "-t", "60", "-o", opts);

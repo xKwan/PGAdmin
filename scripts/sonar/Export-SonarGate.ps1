@@ -10,6 +10,7 @@ param([Parameter(Mandatory)][string]$Tag)
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) '..\..'))
+. (Join-Path $repoRoot 'scripts\ci\CiCommon.ps1')
 $base = if ($env:SONAR_HOST_URL) { $env:SONAR_HOST_URL } else { 'http://localhost:9000' }
 $state = Get-Content -Raw (Join-Path $repoRoot 'tools\sonar-local.json') | ConvertFrom-Json
 $auth = 'Basic ' + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:$($state.adminPassword)"))
@@ -22,14 +23,16 @@ foreach ($key in 'pgweb-backend', 'pgweb-frontend') {
     $m = Get-Api "/api/measures/component?component=$key&metricKeys=$metrics"
     $measures = [ordered]@{}
     foreach ($x in @($m.component.measures)) { $measures[$x.metric] = $x.value }
-    # The gate status is that of the project's LAST analysis. Refuse to export it if that analysis is older than the
-    # newest change in the project's sources (a scan that silently failed to upload would otherwise look like a pass).
+    # The gate status is that of the project's LAST analysis. Refuse to export it unless the sonar job recorded that
+    # it analysed exactly the sources in the working tree now (finding P6-4: a scan that silently failed to upload
+    # would otherwise look like a pass).
     $last = @((Get-Api "/api/project_analyses/search?project=$key&ps=1").analyses)[0]
-    $analysedAt = [DateTimeOffset]::Parse($last.date)
-    $srcDir = if ($key -eq 'pgweb-backend') { 'backend\src' } else { 'frontend\src' }
-    $newest = Get-ChildItem -Recurse -File (Join-Path $repoRoot $srcDir) | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
-    if ($newest.LastWriteTimeUtc -gt $analysedAt.UtcDateTime) {
-        throw "${key}: last analysis ($($last.date)) is older than $($newest.FullName) ($($newest.LastWriteTimeUtc.ToString('o'))). Run the sonar job first."
+    $srcDir = if ($key -eq 'pgweb-backend') { 'backend/src' } else { 'frontend/src' }
+    $recordFile = Join-Path $repoRoot "ci-logs\sonar-$key.sources"
+    $recorded = if (Test-Path $recordFile) { (Get-Content $recordFile -TotalCount 1).Trim() } else { '' }
+    $current = Get-SourceHash -RepoRoot $repoRoot -Dir $srcDir
+    if ($recorded -ne $current) {
+        throw "${key}: the last recorded analysis does not cover the current $srcDir (sources changed, or the sonar job did not finish). Run the sonar job first."
     }
     $projects += [pscustomobject]@{
         project = $key; gate = $gate.projectStatus.status; analysedAt = $last.date; analysedRevision = $last.revision

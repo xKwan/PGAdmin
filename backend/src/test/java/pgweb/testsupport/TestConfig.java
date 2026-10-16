@@ -17,6 +17,9 @@ public final class TestConfig {
     /** A local account SID, used as the DataAdmin group in tests: BUILTIN\Users. */
     public static final String USERS_SID = "S-1-5-32-545";
 
+    /** Built by native/libpg_query/Build-PgQuery.ps1 (the CI test job builds it when missing). */
+    public static final Path PARSER = Path.of("..", "native", "libpg_query", "build", "pg_query.dll").toAbsolutePath().normalize();
+
     private TestConfig() {
     }
 
@@ -37,6 +40,7 @@ public final class TestConfig {
         p.setProperty("profile.external.port", "5432");
         p.setProperty("logging.dir", tempDir.resolve("logs").toString());
         p.setProperty("server.workDir", tempDir.resolve("work").toString());
+        p.setProperty("parser.library", PARSER.toString());
         return p;
     }
 

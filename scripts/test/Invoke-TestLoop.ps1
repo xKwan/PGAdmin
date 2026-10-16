@@ -60,6 +60,7 @@ function Read-JUnit([string]$Dir, [string]$Label) {
     return $r
 }
 
+if ($Suite -in 'all', 'backend') { Assert-SqlParser -RepoRoot $repoRoot -Log (Join-Path $logRoot 'parser.log') }
 $before = @(Get-Leftovers).Count
 $runs = @()
 $consecutive = 0

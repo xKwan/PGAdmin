@@ -51,7 +51,7 @@ public final class ConfigLoader {
             "limits.cancelGraceSeconds", "limits.idleSessionMinutes", "limits.idleInTransactionMinutes",
             "limits.idleInTransactionWarningMinutes", "limits.maxTransactionAgeMinutes", "limits.heartbeatAbandonSeconds",
             "limits.sessionsPerUser", "limits.sessionsGlobal", "limits.failedOpensPerWindow", "limits.failedOpenWindowMinutes",
-            "logging.dir", "identity.roleCase", "identity.roleOverrides");
+            "logging.dir", "identity.roleCase", "identity.roleOverrides", "parser.library");
     private static final Set<String> PROFILE_KEYS = Set.of(
             "displayName", "host", "port", "sslMode", "sslRootCert", "maintenanceDb", "requiresDataAdmin", "statementTimeoutSeconds");
 
@@ -125,6 +125,7 @@ public final class ConfigLoader {
             Config.Limits limits = limits();
             boolean execution = bool("execution.enabled", false);
             Path logDir = Path.of(str("logging.dir", "logs"));
+            Path parserLibrary = Path.of(str("parser.library", "native/pg_query.dll"));
 
             if (!problems.isEmpty()) {
                 throw new ConfigException(problems);
@@ -133,7 +134,7 @@ public final class ConfigLoader {
             if (!problems.isEmpty()) {
                 throw new ConfigException(problems);
             }
-            return new Config(mode, server, auth, audit, profiles, limits, execution, logDir, identity);
+            return new Config(mode, server, auth, audit, profiles, limits, execution, logDir, identity, parserLibrary);
         }
 
         private Config.Server server(boolean prod) {

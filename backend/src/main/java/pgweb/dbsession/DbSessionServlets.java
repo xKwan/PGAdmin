@@ -23,6 +23,8 @@ import java.util.Map;
  *   GET    /api/db-sessions/{id}                  one session
  *   DELETE /api/db-sessions/{id}                  close
  *   POST   /api/db-sessions/{id}/heartbeat        keep alive while the page is open
+ *   POST   /api/db-sessions/{id}/execute          run one statement: {"sql": "..."}  (plan Phase 7)
+ *   POST   /api/db-sessions/{id}/cancel           cancel the running statement
  * </pre>
  */
 public final class DbSessionServlets {
@@ -32,6 +34,10 @@ public final class DbSessionServlets {
 
     /** Body of an open request. */
     public record OpenRequest(String database) {
+    }
+
+    /** Body of an execute request. */
+    public record ExecuteRequest(String sql) {
     }
 
     static UserContext user(HttpServletRequest req) {
@@ -121,9 +127,19 @@ public final class DbSessionServlets {
     public static final class Sessions extends ApiServlet {
         private static final long serialVersionUID = 1L;
         private final transient DbSessionManager manager;
+        private final transient StatementRunner runner;
+        private final long maxBody;
 
-        public Sessions(DbSessionManager manager) {
+        public Sessions(DbSessionManager manager, StatementRunner runner, long maxSqlBytes) {
             this.manager = manager;
+            this.runner = runner;
+            // JSON may escape every byte of the text (at most 6 characters each); the gate checks the real size.
+            this.maxBody = maxSqlBytes * 6 + 1024;
+        }
+
+        @Override
+        protected long maxBodyBytes() {
+            return maxBody;
         }
 
         private static String[] path(HttpServletRequest req) {
@@ -152,6 +168,13 @@ public final class DbSessionServlets {
             if (p.length == 2 && p[1].equals("heartbeat")) {
                 DbSession s = manager.heartbeat(user(req), p[0]);
                 return Map.of("state", s.state().name(), "transaction", s.transactionState());
+            }
+            if (p.length == 2 && p[1].equals("execute")) {
+                ExecuteRequest body = body(req, ExecuteRequest.class);
+                return runner.execute(user(req), p[0], body.sql(), requestId(req));
+            }
+            if (p.length == 2 && p[1].equals("cancel")) {
+                return runner.cancel(user(req), p[0]);
             }
             throw ApiException.notFound();
         }

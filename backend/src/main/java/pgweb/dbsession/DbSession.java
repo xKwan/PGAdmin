@@ -210,6 +210,7 @@ public final class DbSession {
         m.put("companion", !degraded());
         m.put("state", state.name());
         m.put("transaction", transactionState());
+        m.put("busy", lock.isLocked());
         m.put("createdAt", createdAt.toString());
         m.put("lastActivity", lastActivity.toString());
         return m;
