@@ -1,0 +1,68 @@
+﻿{
+    "tag":  "phase-8",
+    "when":  "2026-10-16T09:00:46.9780544+08:00",
+    "masterSeed":  382077461,
+    "repeat":  5,
+    "overall":  "FAIL",
+    "edge":  "155.0.4283.45",
+    "commit":  "1f783e5",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  716732219,
+                     "ok":  true,
+                     "passed":  3,
+                     "failed":  [
+
+                                ],
+                     "seconds":  5.2
+                 },
+                 {
+                     "run":  2,
+                     "seed":  507375980,
+                     "ok":  false,
+                     "passed":  1,
+                     "failed":  [
+                                    "a long statement shows a timer and can be cancelled",
+                                    "the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling"
+                                ],
+                     "seconds":  34.1
+                 },
+                 {
+                     "run":  3,
+                     "seed":  943152406,
+                     "ok":  false,
+                     "passed":  0,
+                     "failed":  [
+                                    "sign in, connect as my own role, run statements and see every result view",
+                                    "a long statement shows a timer and can be cancelled",
+                                    "the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling"
+                                ],
+                     "seconds":  49.4
+                 },
+                 {
+                     "run":  4,
+                     "seed":  1169621363,
+                     "ok":  false,
+                     "passed":  0,
+                     "failed":  [
+                                    "sign in, connect as my own role, run statements and see every result view",
+                                    "a long statement shows a timer and can be cancelled",
+                                    "the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling"
+                                ],
+                     "seconds":  49.1
+                 },
+                 {
+                     "run":  5,
+                     "seed":  715805177,
+                     "ok":  false,
+                     "passed":  0,
+                     "failed":  [
+                                    "sign in, connect as my own role, run statements and see every result view",
+                                    "a long statement shows a timer and can be cancelled",
+                                    "the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling"
+                                ],
+                     "seconds":  49.2
+                 }
+             ]
+}

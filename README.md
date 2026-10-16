@@ -17,7 +17,7 @@ An internal web application, similar to DBeaver for everyday workflows, that let
 | Architecture decisions (all Accepted 2026-10-15) | [`docs/adr/`](docs/adr/README.md) |
 | Decision log (stakeholder instructions) | [`docs/decision-log.md`](docs/decision-log.md) |
 | What still has to be proven in the real environment | [`docs/target-environment-checklist.md`](docs/target-environment-checklist.md) |
-| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md), [`docs/phase-3-status.md`](docs/phase-3-status.md), [`docs/phase-4-status.md`](docs/phase-4-status.md), [`docs/phase-5-status.md`](docs/phase-5-status.md), [`docs/phase-6-status.md`](docs/phase-6-status.md), [`docs/phase-7-status.md`](docs/phase-7-status.md) |
+| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md), [`docs/phase-3-status.md`](docs/phase-3-status.md), [`docs/phase-4-status.md`](docs/phase-4-status.md), [`docs/phase-5-status.md`](docs/phase-5-status.md), [`docs/phase-6-status.md`](docs/phase-6-status.md), [`docs/phase-7-status.md`](docs/phase-7-status.md), [`docs/phase-8-status.md`](docs/phase-8-status.md) |
 | SQL execution behaviour (gate, limits, timeout, cancel, outcomes, audit) | [`docs/sql-execution-behaviour.md`](docs/sql-execution-behaviour.md) |
 | Developer setup: build, local audit DB, run, configuration reference | [`docs/dev-setup.md`](docs/dev-setup.md) |
 | Requirements, threat model, audit policy | [`docs/requirements.md`](docs/requirements.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/audit-policy.md`](docs/audit-policy.md) |
@@ -138,6 +138,7 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 | Suite | Command | Evidence |
 |---|---|---|
 | Application test loop (frontend lint + Vitest; backend unit + integration + coverage) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-TestLoop.ps1 -Tag <phase>` | `docs/evidence/<phase>/loop-*.json` |
+| End-to-end tests in Edge against a real environment (see [`docs/dev-setup.md`](docs/dev-setup.md) §6) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-E2E.ps1 -Tag <phase> -Repeat 5` | `docs/evidence/<phase>/e2e-*.json` |
 | Pipeline gates fail when faults are injected | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-PipelineGates.ps1` | `docs/evidence/phase-2/gates-*.json` |
 | Offline intake, end to end | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-OfflineIntake.ps1` | `docs/evidence/phase-2/intake-*.json` |
 | SonarQube gate status as evidence (run the `sonar-backend` and `sonar-frontend` jobs first: the export refuses a gate whose analysis doesn't cover the current sources) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sonar\Export-SonarGate.ps1 -Tag <phase>` | `docs/evidence/<phase>/sonar-*.json` |
@@ -156,4 +157,5 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 | 5: Frontend shell, landing page, components | **Done** ([`docs/phase-5-status.md`](docs/phase-5-status.md)) |
 | 6: Database connections and sessions (Kerberos delegation, no passwords) | **Done** on the workstation; cross-host delegation is a target-environment item ([`docs/phase-6-status.md`](docs/phase-6-status.md)) |
 | 7: SQL execution engine (API only; off by default) | **Done** on the workstation: single-statement gate on PostgreSQL's own parser, limits, timeout, cancel and escalation, fail-closed audit ([`docs/phase-7-status.md`](docs/phase-7-status.md)) |
-| 8–12 | Not started |
+| 8: SQL editor and results UI | **Done** on the workstation: CodeMirror editor (strict CSP), result grid, cancel, lock-wait indicator; first end-to-end suite in Edge against a real environment ([`docs/phase-8-status.md`](docs/phase-8-status.md)) |
+| 9–12 | Not started |

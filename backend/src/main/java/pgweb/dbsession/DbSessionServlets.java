@@ -25,6 +25,7 @@ import java.util.Map;
  *   POST   /api/db-sessions/{id}/heartbeat        keep alive while the page is open
  *   POST   /api/db-sessions/{id}/execute          run one statement: {"sql": "..."}  (plan Phase 7)
  *   POST   /api/db-sessions/{id}/cancel           cancel the running statement
+ *   GET    /api/db-sessions/{id}/activity         is a statement running, and is it waiting for a lock (Phase 8)
  * </pre>
  */
 public final class DbSessionServlets {
@@ -158,6 +159,9 @@ public final class DbSessionServlets {
             }
             if (p.length == 1) {
                 return manager.get(user(req), p[0]).view();
+            }
+            if (p.length == 2 && p[1].equals("activity")) {
+                return runner.activity(user(req), p[0]);
             }
             throw ApiException.notFound();
         }

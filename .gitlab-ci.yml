@@ -100,7 +100,12 @@ test:e2e:
   stage: e2e
   needs: [test:backend, test:frontend]
   script:
-    - .\scripts\ci\Invoke-CiJob.ps1 -Job e2e
+    - .\scripts\ci\Invoke-CiJob.ps1 -Job e2e -Seed $CI_PIPELINE_IID
+  after_script:
+    - Get-ChildItem $env:TEMP -Directory -Filter 'pgweb-e2e-*' -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+  artifacts:
+    when: always
+    paths: [ci-logs/, docs/evidence/ci/, e2e/test-results/]
 
 # Community Build analyses main only (plan 8.3): a red gate on main blocks the next merge and phase sign-off.
 sonar:backend:

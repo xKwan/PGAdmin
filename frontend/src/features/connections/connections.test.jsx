@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { describeConnectionError } from '../../api/dbsessions.js';
@@ -74,6 +74,44 @@ describe('ConnectPanel', () => {
     expect(screen.getByText('Code: CONNECT_FAILED')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(await screen.findByRole('list', { name: 'Databases' })).toBeInTheDocument();
+  });
+
+  it('at the session limit, lists open sessions so one can be disconnected', async () => {
+    let open = [session({ id: 'S1aaaaaaaaaaaaaaaaaaaa', database: 'sales' }), session({ id: 'S2bbbbbbbbbbbbbbbbbbbb', database: 'hr', createdAt: '2026-10-16T08:00:00Z' })];
+    let listFails = true;
+    const closed = [];
+    server.use(
+      http.post('/api/profiles/external/databases', () => HttpResponse.json({ databases: [{ name: 'sales', owner: 'x', owned: true }] })),
+      http.post('/api/db-sessions/external', () => (open.length >= 2 ? envelope(409, 'SESSION_LIMIT', 'You already have 2 open database sessions; close one first.') : HttpResponse.json(session(), { status: 201 }))),
+      http.get('/api/db-sessions', () => {
+        if (listFails) {
+          listFails = false;
+          return envelope(503, 'UNAVAILABLE', 'busy');
+        }
+        return HttpResponse.json({ sessions: open });
+      }),
+      http.delete('/api/db-sessions/:id', ({ params }) => {
+        closed.push(params.id);
+        open = open.filter((s) => s.id !== params.id);
+        return params.id.startsWith('S2') ? envelope(404, 'NOT_FOUND', 'Not found') : new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const onConnected = vi.fn();
+    render(<ConnectPanel profile="external" onConnected={onConnected} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Show my databases' }));
+    await userEvent.click(await screen.findByRole('button', { name: /sales/ }));
+    expect(await screen.findByText(/already have 2 open database sessions/)).toBeInTheDocument();
+    expect(await screen.findByText('Could not list your sessions')).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: /Try again|Retry/ }).at(-1));
+    const list = await screen.findByRole('region', { name: 'Your open sessions' });
+    expect(within(list).getAllByText(/^since /)).toHaveLength(2);
+    await userEvent.click(within(list).getByRole('button', { name: 'Disconnect hr' })); // already gone (404): fine
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Disconnect hr' })).toBeNull());
+    expect(screen.getByRole('button', { name: 'Disconnect sales' })).toBeInTheDocument();
+    expect(closed).toEqual(['S2bbbbbbbbbbbbbbbbbbbb']);
+    await userEvent.click(within(screen.getByRole('region', { name: 'Your open sessions' })).getByRole('button', { name: 'Show my databases' }));
+    await userEvent.click(await screen.findByRole('button', { name: /sales/ }));
+    await waitFor(() => expect(onConnected).toHaveBeenCalled());
   });
 
   it('describes every connection error code', () => {
@@ -168,7 +206,10 @@ describe('Workspace with connections', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Show my databases' }));
     await userEvent.click(await screen.findByRole('button', { name: /ops/ }));
     expect(await screen.findByLabelText('Database session')).toHaveTextContent('ops');
-    expect(screen.getAllByText(/arrives in a later version/, { selector: '.empty-body' })).toHaveLength(2);
+    expect(screen.getAllByText(/arrives in a later version/, { selector: '.empty-body' })).toHaveLength(1); // object explorer (Phase 10)
+    expect(await screen.findByRole('textbox', { name: 'SQL editor' })).toBeInTheDocument();
+    expect(screen.getByText('Running SQL is switched off by the administrator')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled();
     await act(async () => {
       await userEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
     });

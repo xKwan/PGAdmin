@@ -67,6 +67,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
     private static final String UNCONFIRMED = "unconfirmed";
     private static final String INDETERMINATE = "indeterminate";
     private static final String ERROR = "error";
+    private static final String EXECUTION_ID = "executionId";
     /** admin_shutdown, crash_shutdown, cannot_connect_now: the backend is gone. */
     private static final Set<String> TERMINATED = Set.of("57P01", "57P02", "57P03");
 
@@ -240,7 +241,44 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         audit.record(AuditEvent.of("cancel_requested").user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
                 .execution(run.executionId, null));
         stop(s, run, "cancelled");
-        return Map.of("executionId", run.executionId.toString(), "status", "cancel_requested");
+        return Map.of(EXECUTION_ID, run.executionId.toString(), "status", "cancel_requested");
+    }
+
+    /**
+     * Whether a statement is running on the session, for how long, and what its backend waits for, read from
+     * {@code pg_stat_activity} on the companion connection (the user can see their own backends). Polled by the UI
+     * about once a second while a statement runs; not audited (it changes nothing). Degraded sessions report no wait
+     * information.
+     */
+    @Override
+    public Map<String, Object> activity(UserContext user, String sessionId) {
+        DbSession s = sessions.get(user, sessionId);
+        Running run = running.get(s.id());
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("running", run != null);
+        if (run == null) {
+            return m;
+        }
+        m.put(EXECUTION_ID, run.executionId.toString());
+        m.put("elapsedMs", Duration.between(run.startedAt, clock.instant()).toMillis());
+        Connection companion = s.companion();
+        if (companion == null) {
+            return m;
+        }
+        try (PreparedStatement ps = companion.prepareStatement(
+                "SELECT wait_event_type, wait_event FROM pg_catalog.pg_stat_activity WHERE pid = ?")) {
+            ps.setInt(1, s.mainPid());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    m.put("waitEventType", rs.getString(1));
+                    m.put("waitEvent", rs.getString(2));
+                    m.put("lockWait", "Lock".equals(rs.getString(1)));
+                }
+            }
+        } catch (SQLException e) {
+            LOG.debug("activity query failed for session {}: {}", s.id(), e.getSQLState());
+        }
+        return m;
     }
 
     /** Cancel, then terminate through the companion if the statement is still running after the grace period. */
@@ -409,7 +447,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
 
         ResultBuilder(Config.Limits limits, UUID executionId, String statementClass) {
             this.limits = limits;
-            doc.put("executionId", executionId.toString());
+            doc.put(EXECUTION_ID, executionId.toString());
             doc.put("statementClass", statementClass);
         }
 

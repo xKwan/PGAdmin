@@ -85,7 +85,7 @@ function Shell() {
         </button>
       </header>
       <main className="content">
-        {profile ? <Workspace profile={profile} onBack={() => setProfile(null)} /> : <LandingPage me={me.data} onOpen={setProfile} />}
+        {profile ? <Workspace profile={profile} executionEnabled={me.data.capabilities.executionEnabled} onBack={() => setProfile(null)} /> : <LandingPage me={me.data} onOpen={setProfile} />}
       </main>
       <ToastList toasts={toasts} onDismiss={dismiss} />
     </div>

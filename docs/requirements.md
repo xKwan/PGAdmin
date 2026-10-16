@@ -27,7 +27,7 @@
 | EXE-01 | SQL execution disabled (feature flag) until gate G4 | P6–P8 | Flag test; G4 sign-off | Tested (P7): disabled → 403 `EXECUTION_DISABLED`; enabled without a loadable parser → startup refused. G4 sign-off pending (after P8) |
 | EXE-02 | Single-statement execution enforced by the verified parser gate plus a pgJDBC cross-check (ADR-0009); no hand-written splitter | P1, P7 | S2/S3 reports; P7 tests | Tested (P7): libpg_query gate + pgJDBC cross-check; corpus on the real server (both `standard_conforming_strings` settings); the server's statement log shows rejected text never arrived; NUL characters refused (P7-3) |
 | EXE-03 | Multi-statement scripts only if the parser passes 100% of the corpus; otherwise disabled | P1, P7 | S2 report | Not offered in this release (P7): the parser passes the whole corpus, so scripts are allowed, but their partial-failure, transaction and audit rules are deferred. **Stakeholder to confirm** |
-| EXE-04 | Distinct handling of row-returning, command, DDL, zero-row, error, timeout and cancelled outcomes | P7, P8 | §3.3 integration and RTL tests | Tested (P7) in the API: rows, command, DDL, zero rows, error (SQLSTATE, position), timeout, cancelled, indeterminate. UI in P8 |
+| EXE-04 | Distinct handling of row-returning, command, DDL, zero-row, error, timeout and cancelled outcomes | P7, P8 | §3.3 integration and RTL tests | Tested (P7 API; P8 UI): rows, command, DDL, zero rows, error (SQLSTATE, position), timeout, cancelled, indeterminate |
 | EXE-05 | Server-side row, response-size and cell limits; SQL never rewritten | P7 | Limit and heap tests | Tested (P7): row, byte and cell limits; SQL sent unchanged. Memory per statement is bounded by `maxRows + 1` rows, not by bytes (documented; streaming in P9) |
 | EXE-06 | Server-side wall-clock timeout unaffected by user `SET` commands | P7 | Timeout-after-SET tests | Tested (P7): timeout holds after `SET statement_timeout = 0`, `SET lock_timeout = 0` and `RESET ALL` |
 | EXE-07 | Cancellation reaches PostgreSQL; resource release measured; escalation and quarantine | P7 | Resource-release measurements | Tested (P7): cancel releases row locks; an ineffective cancel escalates to `pg_terminate_backend` and quarantines the session; without a companion the outcome is `unconfirmed` (P7-2) |
@@ -44,15 +44,15 @@
 | FN-01 | Landing page offering internal (DataAdmin only) and external options | P5 | RTL; E2E | Tested (P5; E2E in P11) |
 | FN-02 | External connection: choose a database from those the user may CONNECT to (no password) | P6 | RTL; integration | Tested (P6) |
 | FN-03 | Connection status and session info; multiple sessions; expired/lost handling | P6 | RTL; integration | Tested (P6) |
-| FN-04 | SQL editor with PostgreSQL highlighting and practical editing features | P8 | RTL | Planned |
-| FN-05 | Execute selection or current statement; cancel; running timer | P8 | RTL; E2E | Planned |
-| FN-06 | Bounded, locally sortable, paginated results with NULL and type-aware display | P8 | RTL | Planned |
-| FN-07 | Affected-row counts and command completion display | P8 | RTL; integration | Planned |
+| FN-04 | SQL editor with PostgreSQL highlighting and practical editing features | P8 | RTL | Tested (P8): CodeMirror 6 with PostgreSQL highlighting, bracket matching, search, comment toggle, keyword completion; RTL and E2E (Edge) |
+| FN-05 | Execute selection or current statement; cancel; running timer | P8 | RTL; E2E | Tested (P8): Ctrl+Enter runs the selection or the statement at the cursor; running timer; Cancel; RTL and E2E |
+| FN-06 | Bounded, locally sortable, paginated results with NULL and type-aware display | P8 | RTL | Tested (P8): virtualised grid, type names, NULL vs '' vs 'NULL', truncation markers, local sort (labelled), pages of 200; RTL and E2E |
+| FN-07 | Affected-row counts and command completion display | P8 | RTL; integration | Tested (P8): affected-row counts and "Completed."; RTL and E2E |
 | FN-08 | Auto-commit and manual transactions; isolation-level choice; transaction state shown | P9 | Integration; RTL | Planned |
 | FN-09 | Lock waits, deadlocks, serialization failures and aborted transactions reported clearly | P9 | Concurrency suite | Planned |
-| FN-10 | Results labelled as snapshots ("Retrieved at"); refresh re-runs the statement | P8 | RTL | Planned |
+| FN-10 | Results labelled as snapshots ("Retrieved at"); refresh re-runs the statement | P8 | RTL | Tested (P8): "Retrieved at" and Refresh (runs the same text again); RTL |
 | FN-11 | Metadata browser for accessible databases, schemas and objects | P10 | Integration; RTL | Planned |
-| FN-12 | Usable at 1366×768 and 1920×1080 | P5, P11 | Playwright layout check | Planned |
+| FN-12 | Usable at 1366×768 and 1920×1080 | P5, P11 | Playwright layout check | Tested (P8, E2E): no page-level horizontal scrolling at 1366×768 and 1920×1080 in the workspace; the full layout check is Phase 11 |
 
 ## 4. MVP: quality and operations
 

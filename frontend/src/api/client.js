@@ -4,12 +4,14 @@
 // - 401 means the app session is gone: a full reload makes the browser sign in again (Negotiate).
 
 export class ApiError extends Error {
-  constructor(status, code, message, requestId) {
+  /** `details` holds the envelope's extra fields (for example a syntax error's `position`). */
+  constructor(status, code, message, requestId, details = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.requestId = requestId;
+    this.details = details;
   }
 
   get kind() {
@@ -79,7 +81,8 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
   if (response.status === 204) return null;
   if (response.ok) return response.json();
   const err = await readEnvelope(response);
-  const apiError = new ApiError(response.status, err.code, err.message, err.requestId ?? null);
+  const { code, message, requestId, ...details } = err;
+  const apiError = new ApiError(response.status, code, message, requestId ?? null, details);
   // DELEGATION_HANDSHAKE: the browser could not complete the Windows sign-in for a database connection; the app
   // session itself is fine, so this is an ordinary error, not a reason to reload.
   if (response.status === 401 && apiError.code !== 'DELEGATION_HANDSHAKE') handlers.unauthenticated(apiError);

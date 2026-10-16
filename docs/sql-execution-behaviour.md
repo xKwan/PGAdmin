@@ -8,7 +8,16 @@ AUD-01/02). Everything described here is enforced on the server. The browser can
 ```
 POST /api/db-sessions/{id}/execute     {"sql": "<one statement>"}
 POST /api/db-sessions/{id}/cancel      {}
+GET  /api/db-sessions/{id}/activity    {"running", "elapsedMs", "waitEventType", "waitEvent", "lockWait"}
 ```
+
+`activity` reads the running statement's `pg_stat_activity` row on the companion connection. The UI polls it once a
+second while a statement runs, to show "Waiting for a lock held by another session". It changes nothing and isn't
+audited. Degraded sessions report only `running` and `elapsedMs`.
+
+In the browser (Phase 8), Ctrl+Enter runs the selection or, with no selection, the statement at the cursor. The
+editor's own SQL grammar finds that statement. This is only a convenience: the server still parses whatever is sent
+and refuses anything that isn't exactly one statement.
 
 `{id}` is a DB session the caller opened (Phase 6). A session that belongs to someone else, or to another app
 session of the same user, is reported as `404`.

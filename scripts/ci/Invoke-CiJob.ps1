@@ -103,13 +103,8 @@ switch ($Job) {
         if ($LASTEXITCODE -ne 0) { throw 'package failed' }
     }
     'e2e' {
-        $e2e = Join-Path $repoRoot 'e2e'
-        if (-not (Test-Path (Join-Path $e2e 'package.json'))) {
-            Write-Host '  e2e: no end-to-end suite yet (added in Phase 11); nothing to run.'
-        } else {
-            Step 'npm-ci' 'npm ci --offline --no-audit --no-fund' $e2e
-            Step 'playwright' 'npx playwright test' $e2e
-        }
+        # Real environment (throwaway PostgreSQL with SSPI for the runner's account, packaged JAR, installed Edge).
+        Step 'playwright' "powershell -NoProfile -ExecutionPolicy Bypass -File `"$(Join-Path $repoRoot 'scripts\test\Invoke-E2E.ps1')`" -Tag ci -Seed $Seed" $repoRoot
     }
 }
 Write-Host "job $Job passed (seed $Seed)"

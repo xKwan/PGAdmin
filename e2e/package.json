@@ -1,0 +1,13 @@
+{
+  "name": "pgweb-e2e",
+  "private": true,
+  "version": "0.1.0",
+  "description": "End-to-end tests: Playwright drives the installed Microsoft Edge against a real pgweb (scripts/test/Invoke-E2E.ps1 sets up the environment).",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

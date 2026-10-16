@@ -93,7 +93,17 @@ The workstation has no domain, so test mode allows NTLM (`auth.protocols=Negotia
 
 State-changing requests (POST, PUT, DELETE) need the `X-CSRF-Token` header from `/api/me` and an own-origin `Origin` header.
 
-## 6. Security notes for developers
+## 6. End-to-end tests (real Edge, real database connection)
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-E2E.ps1 -Tag <phase> -Repeat 5
+```
+
+The script builds the JAR with the SPA (skip with `-SkipBuild`). It creates a throwaway PostgreSQL 18 cluster under `%TEMP%\pgweb-e2e-*`, whose `pg_hba.conf` authenticates **your Windows account** with `sspi` as the role with your lower-cased user name, and seeds an `e2e_db` database. It then starts pgweb in test mode with execution enabled, and runs `e2e\` (Playwright 1.63, installed Edge only, headless, `--auth-server-allowlist=localhost`). Everything is removed afterwards (`-KeepEnvironment` keeps the folder). Requirements: Edge, PostgreSQL 18 binaries (as for the integration tests), and the parser DLL (built when missing). The report goes to `docs\evidence\<phase>\e2e-*.json`; logs to `ci-logs\e2e-<phase>\`.
+
+This exercises the production connection path in a real browser: Windows sign-in, the fresh Negotiate handshake on the request that opens a session, impersonation and an SSPI logon. On a workstation this is NTLM loopback. Kerberos is a target-environment item.
+
+## 7. Security notes for developers
 
 - **Heap dumps:** the JVM default (`-XX:-HeapDumpOnOutOfMemoryError`) is kept. Don't enable heap dumps on servers: a dump can contain the audit HMAC key, the audit DB password and query results (threat T10/T27). The service wrapper configuration (Phase 12) leaves them off.
 - **Logs** are not audit records. The redactor masks `password=`, `token`, `secret`, `hmacKey` and `Authorization` values, but code must still never log secrets on purpose.

@@ -309,6 +309,60 @@ class ExecutionIT {
                 .anyMatch(e -> "confirmed".equals(e.get("cancel_outcome"))));
     }
 
+    static JsonNode activity(Session s) throws Exception {
+        return Json.mapper().readTree(s.client().get("/api/db-sessions/" + s.id() + "/activity").body());
+    }
+
+    @Test
+    void aLockWaitIsVisibleWhileTheStatementRuns() throws Exception {
+        Session holder = session(app, "xena", "1");
+        Session waiter = session(app, "yuri", "2");
+        int id = 1 + Seeds.random("lock-wait").nextInt(50);
+        assertThat(activity(waiter).path("running").asBoolean()).isFalse();
+        holder.ok("BEGIN");
+        holder.ok("UPDATE items SET name = name WHERE id = " + id);
+        CompletableFuture<JsonNode> blocked = CompletableFuture.supplyAsync(() -> {
+            try {
+                return waiter.ok("UPDATE items SET name = name WHERE id = " + id);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        });
+        try {
+            await().atMost(Duration.ofSeconds(2)).pollInterval(Duration.ofMillis(50)).until(() -> activity(waiter).path("lockWait").asBoolean());
+            JsonNode a = activity(waiter);
+            assertThat(a.path("running").asBoolean()).isTrue();
+            assertThat(a.path("waitEventType").asText()).isEqualTo("Lock");
+            assertThat(a.path("elapsedMs").asLong()).isNotNegative();
+            assertThat(a.path("executionId").asText()).isNotEmpty();
+        } finally {
+            holder.ok("ROLLBACK");
+        }
+        assertThat(blocked.get(20, TimeUnit.SECONDS).path("results").get(0).path("rowCount").asInt()).isEqualTo(1);
+        assertThat(waiter.client().get("/api/db-sessions/" + waiter.id() + "/nonsense").statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void aDegradedSessionReportsRunningWithoutWaitDetails() throws Exception {
+        connector.failCompanion("zoe", true);
+        Session s;
+        try {
+            s = session(app, "zoe", "3");
+        } finally {
+            connector.failCompanion("zoe", false);
+        }
+        CompletableFuture<JsonNode> running = CompletableFuture.supplyAsync(() -> {
+            try {
+                return s.ok("SELECT pg_sleep(1)");
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        });
+        await().atMost(Duration.ofSeconds(5)).until(() -> activity(s).path("running").asBoolean());
+        assertThat(activity(s).has("waitEventType")).isFalse();
+        assertThat(running.get(20, TimeUnit.SECONDS).path("kind").asText()).isEqualTo("rows");
+    }
+
     @Test
     void anIneffectiveCancelEscalatesToTerminationAndQuarantine() throws Exception {
         Session s = session(stubborn, "xena", "1");
@@ -443,7 +497,9 @@ class ExecutionIT {
         } finally {
             apps.auditDown(false);
         }
-        s.ok("SELECT '" + m + "_after'");
+        // The audit pool needs a moment to reconnect; until then every attempt is refused (503) and runs nothing.
+        await().atMost(Duration.ofSeconds(30)).pollInterval(Duration.ofMillis(250))
+                .until(() -> s.run("SELECT '" + m + "_after'").statusCode() == 200);
         await().atMost(Duration.ofSeconds(10)).until(() -> serverLog().contains(m + "_after"));
         assertThat(serverLog()).doesNotContain("'" + m + "'");
     }

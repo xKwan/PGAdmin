@@ -20,3 +20,4 @@ frontend/coverage/
 native/libpg_query/build/
 # Local throwaway dev clusters (scripts/dev-db.ps1)
 .dev-db/
+frontend/dist-report.json

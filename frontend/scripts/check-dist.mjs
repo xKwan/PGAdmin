@@ -1,7 +1,29 @@
-// Build check (plan Phase 5): the production bundle must not reference any external origin.
-// Fails the build if dist/ contains an http(s):// URL outside the small allow-list of inert namespace strings.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+// Build checks on dist/:
+// - plan Phase 5: the bundle must not reference any external origin (http(s):// URLs outside a small allow-list of
+//   inert namespace strings);
+// - plan Phase 8: size budgets in gzip bytes. The editor (CodeMirror) is a lazily loaded chunk of its own.
+// Sizes are written to dist-report.json so each phase can record them.
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { basename, join } from 'node:path';
+import { gzipSync } from 'node:zlib';
+
+export const BUDGETS = [
+  { name: 'editor chunk', match: /^SqlEditor-.*\.js$/, maxGzip: 400 * 1024 },
+  { name: 'entry chunk', match: /^index-.*\.js$/, maxGzip: 250 * 1024 },
+];
+
+/** Gzip size of every JS/CSS asset and the budget verdicts. */
+export function sizeReport(files, read = readFileSync) {
+  const assets = files
+    .filter((f) => /\.(js|css)$/.test(f))
+    .map((f) => ({ file: basename(f), bytes: read(f).length, gzip: gzipSync(read(f)).length }));
+  const budgets = BUDGETS.map((b) => {
+    const hits = assets.filter((a) => b.match.test(a.file));
+    const gzip = hits.reduce((n, a) => n + a.gzip, 0);
+    return { name: b.name, files: hits.map((a) => a.file), gzip, maxGzip: b.maxGzip, ok: hits.length > 0 && gzip <= b.maxGzip };
+  });
+  return { assets, budgets };
+}
 
 const ALLOWED = [
   /^https?:\/\/www\.w3\.org\//, // SVG / XML namespaces inside libraries
@@ -35,4 +57,10 @@ if (process.argv[1] && process.argv[1].endsWith('check-dist.mjs')) {
     process.exit(1);
   }
   console.log('check-dist: no external URLs in dist/');
+  const report = sizeReport(walk('dist'));
+  writeFileSync('dist-report.json', JSON.stringify(report, null, 2));
+  for (const b of report.budgets) {
+    console.log(`check-dist: ${b.name} ${(b.gzip / 1024).toFixed(1)} KB gzip (budget ${b.maxGzip / 1024} KB) ${b.ok ? 'ok' : 'OVER BUDGET or missing'}`);
+  }
+  if (report.budgets.some((b) => !b.ok)) process.exit(1);
 }
