@@ -45,6 +45,17 @@
                         "resolvedAt":  "2026-10-15T13:49:11.9993324Z"
                     },
                     {
+                        "name":  "winsw",
+                        "versionSpec":  "2.12.0",
+                        "version":  "2.12.0",
+                        "url":  "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe",
+                        "file":  "WinSW-x64.exe",
+                        "hashAlgorithm":  "SHA256",
+                        "hash":  "05B82D46AD331CC16BDC00DE5C6332C1EF818DF8CEEFCD49C726553209B3A0DA",
+                        "hashSource":  "pinned at first download, 2026-10-16 (GitHub publishes no checksum; two downloads matched; release 2023-01-28; the binary is not Authenticode-signed)",
+                        "resolvedAt":  "2026-10-16T05:33:45.1809776Z"
+                    },
+                    {
                         "name":  "zig",
                         "versionSpec":  "0.17",
                         "version":  "0.17.0",

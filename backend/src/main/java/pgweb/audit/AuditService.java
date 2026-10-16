@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@link #record(AuditEvent)}: best effort (login, logout, denials, outcomes). A failed write goes to the local
  *       spool and is replayed later; the caller is never blocked.</li>
  * </ul>
- * Every failure is logged at ERROR as {@code audit_failure}, which monitoring alerts on (Windows Event Log, P12).
+ * Every failure is logged at ERROR as {@code audit_failure}, which monitoring alerts on (docs/operations/deployment-guide.md §10).
  */
 public final class AuditService implements AutoCloseable {
 

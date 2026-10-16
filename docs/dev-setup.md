@@ -105,7 +105,7 @@ This exercises the production connection path in a real browser: Windows sign-in
 
 ## 7. Security notes for developers
 
-- **Heap dumps:** the JVM default (`-XX:-HeapDumpOnOutOfMemoryError`) is kept. Don't enable heap dumps on servers: a dump can contain the audit HMAC key, the audit DB password and query results (threat T10/T27). The service wrapper configuration (Phase 12) leaves them off.
+- **Heap dumps:** the JVM default (`-XX:-HeapDumpOnOutOfMemoryError`) is kept. Don't enable heap dumps on servers: a dump can contain the audit HMAC key, the audit DB password and query results (threat T10/T27). The service wrapper configuration (`deploy/windows/pgweb-service.xml.template`) turns them off explicitly.
 - **Logs** are not audit records. The redactor masks `password=`, `token`, `secret`, `hmacKey` and `Authorization` values, but code must still never log secrets on purpose.
 - **Errors:** every error response uses the `{"error":{"code","message","requestId"}}` envelope, with no stack trace or server version. The `requestId` matches the log lines for that request.
 - **JSON requests** are parsed strictly: unknown fields, duplicate keys, trailing data and type coercion give 400.

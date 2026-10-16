@@ -225,6 +225,43 @@ $Scenarios = [ordered]@{
         "removed-and-restored=$($p.name)"
     }
 
+    'single-file-package' = {
+        # A package that is one self-contained file (WinSW-x64.exe): verified by hash, copied as is, removable.
+        param($S, $Rng)
+        $exe = 'tool' + $Rng.Next(100, 999) + '-x64.exe'
+        $file = "single-1.0.$($Rng.Next(0, 50)).exe"
+        $path = Join-Path $S.Source $file
+        $bytes = New-Object byte[] ($Rng.Next(1, 65536)); $Rng.NextBytes($bytes)
+        [IO.File]::WriteAllBytes($path, $bytes)
+        $single = [pscustomobject]@{
+            name = 'single'; displayName = 'Fake single'; resolver = 'direct'; versionSpec = '1.0.0'; version = '1.0.0'
+            url = ([uri]$path).AbsoluteUri; file = $file; hashAlgorithm = 'SHA256'; hash = (Get-FileHash $path -Algorithm SHA256).Hash
+            homeCheck = $exe; purpose = 'single-file test package'
+        }
+        $home1 = Join-Path $S.Ctx.ToolsRoot 'single-1.0.0'
+        Save-Manifest $S (@($S.Packages) + $single)
+        try {
+            $null = Install-Toolchain -Ctx $S.Ctx -Name 'single'
+            $installed = Join-Path $home1 $exe
+            Assert-True (Test-Path -LiteralPath $installed) 'single-file package not installed under its home'
+            Assert-True ((Get-FileHash $installed -Algorithm SHA256).Hash -eq $single.hash) 'installed file differs from the verified download'
+            Assert-True ((Get-Props $S)['single.home'] -eq 'tools/single-1.0.0') 'single.home property wrong'
+            # A download whose hash doesn't match is refused, as for archives.
+            $null = Uninstall-Toolchain -Ctx $S.Ctx -Name 'single'
+            [IO.File]::WriteAllBytes($path, [byte[]]($bytes + [byte]1))
+            Remove-Item -LiteralPath (Join-Path $S.Ctx.Downloads $file) -Force -ErrorAction SilentlyContinue
+            Assert-Throws { Install-Toolchain -Ctx $S.Ctx -Name 'single' -WarningAction SilentlyContinue } 'Download failed|hash|checksum' 'a tampered single-file download was accepted'
+            Assert-True (-not (Test-Path -LiteralPath $home1)) 'tampered single-file package left a home folder'
+        } finally {
+            try { $null = Uninstall-Toolchain -Ctx $S.Ctx -Name 'single' } catch { Write-Verbose "single not installed: $_" }
+            Save-Manifest $S $S.Packages
+            $null = Install-Toolchain -Ctx $S.Ctx
+        }
+        Assert-NoStaging $S
+        Assert-AllInstalled $S
+        "file=$exe bytes=$($bytes.Length)"
+    }
+
     'zip-slip-rejected' = {
         param($S, $Rng)
         $escapeName = 'escape-' + $Rng.Next(100000, 999999) + '.txt'

@@ -55,6 +55,20 @@
       "hashSource": "binaries.sonarsource.com .sha256 (HTTPS), 2026-10-15",
       "homeCheck": "conf/sonar.properties",
       "purpose": "Local code-quality server for the 'pgweb gate' (plan section 8.3, ADR-0008), run project-locally with the project JDK and an embedded H2 database (evaluation mode). Not used at runtime; the organisation's own SonarQube replaces it in CI."
+    },
+    {
+      "name": "winsw",
+      "displayName": "WinSW (Windows service wrapper)",
+      "resolver": "direct",
+      "versionSpec": "2.12.0",
+      "version": "2.12.0",
+      "url": "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe",
+      "file": "WinSW-x64.exe",
+      "hashAlgorithm": "SHA256",
+      "hash": "05b82d46ad331cc16bdc00de5c6332c1ef818df8ceefcd49c726553209b3a0da",
+      "hashSource": "pinned at first download, 2026-10-16 (GitHub publishes no checksum; two downloads matched; release 2023-01-28; the binary is not Authenticode-signed)",
+      "homeCheck": "WinSW-x64.exe",
+      "purpose": "Runs pgweb as a Windows service (MIT licence; self-contained x64 build, no .NET install needed). Shipped in the release bundle as service\\pgweb-service.exe (Phase 12)."
     }
   ],
   "preexisting": [

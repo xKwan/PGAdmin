@@ -90,8 +90,8 @@ class MainIT {
 
         Run m1 = run("migrate", "--config", f.toString());
         assertThat(m1.rc).as(m1.err).isEqualTo(Main.OK);
-        assertThat(m1.out).contains("1 migrations applied");
-        assertThat(run("migrate", "--config", f.toString()).out).contains("0 migrations applied");
+        assertThat(m1.out).contains("audit schema at version 1 (1 migrations applied)");
+        assertThat(run("migrate", "--config", f.toString()).out).contains("audit schema at version 1 (0 migrations applied)");
 
         Random r = Seeds.random("main-events");
         int n = 3 + r.nextInt(10);

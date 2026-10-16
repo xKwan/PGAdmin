@@ -1,0 +1,27 @@
+<!--
+  WinSW 2.12 configuration for pgweb (written by Install-Pgweb.ps1; plan section 7.6). The service runs the release that
+  the "current" junction points to, so upgrade and rollback only repoint the junction and restart.
+  Stopping: WinSW sends Ctrl+C; pgweb's shutdown hook closes every database session (PostgreSQL rolls back open
+  transactions) and the audit resources, then exits. After stoptimeout WinSW kills the process.
+-->
+<service>
+  <id>@SERVICE_NAME@</id>
+  <name>@SERVICE_NAME@ (PostgreSQL web query interface)</name>
+  <description>pgweb: browser-based SQL for PostgreSQL with Windows sign-in. Configuration: @DATA_ROOT@\config\pgweb.properties</description>
+  <executable>@CURRENT@\runtime\bin\java.exe</executable>
+  <arguments>@JAVA_OPTIONS@ -XX:-HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8 -jar "@CURRENT@\pgweb.jar" serve --config "@DATA_ROOT@\config\pgweb.properties"</arguments>
+  <workingdirectory>@CURRENT@</workingdirectory>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <stoptimeout>30 sec</stoptimeout>
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="60 sec"/>
+  <onfailure action="none"/>
+  <resetfailure>1 hour</resetfailure>
+  <logpath>@DATA_ROOT@\logs\service</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+  <!--@SERVICE_ACCOUNT@-->
+</service>

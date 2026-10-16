@@ -41,7 +41,9 @@ Each item gives the claim, how to check it, and where the workstation evidence i
 
 | # | Check | How |
 |---|---|---|
-| D1 | The service installs under WinSW and runs as the service account | Installation guide (P12) |
+| D1 | The service installs under WinSW and runs as the service account (rehearsed on the workstation in process mode only: no elevation there) | [`operations/deployment-guide.md`](operations/deployment-guide.md) §7–8 |
+| D6 | AppLocker/WDAC allows the unsigned WinSW wrapper (by hash), the bundled Java runtime and the parser DLL | Deployment guide §1 |
+| D7 | Someone other than the author installs from the deployment guide alone (Phase 12 acceptance) | Record who, when, and every point where the guide was unclear |
 | D2 | HTTPS with a certificate from the internal CA; HSTS on | Browser + header check |
 | D3 | The app host can reach 5432 and 5433, and the audit DB cluster | `Test-NetConnection` |
 | D4 | Browser GPO `AuthServerAllowlist` / intranet zone contains the exact app host name (S6 E3) | Silent logon from a user desktop |

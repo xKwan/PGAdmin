@@ -136,14 +136,31 @@ package:
     paths: [ci-logs/, release/]
     expire_in: 90 days
 
+# Packaged-release smoke test (plan Phase 12): install -> use -> upgrade -> tampered bundle -> rollback -> uninstall
+# on a throwaway environment, with the audit chain verified at each step and graceful shutdown checked.
+smoke:package:
+  extends: .job
+  stage: package
+  needs: [package]
+  script:
+    - .\scripts\test\Invoke-DeploymentRehearsal.ps1 -Tag ci
+  after_script:
+    - Get-ChildItem $env:TEMP -Directory -Filter 'pgweb-rehearsal-*' -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+  artifacts:
+    when: always
+    paths: [ci-logs/, docs/evidence/ci/]
+
+# Manual deployment to the test server (runner on that server, elevated). Configuration and service account come
+# from protected CI variables; an existing installation is upgraded (the DBA confirms the audit backup).
 deploy:test:
   stage: deploy
-  needs: [package]
+  needs: [package, smoke:package]
   when: manual
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
-    - .\deploy\windows\Install-Pgweb.ps1 -Bundle (Get-ChildItem release\pgweb-*.zip | Select-Object -First 1).FullName -Environment test
+    - $bundle = (Get-ChildItem release\pgweb-*.zip | Select-Object -First 1).FullName
+    - if (Test-Path (Join-Path $env:ProgramFiles 'pgweb\current')) { .\deploy\windows\Update-Pgweb.ps1 -Bundle $bundle -AuditBackupConfirmed:($env:PGWEB_AUDIT_BACKUP_CONFIRMED -eq 'yes') } else { .\deploy\windows\Install-Pgweb.ps1 -Bundle $bundle -Config $env:PGWEB_TEST_CONFIG_FILE -ServiceAccount $env:PGWEB_TEST_SERVICE_ACCOUNT -Environment test }
 
 # Nightly (scheduled pipelines): the concurrency suite 20 times in a row with new seeds, to catch flaky
 # behaviour (plan 7.5, section 8.1, Phase 9).

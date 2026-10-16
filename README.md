@@ -17,7 +17,10 @@ An internal web application, similar to DBeaver for everyday workflows, that let
 | Architecture decisions (all Accepted 2026-10-15) | [`docs/adr/`](docs/adr/README.md) |
 | Decision log (stakeholder instructions) | [`docs/decision-log.md`](docs/decision-log.md) |
 | What still has to be proven in the real environment | [`docs/target-environment-checklist.md`](docs/target-environment-checklist.md) |
-| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md), [`docs/phase-3-status.md`](docs/phase-3-status.md), [`docs/phase-4-status.md`](docs/phase-4-status.md), [`docs/phase-5-status.md`](docs/phase-5-status.md), [`docs/phase-6-status.md`](docs/phase-6-status.md), [`docs/phase-7-status.md`](docs/phase-7-status.md), [`docs/phase-8-status.md`](docs/phase-8-status.md), [`docs/phase-9-status.md`](docs/phase-9-status.md), [`docs/phase-10-status.md`](docs/phase-10-status.md), [`docs/phase-11-status.md`](docs/phase-11-status.md) |
+| Phase status | [`docs/phase-1-status.md`](docs/phase-1-status.md), [`docs/phase-2-status.md`](docs/phase-2-status.md), [`docs/phase-3-status.md`](docs/phase-3-status.md), [`docs/phase-4-status.md`](docs/phase-4-status.md), [`docs/phase-5-status.md`](docs/phase-5-status.md), [`docs/phase-6-status.md`](docs/phase-6-status.md), [`docs/phase-7-status.md`](docs/phase-7-status.md), [`docs/phase-8-status.md`](docs/phase-8-status.md), [`docs/phase-9-status.md`](docs/phase-9-status.md), [`docs/phase-10-status.md`](docs/phase-10-status.md), [`docs/phase-11-status.md`](docs/phase-11-status.md), [`docs/phase-12-status.md`](docs/phase-12-status.md) |
+| **Deployment** on Windows Server (AD, SPN, delegation, TLS, PostgreSQL, install, checks) | [`docs/operations/deployment-guide.md`](docs/operations/deployment-guide.md) |
+| **Runbooks**: upgrade, rollback, kill switch, rotation, DataAdmin, audit, spool, outage, partitions | [`docs/operations/runbooks.md`](docs/operations/runbooks.md) |
+| **User guide**: supported SQL behaviour and limitations | [`docs/operations/user-guide.md`](docs/operations/user-guide.md) |
 | SQL execution behaviour (gate, limits, timeout, cancel, outcomes, audit) | [`docs/sql-execution-behaviour.md`](docs/sql-execution-behaviour.md) |
 | Developer setup: build, local audit DB, run, configuration reference | [`docs/dev-setup.md`](docs/dev-setup.md) |
 | Requirements, threat model, audit policy | [`docs/requirements.md`](docs/requirements.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/audit-policy.md`](docs/audit-policy.md) |
@@ -29,12 +32,13 @@ An internal web application, similar to DBeaver for everyday workflows, that let
 ## Repository layout
 
 ```
-deploy/sql/           audit database bootstrap for DBAs
+deploy/sql/           audit database bootstrap and privilege verification for DBAs
+deploy/windows/       install, upgrade, rollback, uninstall scripts; service and configuration templates
 backend/              Java 21 service: plain Jakarta Servlet + Waffle on embedded Tomcat 11, pgJDBC (Maven)
 frontend/             React single-page app (Vite, Vitest), built into the backend JAR
 offline/              air-gap intake: Maven settings, dependency and release bundles, SHA-256 manifests
 scripts/ci/           CI job logic shared by .gitlab-ci.yml and local runs; pipeline gate tests
-scripts/test/         randomised 5x test loop (delivery workflow)
+scripts/test/         randomised 5x test loop, E2E runner, deployment rehearsal
 scripts/dev-db.ps1    local development audit database
 scripts/sonar/        project-local SonarQube start/stop and quality-gate setup
 scripts/toolchain/    install / uninstall / activate project-local software, plus tests
@@ -129,7 +133,9 @@ Uninstall only ever deletes inside `tools\`, and refuses any recorded path that 
 
 ### Running the application, database and Windows service
 
-See [`docs/dev-setup.md`](docs/dev-setup.md): a local audit database (`scripts\dev-db.ps1 start`), the `serve`, `check-config`, `migrate` and `verify-audit-chain` commands, and the full `pgweb.properties` reference. Sign-in (Phase 4), database connections (Phase 6) and Windows service deployment (Phase 12) are added as those phases are completed.
+See [`docs/dev-setup.md`](docs/dev-setup.md): a local audit database (`scripts\dev-db.ps1 start`), the `serve`, `check-config`, `migrate` and `verify-audit-chain` commands, and the full `pgweb.properties` reference.
+
+To deploy on a server, build the release bundle (`offline\New-ReleaseBundle.ps1`, or the GitLab `package` job) and follow [`docs/operations/deployment-guide.md`](docs/operations/deployment-guide.md). The bundle carries its own Java runtime and the service wrapper, so the server needs no other software.
 
 ## Testing
 
@@ -140,6 +146,7 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 | Application test loop (frontend lint + Vitest; backend unit + integration + coverage) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-TestLoop.ps1 -Tag <phase>` | `docs/evidence/<phase>/loop-*.json` |
 | End-to-end tests in Edge against a real environment (see [`docs/dev-setup.md`](docs/dev-setup.md) §6) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-E2E.ps1 -Tag <phase> -Repeat 5` | `docs/evidence/<phase>/e2e-*.json` |
 | Pipeline gates fail when faults are injected | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-PipelineGates.ps1` | `docs/evidence/phase-2/gates-*.json` |
+| Deployment rehearsal: build two releases, install → use in Edge → upgrade → tampered bundle refused → rollback → uninstall, on a throwaway environment | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\test\Invoke-DeploymentRehearsal.ps1 -Tag <phase>` | `docs/evidence/<phase>/rehearsal-*.json` |
 | Offline intake, end to end | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\ci\tests\Test-OfflineIntake.ps1` | `docs/evidence/phase-2/intake-*.json` |
 | SonarQube gate status as evidence (run the `sonar-backend` and `sonar-frontend` jobs first: the export refuses a gate whose analysis doesn't cover the current sources) | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\sonar\Export-SonarGate.ps1 -Tag <phase>` | `docs/evidence/<phase>/sonar-*.json` |
 | Toolchain scripts | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts\toolchain\tests\Test-Toolchain.ps1` | `scripts/toolchain/tests/results/` |
@@ -161,4 +168,4 @@ Every phase's suites must pass **at least 5 consecutive runs**, each with fresh 
 | 9: Transactions, isolation and concurrency | **Done** on the workstation: transaction controls, failed-transaction lockout, warnings before limits, destructive-statement confirmations (not a security control), real-PostgreSQL concurrency suite run 20 times in a row ([`docs/phase-9-status.md`](docs/phase-9-status.md)) |
 | 10: Metadata browser | **Done** on the workstation: privilege-filtered object tree on the companion connection, parameterised catalog SQL only, quoted-name insert ([`docs/phase-10-status.md`](docs/phase-10-status.md)) |
 | 11: Security hardening, E2E and security suite | **Done** on the workstation, with one open decision (a proposed dependency exception) and the clean-VM rehearsal left for the target environment ([`docs/phase-11-status.md`](docs/phase-11-status.md)) |
-| 12 | Not started |
+| 12: Deployment readiness and documentation | **Done** on the workstation: release bundle with its own Java runtime and service wrapper, install/upgrade/rollback/uninstall scripts, deployment rehearsal, deployment guide, runbooks, user guide. Not yet: deployment by someone else from the docs, service mode on a server, stakeholder sign-off, MVP tag ([`docs/phase-12-status.md`](docs/phase-12-status.md)) |

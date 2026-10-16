@@ -1,0 +1,19 @@
+﻿{
+    "tag":  "phase-12",
+    "when":  "2026-10-16T18:22:35.1148915+08:00",
+    "mavenComponents":  20,
+    "overall":  "FAIL",
+    "findings":  [
+                     {
+                         "source":  "npm:frontend",
+                         "package":  "node-forge",
+                         "id":  "GHSA-86w9-cpqp-85rv",
+                         "severity":  "high",
+                         "title":  "node-forge RSA PKCS#1 v1.5 signature verification accepts extra nested DigestAlgorithm elements",
+                         "through":  "node-forge",
+                         "direct":  false,
+                         "fixAvailable":  false,
+                         "exception":  "proposed"
+                     }
+                 ]
+}

@@ -1,0 +1,59 @@
+# pgweb production configuration (template). Copy to C:\ProgramData\pgweb\config\pgweb.properties on the server,
+# fill in every <...>, and protect secrets with deploy\windows\Protect-PgwebSecret.ps1 (dpapi:...). Never commit the
+# filled-in file. Every setting is described in docs/dev-setup.md section 4; deployment in
+# docs/operations/deployment-guide.md. pgweb refuses to start on any unknown or invalid setting.
+
+pgweb.mode=prod
+
+# --- Web server -----------------------------------------------------------------------------------------------
+server.bind=0.0.0.0
+server.port=8443
+# The name users type in the browser: it must match the HTTP/<host> SPN and the TLS certificate.
+server.publicHost=<pgweb.corp.example>
+# PKCS#12 keystore from the internal CA (HTTPS is required in production).
+server.tls.keystore=C:\\ProgramData\\pgweb\\config\\pgweb.p12
+server.tls.keystorePassword=dpapi:<...>
+server.workDir=C:\\ProgramData\\pgweb\\work
+
+# --- Windows sign-in (ADR-0002) ---------------------------------------------------------------------------------
+auth.protocols=Negotiate
+auth.kerberosOnly=true
+# SID of the DataAdmin AD group (Get-ADGroup DataAdmin | Select SID).
+auth.dataAdminSid=<S-1-5-21-...>
+# NetBIOS domains whose users may sign in (comma-separated); empty = any trusted domain.
+auth.allowedDomains=<CORP>
+auth.session.idleMinutes=30
+auth.session.absoluteHours=8
+
+# --- Audit database (docs/audit-policy.md) -----------------------------------------------------------------------
+audit.jdbcUrl=jdbc:postgresql://<audit-db-host>:5432/pgweb_audit?sslmode=verify-full&sslrootcert=C:\\ProgramData\\pgweb\\config\\root.crt
+audit.user=pgweb_app
+audit.password=dpapi:<...>
+# At least 32 bytes; Protect-PgwebSecret.ps1 -NewHmacKey makes one. Keep a copy in the organisation's vault:
+# without it, earlier audit HMACs can't be checked.
+audit.hmacKey=dpapi:<...>
+audit.spoolDir=C:\\ProgramData\\pgweb\\spool
+audit.failMode=closed
+# Only for 'migrate' (install, upgrade) and 'verify-audit-chain'.
+audit.migrator.user=pgweb_migrator
+audit.migrator.password=dpapi:<...>
+
+# --- PostgreSQL servers (ADR-0003; host names, never IP addresses: finding S7-3) ---------------------------------
+profile.internal.host=<internal-pg.corp.example>
+profile.internal.port=5433
+profile.internal.sslMode=verify-full
+profile.internal.sslRootCert=C:\\ProgramData\\pgweb\\config\\root.crt
+profile.internal.bannerText=INTERNAL
+profile.internal.bannerTone=danger
+
+profile.external.host=<external-pg.corp.example>
+profile.external.port=5432
+profile.external.sslMode=verify-full
+profile.external.sslRootCert=C:\\ProgramData\\pgweb\\config\\root.crt
+
+# --- SQL execution: OFF until gate G4 is signed off (EXE-01) ------------------------------------------------------
+execution.enabled=false
+parser.library=native\\pg_query.dll
+
+# --- Logging -------------------------------------------------------------------------------------------------------
+logging.dir=C:\\ProgramData\\pgweb\\logs

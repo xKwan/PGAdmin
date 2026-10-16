@@ -290,7 +290,12 @@ function Install-ToolchainPackage {
     $stage = Join-Path $Ctx.Staging ([guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Force -Path $stage | Out-Null
     try {
-        Expand-ZipSafely -Archive $archive -Destination $stage
+        if ($archive -match '\.zip$') {
+            Expand-ZipSafely -Archive $archive -Destination $stage
+        } else {
+            # A single-file package (for example a self-contained .exe): verified like an archive, copied as is.
+            Copy-Item -LiteralPath $archive -Destination (Join-Path $stage $Pkg.homeCheck)
+        }
         $children = @(Get-ChildItem -LiteralPath $stage -Force)
         $homeDir = if ($children.Count -eq 1 -and $children[0].PSIsContainer) { $children[0].FullName } else { $stage }
         if (-not (Test-Path -LiteralPath (Join-Path $homeDir $Pkg.homeCheck))) {

@@ -1,0 +1,80 @@
+﻿{
+    "tag":  "phase-12",
+    "when":  "2026-10-16T18:11:12.6164648+08:00",
+    "overall":  "PASS",
+    "mode":  "process (-NoService, not elevated)",
+    "rollbackSeconds":  3.5,
+    "releases":  [
+                     "0.1.0-rehearsal.1",
+                     "0.1.0-rehearsal.2"
+                 ],
+    "commit":  "9823891",
+    "steps":  [
+                  {
+                      "step":  "build two release bundles",
+                      "ok":  true,
+                      "seconds":  61.2,
+                      "detail":  "0.1.0-rehearsal.1, 0.1.0-rehearsal.2"
+                  },
+                  {
+                      "step":  "throwaway PostgreSQL 18 with the shipped audit bootstrap",
+                      "ok":  true,
+                      "seconds":  4.8,
+                      "detail":  "port 61659"
+                  },
+                  {
+                      "step":  "prepare the configuration (dpapi: secrets)",
+                      "ok":  true,
+                      "seconds":  0,
+                      "detail":  "secrets: dpapi (CurrentUser)"
+                  },
+                  {
+                      "step":  "install 0.1.0-rehearsal.1 (Install-Pgweb.ps1 -NoService)",
+                      "ok":  true,
+                      "seconds":  7.7,
+                      "detail":  "ACL: SYSTEM, Administrators, cheek only current=0.1.0-rehearsal.1"
+                  },
+                  {
+                      "step":  "use it: Windows sign-in, SSPI session, an uncommitted change left open",
+                      "ok":  true,
+                      "seconds":  1.2,
+                      "detail":  "session 00skoCJ6PAw5rqj1qF5YYw; audit rows 9; backends 2"
+                  },
+                  {
+                      "step":  "back up the audit database (pg_dump, as the DBA would)",
+                      "ok":  true,
+                      "seconds":  0.4,
+                      "detail":  "104,170 bytes"
+                  },
+                  {
+                      "step":  "upgrade 0.1.0-rehearsal.1 -\u003e 0.1.0-rehearsal.2 (Update-Pgweb.ps1): graceful stop closes every session",
+                      "ok":  true,
+                      "seconds":  30.4,
+                      "detail":  "current=0.1.0-rehearsal.2; uncommitted row rolled back; user backends after the stop: 0; db_disconnect at shutdown: 1; audit rows 9 -\u003e 10"
+                  },
+                  {
+                      "step":  "use 0.1.0-rehearsal.2",
+                      "ok":  true,
+                      "seconds":  0.9,
+                      "detail":  "rows in t: 1"
+                  },
+                  {
+                      "step":  "a tampered bundle is refused and nothing changes",
+                      "ok":  true,
+                      "seconds":  0.6,
+                      "detail":  "refused before anything stopped: Checksum mismatch: VERSION"
+                  },
+                  {
+                      "step":  "roll back 0.1.0-rehearsal.2 -\u003e 0.1.0-rehearsal.1 (Rollback-Pgweb.ps1)",
+                      "ok":  true,
+                      "seconds":  4.6,
+                      "detail":  "current=0.1.0-rehearsal.1 in 3.5 s; audit rows 15 -\u003e 16; usable"
+                  },
+                  {
+                      "step":  "uninstall (keeps data and releases)",
+                      "ok":  true,
+                      "seconds":  4.1,
+                      "detail":  "stopped; history: install 0.1.0-rehearsal.1, update 0.1.0-rehearsal.2, rollback 0.1.0-rehearsal.1"
+                  }
+              ]
+}

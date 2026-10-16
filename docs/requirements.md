@@ -58,12 +58,12 @@
 
 | ID | Requirement | Phase | Verified by | Status |
 |---|---|---|---|---|
-| QA-01 | Coverage thresholds per plan §8.2, enforced by the build | P2+ | CI | Planned |
-| QA-02 | SonarQube gates per plan §8.3 on both projects | P2+ | CI | Planned |
-| QA-03 | Real-PostgreSQL concurrency suite, nightly ×20 without flakes | P9 | Nightly CI | Planned |
-| OPS-01 | Offline dependency intake with SBOM, scan and manifest | P2 | `deps:verify`; intake record | Planned |
-| OPS-02 | GitLab pipeline on Windows runners; no remote includes, Docker or SaaS | P2 | Pipeline run | Planned |
-| OPS-03 | Windows service deployment, rollback and runbooks; offline install rehearsal | P11, P12 | Rehearsals | Planned |
+| QA-01 | Coverage thresholds per plan §8.2, enforced by the build | P2+ | CI | Tested (workstation): JaCoCo and Vitest thresholds fail the build; every phase's loop ran with them |
+| QA-02 | SonarQube gates per plan §8.3 on both projects | P2+ | CI | Tested on the project-local SonarQube Community Build; the organisation's SonarQube is target item C4 |
+| QA-03 | Real-PostgreSQL concurrency suite, nightly ×20 without flakes | P9 | Nightly CI | Tested (workstation): 20/20 consecutive (P9); the nightly GitLab schedule is target item C1 |
+| OPS-01 | Offline dependency intake with SBOM, scan and manifest | P2 | `deps:verify`; intake record | Tested (workstation): intake exercise (P2), vulnerability scan (P11; one proposed exception awaits approval). Clean network-disabled VM: target item C5 |
+| OPS-02 | GitLab pipeline on Windows runners; no remote includes, Docker or SaaS | P2 | Pipeline run | Tested locally (`Invoke-LocalPipeline.ps1` runs the same job scripts offline); a real GitLab Windows runner is target item C1 |
+| OPS-03 | Windows service deployment, rollback and runbooks; offline install rehearsal | P11, P12 | Rehearsals | Tested (workstation, P12): install → upgrade → tampered bundle → rollback → uninstall, audit preserved and chain verified, graceful shutdown closes sessions; pgweb ran as a process (no elevation here). Service mode, gMSA, Kerberos and a clean VM: target items D1–D5, C5 |
 
 ## 5. Deferred (post-MVP; each needs separate approval)
 

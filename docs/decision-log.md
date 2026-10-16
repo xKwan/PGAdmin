@@ -22,4 +22,13 @@ Records instructions from the stakeholder that affect how work proceeds. Entries
 
 ## Still needs explicit stakeholder approval
 
-No design decision is pending. Still needed from the organisation (not decisions): the target-environment facts and access listed in `docs/target-environment-checklist.md`, and written sign-off for production enablement (G5) after those checks.
+| Item | Raised | Where |
+|---|---|---|
+| Re-confirm the accepted parser risk T31 after finding P7-5 (an intermittent native crash in libpg_query, mitigated by running every parser call on one thread) | Phase 7 | `docs/phase-7-status.md`, `docs/threat-model.md` |
+| Confirm EXE-03: no multi-statement scripts in the MVP | Phase 7 | `docs/sql-execution-behaviour.md` §2 |
+| Approve or reject the proposed `node-forge` exception (GHSA-86w9-cpqp-85rv, build-only via `@sonar/scan`, not shipped); the dependency scan fails until then | Phase 11 | `offline/vulnerability-exceptions.json` |
+| Gate G4 sign-off before SQL execution is turned on outside tests; MVP sign-off and release tag (Phase 12 acceptance) | Phase 12 | `docs/phase-12-status.md` |
+
+Implementation choices made within the approved ADRs (bundled `jlink` runtime, WinSW 2.12.0, a test-only `-NoService` mode) are listed in `docs/phase-12-status.md`; they are not stakeholder decisions.
+
+Still needed from the organisation (not decisions): the target-environment facts and access listed in `docs/target-environment-checklist.md`, and written sign-off for production enablement (G5) after those checks.

@@ -9,14 +9,17 @@
               pgweb.jar            backend (Main-Class pgweb.Main, Class-Path lib/*)
               lib\                 runtime dependencies
               native\              pg_query.dll and its expected SHA256 (built by native\libpg_query\Build-PgQuery.ps1)
-              deploy\              Windows service scripts and config templates (when present)
+              runtime\             Java runtime made with jlink from the pinned JDK (servers need no Java install)
+              service\             pgweb-service.exe (WinSW 2.12.0, from the pinned toolchain)
+              deploy\              install/upgrade/rollback scripts, service and config templates, SQL scripts
+              VERSION              the release version (deploy scripts read it)
               sbom\                pgweb-backend-sbom.json, pgweb-frontend-sbom.json
               SHA256SUMS.txt       one line per file: <sha256>  <relative path>
             release\pgweb-<version>.zip and .zip.sha256
     Tests are not run here: the package stage runs after the test stages have passed.
 #>
 [CmdletBinding()]
-param([string]$LogDir, [string]$OutDir)
+param([string]$LogDir, [string]$OutDir, [string]$VersionLabel)
 
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
@@ -51,12 +54,15 @@ foreach ($s in $beSbom, $feSbom) { if (-not (Test-Path $s)) { throw "SBOM was no
 
 [xml]$pom = Get-Content -Raw (Join-Path $backend 'pom.xml')
 $version = $pom.project.version
+$jarVersion = $version
+# -VersionLabel: the same build under another release name (deployment rehearsals need two releases).
+if ($VersionLabel) { $version = $VersionLabel }
 $name = "pgweb-$version"
 $stage = Join-Path $OutDir $name
 if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
 New-Item -ItemType Directory -Force -Path (Join-Path $stage 'sbom') | Out-Null
 
-$jar = Join-Path $backend "target\pgweb-backend-$version.jar"
+$jar = Join-Path $backend "target\pgweb-backend-$jarVersion.jar"
 Copy-Item $jar (Join-Path $stage 'pgweb.jar')
 Copy-Item (Join-Path $backend 'target\lib') (Join-Path $stage 'lib') -Recurse
 Copy-Item (Join-Path $backend 'target\pgweb-backend-sbom.json') (Join-Path $stage 'sbom')
@@ -69,6 +75,19 @@ Copy-Item $dll (Join-Path $stage 'native')
 Copy-Item (Join-Path $repoRoot 'native\libpg_query\pg_query.dll.sha256') (Join-Path $stage 'native')
 $deploy = Join-Path $repoRoot 'deploy'
 if (Test-Path $deploy) { Copy-Item $deploy (Join-Path $stage 'deploy') -Recurse }
+Set-Content -Path (Join-Path $stage 'VERSION') -Value $version -Encoding ASCII
+
+# Java runtime: only the modules pgweb needs (jdeps), plus TLS (jdk.crypto.ec), charsets, zipfs and jdk.unsupported
+# which are loaded at run time and invisible to jdeps.
+$modules = 'java.base,java.desktop,java.instrument,java.management,java.naming,java.security.jgss,java.sql,jdk.crypto.ec,jdk.unsupported,jdk.charsets,jdk.zipfs'
+Run 'jlink' "`"$(Join-Path $env:JAVA_HOME 'bin\jlink.exe')`" --add-modules $modules --output `"$(Join-Path $stage 'runtime')`" --strip-debug --no-header-files --no-man-pages --compress=zip-6" $repoRoot
+
+# Service wrapper from the pinned toolchain (configuration.properties: winsw.home).
+$winswLine = Get-Content (Join-Path $repoRoot 'configuration.properties') | Where-Object { $_ -like 'winsw.home=*' } | Select-Object -First 1
+if (-not $winswLine) { throw 'WinSW is not installed: scripts\toolchain\Install-Toolchain.ps1 -Name winsw' }
+$winsw = Join-Path $repoRoot (Join-Path (($winswLine -split '=', 2)[1]) 'WinSW-x64.exe')
+New-Item -ItemType Directory -Force -Path (Join-Path $stage 'service') | Out-Null
+Copy-Item $winsw (Join-Path $stage 'service\pgweb-service.exe')
 
 # The JAR must contain the SPA.
 Add-Type -AssemblyName System.IO.Compression.FileSystem

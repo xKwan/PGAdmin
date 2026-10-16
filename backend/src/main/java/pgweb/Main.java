@@ -109,7 +109,9 @@ public final class Main {
         }
         try {
             var result = AuditMigrator.migrate(a.jdbcUrl(), user, password.reveal(), a.user());
-            out.println("audit schema at version " + result.targetSchemaVersion + " (" + result.migrationsExecuted + " migrations applied)");
+            // Flyway leaves targetSchemaVersion null when nothing was applied; the schema is then at its initial version.
+            String version = result.targetSchemaVersion != null ? result.targetSchemaVersion : result.initialSchemaVersion;
+            out.println("audit schema at version " + version + " (" + result.migrationsExecuted + " migrations applied)");
             return OK;
         } catch (RuntimeException e) {
             err.println("migration failed: " + pgweb.logging.Redactor.redact(String.valueOf(e.getMessage())));
