@@ -157,6 +157,26 @@ test('manual transactions roll back and commit; destructive statements ask first
   expect(await problems()).toEqual([]);
 });
 
+test('the object browser shows my tables and inserts a name into the editor', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const objects = page.getByRole('region', { name: 'Objects' });
+  await objects.getByRole('button', { name: 'public', exact: true }).click();
+  await objects.getByRole('button', { name: 'items', exact: true }).click();
+  await expect(objects.getByText('Columns')).toBeVisible();
+  await expect(objects.getByText('PRIMARY KEY (id)')).toBeVisible();
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+  await page.keyboard.insertText('SELECT count(*) AS n FROM ');
+  await objects.getByRole('button', { name: 'Insert public.items' }).click();
+  await expect(editor).toContainText('SELECT count(*) AS n FROM public.items');
+  await page.keyboard.press('Control+Enter');
+  const results = page.getByRole('region', { name: 'Results' });
+  await expect(results.locator('td').nth(1)).toHaveText('2500');
+  expect(await problems()).toEqual([]);
+});
+
 test('the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling', async ({ page }) => {
   for (const size of [{ width: 1366, height: 768 }, { width: 1920, height: 1080 }]) {
     await page.setViewportSize(size);

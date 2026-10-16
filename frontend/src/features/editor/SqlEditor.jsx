@@ -17,7 +17,8 @@ export function cspNonce(doc = document) {
  * CodeMirror 6 SQL editor (plan Phase 8): PostgreSQL highlighting, bracket matching, search (Ctrl+F), comment
  * toggle (Ctrl+/), keyword completion, and Ctrl+Enter to run the selection or the statement at the cursor.
  *
- * `controllerRef` receives {run(), showPosition(from, position), focus(), selection()} so the page can drive the editor.
+ * `controllerRef` receives {run(), showPosition(from, position), focus(), selection(), insert(text)} so the page can
+ * drive the editor.
  */
 export default function SqlEditor({ initialDoc = '', onRun, canRun = true, controllerRef, label = 'SQL editor' }) {
   const host = useRef(null);
@@ -79,6 +80,11 @@ export default function SqlEditor({ initialDoc = '', onRun, canRun = true, contr
         run: () => runCommand(v),
         focus: () => v.focus(),
         selection: () => ({ from: v.state.selection.main.from, to: v.state.selection.main.to }),
+        /** Replaces the selection (or inserts at the cursor), for example a quoted name from the object browser. */
+        insert: (text) => {
+          v.dispatch(v.state.replaceSelection(text));
+          v.focus();
+        },
         /** Selects the character at `position` (1-based, in the text that was run, which started at `from`). */
         showPosition: (from, position) => {
           const at = Math.min(v.state.doc.length, from + Math.max(0, position - 1));

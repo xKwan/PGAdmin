@@ -71,6 +71,8 @@ $dll = Join-Path $repoRoot 'native\libpg_query\build\pg_query.dll'
 Assert-SqlParser -RepoRoot $repoRoot -Log (Join-Path $logDir 'parser.log')
 if (-not $SkipBuild) {
     Run 'frontend-ci' 'npm ci --offline --no-audit --no-fund' (Join-Path $repoRoot 'frontend')
+    # -Pwith-spa only copies frontend\dist into the JAR: build it from the current sources first (finding P10-1).
+    Run 'spa-build' 'npm run build' (Join-Path $repoRoot 'frontend')
     Run 'jar' "mvn -B -o -q -s `"$settings`" -Pwith-spa -DskipTests package" $backend
 }
 $jar = (Get-ChildItem (Join-Path $backend 'target') -Filter 'pgweb-backend-*.jar' | Where-Object { $_.Name -notmatch 'sources|javadoc' } | Select-Object -First 1).FullName

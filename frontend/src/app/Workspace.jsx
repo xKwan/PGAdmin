@@ -4,6 +4,7 @@ import { listProfiles } from '../api/dbsessions.js';
 import { ConfirmDialog, EmptyState, Spinner, StatusBadge } from '../components/common/index.jsx';
 import { Splitter } from '../components/common/Splitter.jsx';
 import ConnectPanel from '../features/connections/ConnectPanel.jsx';
+import ObjectExplorer from '../features/explorer/ObjectExplorer.jsx';
 import SessionBar from '../features/connections/SessionBar.jsx';
 import ResultView from '../features/results/ResultView.jsx';
 import useExecution from '../features/results/useExecution.js';
@@ -59,8 +60,7 @@ function useProfileBanner(profile) {
 }
 
 /**
- * The DBeaver-style workspace: object explorer on the left, editor above results on the right. The object tree
- * arrives in Phase 10.
+ * The DBeaver-style workspace: object explorer on the left, editor above results on the right.
  */
 export default function Workspace({ profile, onBack, executionEnabled = false }) {
   const [session, setSession] = useState(null);
@@ -117,7 +117,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false })
         first={
           <aside className="pane pane-explorer" aria-label="Object explorer">
             {session ? (
-              <EmptyState title={session.database}>Object browsing arrives in a later version.</EmptyState>
+              <ObjectExplorer key={session.id} sessionId={session.id} onInsert={(text) => controllerRef.current?.insert(text)} />
             ) : (
               <ConnectPanel profile={profile} onConnected={connected} />
             )}

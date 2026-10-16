@@ -19,6 +19,8 @@ import pgweb.execution.ExecutionEngine;
 import pgweb.execution.StatementGate;
 import pgweb.sqlparse.SqlParser;
 import pgweb.identity.RoleMapper;
+import pgweb.metadata.MetadataService;
+import pgweb.metadata.MetadataServlet;
 import pgweb.security.FreshNegotiateFilter;
 import pgweb.security.PassThroughFilter;
 import waffle.windows.auth.impl.WindowsAuthProviderImpl;
@@ -129,6 +131,7 @@ public final class Application implements AutoCloseable {
                 .servlet("databasesExternal", new DbSessionServlets.Databases(sessions, "external"), Access.AUTHENTICATED, "/api/profiles/external/*")
                 .servlet("openInternal", new DbSessionServlets.Open(sessions, "internal"), Access.DATA_ADMIN, "/api/db-sessions/internal")
                 .servlet("openExternal", new DbSessionServlets.Open(sessions, "external"), Access.AUTHENTICATED, "/api/db-sessions/external")
+                .servlet("metadata", new MetadataServlet(new MetadataService(sessions, audit, options.clock())), Access.AUTHENTICATED, "/api/metadata/*")
                 .servlet("dbSessions", new DbSessionServlets.Sessions(sessions, engine, config.limits().maxSqlBytes()), Access.AUTHENTICATED, "/api/db-sessions", "/api/db-sessions/*");
         options.extraRoutes().accept(routes);
         routes.servlet("default", new StaticContentServlet(), Access.AUTHENTICATED, "/");

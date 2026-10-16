@@ -206,7 +206,7 @@ describe('Workspace with connections', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Show my databases' }));
     await userEvent.click(await screen.findByRole('button', { name: /ops/ }));
     expect(await screen.findByLabelText('Database session')).toHaveTextContent('ops');
-    expect(screen.getAllByText(/arrives in a later version/, { selector: '.empty-body' })).toHaveLength(1); // object explorer (Phase 10)
+    expect(await screen.findByRole('region', { name: 'Objects' })).toBeInTheDocument();
     expect(await screen.findByRole('textbox', { name: 'SQL editor' })).toBeInTheDocument();
     expect(screen.getByText('Running SQL is switched off by the administrator')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Run' })).toBeDisabled();

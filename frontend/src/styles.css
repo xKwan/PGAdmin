@@ -142,3 +142,24 @@ h1 { font-size: 1.4rem; margin: 0 0 0.75rem; }
 .profile-banner-info { background: var(--info); }
 .profile-banner-warn { background: var(--warn); }
 .profile-banner-danger { background: var(--danger); }
+
+/* Phase 10: object explorer */
+.object-explorer { display: flex; flex-direction: column; height: 100%; overflow: auto; padding: 0.25rem 0.4rem; }
+.tree-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.tree-option { display: flex; align-items: center; gap: 0.3rem; margin: 0.3rem 0; font-size: 0.9em; }
+.tree-list { list-style: none; margin: 0; padding-left: 0.9rem; }
+.tree-root { padding-left: 0; }
+.tree-node, .tree-leaf { margin: 0.1rem 0; }
+.tree-toggle { border: none; background: none; font: inherit; color: inherit; cursor: pointer; padding: 0.1rem 0.2rem; text-align: left; }
+/* The caret is decorative: in an aria-hidden span, so it is not part of the button's accessible name. */
+.tree-caret::before { content: "\25B8"; display: inline-block; width: 1em; color: var(--muted); }
+.tree-toggle[aria-expanded="true"] .tree-caret::before { content: "\25BE"; }
+.tree-toggle:disabled { cursor: default; color: var(--muted); }
+.tree-toggle:focus-visible { outline: 2px solid var(--accent); }
+.tree-flat { padding-left: 1.2em; }
+.tree-name { overflow-wrap: anywhere; }
+.tree-insert { font-size: 0.85em; }
+.tree-group-title { margin: 0.3rem 0 0.1rem; font-size: 0.8em; text-transform: uppercase; color: var(--muted); letter-spacing: 0.04em; }
+.tree-details { padding-left: 0.6rem; }
+.tree-error { color: var(--danger); margin: 0.3rem 0; }
+.tree-empty, .tree-note { font-size: 0.85em; }

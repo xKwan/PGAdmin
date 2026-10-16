@@ -330,8 +330,8 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         m.put(EXECUTION_ID, run.executionId.toString());
         m.put("elapsedMs", Duration.between(run.startedAt, clock.instant()).toMillis());
         Connection companion = s.companion();
-        if (companion == null) {
-            return m;
+        if (companion == null || !s.companionLock().tryLock()) {
+            return m; // degraded, or the object browser is using the companion: no wait details this time
         }
         try (PreparedStatement ps = companion.prepareStatement(
                 "SELECT wait_event_type, wait_event FROM pg_catalog.pg_stat_activity WHERE pid = ?")) {
@@ -345,6 +345,8 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
             }
         } catch (SQLException e) {
             LOG.debug("activity query failed for session {}: {}", s.id(), e.getSQLState());
+        } finally {
+            s.companionLock().unlock();
         }
         return m;
     }

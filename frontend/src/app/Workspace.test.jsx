@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { envelope, http, HttpResponse, server } from '../mocks/server.js';
@@ -72,7 +72,7 @@ describe('Workspace execution', () => {
     expect(editor).toHaveTextContent('SELECT 42');
     await userEvent.click(screen.getByRole('button', { name: 'Run' }));
     expect(await screen.findByText('42', { selector: 'td' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await userEvent.click(within(screen.getByRole('region', { name: 'Results' })).getByRole('button', { name: 'Refresh' }));
     expect(await screen.findByText('Stopped: the time limit was reached')).toBeInTheDocument();
     expect(screen.getByText(/closed by the server. Anything not committed was rolled back/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Connect again' }));

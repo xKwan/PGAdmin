@@ -25,6 +25,7 @@ export const handlers = [
       ],
     }),
   ),
+  http.get('/api/metadata/:id/schemas', () => HttpResponse.json({ schemas: [], loadedAt: '2026-10-16T08:00:00Z' })),
 ];
 
 export const server = setupServer(...handlers);

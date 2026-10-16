@@ -34,6 +34,7 @@ public final class DbSession {
     private final String serverVersion;
     private final Instant createdAt;
     private final ReentrantLock lock = new ReentrantLock();
+    private final ReentrantLock companionLock = new ReentrantLock();
     private volatile Instant lastActivity;
     private volatile Instant lastHeartbeat;
     private volatile Instant transactionStartedAt;
@@ -165,6 +166,11 @@ public final class DbSession {
     /** Serialises use of the main connection: one statement at a time per session (EXE-08). */
     public ReentrantLock lock() {
         return lock;
+    }
+
+    /** Serialises the object browser's use of the companion connection (busy: reported, not queued; Phase 10). */
+    public ReentrantLock companionLock() {
+        return companionLock;
     }
 
     /** True if the main connection still answers (used by the reaper to detect loss). */

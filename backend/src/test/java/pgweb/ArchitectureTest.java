@@ -41,10 +41,26 @@ class ArchitectureTest {
     void noStatementWithDynamicSqlInAppCode() {
         // App-owned SQL uses PreparedStatement with parameters; plain Statement is allowed only for fixed text in
         // the audit infrastructure. User SQL (Phase 7) gets its own package and rule.
-        noClasses().that().resideOutsideOfPackages("pgweb.audit..", "pgweb.execution..", "pgweb.dbsession..", "pgweb.metadata..")
+        noClasses().that().resideOutsideOfPackages("pgweb.audit..", "pgweb.execution..", "pgweb.dbsession..")
                 .should().callMethod(java.sql.Statement.class, "execute", String.class)
                 .orShould().callMethod(java.sql.Statement.class, "executeQuery", String.class)
                 .orShould().callMethod(java.sql.Statement.class, "executeUpdate", String.class)
+                .check(classes);
+    }
+
+    @Test
+    void theObjectBrowserUsesOnlyConstantParameterisedQueries() {
+        // Plan Phase 10: the main body of app-generated SQL. No plain Statement at all, no string building with
+        // names: every query is a static final constant in MetadataService and names are bound parameters.
+        noClasses().that().resideInAPackage("pgweb.metadata..")
+                .should().callMethod(java.sql.Connection.class, "createStatement")
+                .orShould().callMethod(java.sql.Statement.class, "execute", String.class)
+                .orShould().callMethod(java.sql.Statement.class, "executeQuery", String.class)
+                .orShould().callMethod(java.sql.Statement.class, "executeUpdate", String.class)
+                .check(classes);
+        com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields().that().areDeclaredIn(pgweb.metadata.MetadataService.class)
+                .and().haveRawType(String.class).and().haveNameMatching("[A-Z_]+")
+                .should().beStatic().andShould().beFinal()
                 .check(classes);
     }
 }

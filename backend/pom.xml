@@ -312,6 +312,8 @@
                     <include>pgweb.dbsession*</include>
                     <include>pgweb.execution*</include>
                     <include>pgweb.audit*</include>
+                    <!-- App-generated catalog SQL (plan Phase 10). -->
+                    <include>pgweb.metadata*</include>
                   </includes>
                   <limits>
                     <limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>${coverage.critical.lines}</minimum></limit>

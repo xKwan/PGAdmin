@@ -36,7 +36,7 @@ export default defineConfig({
         branches: 75,
         functions: 80,
         statements: 80,
-        'src/features/{connections,editor,results,transactions}/**': { lines: 85, branches: 80 },
+        'src/features/{connections,editor,results,transactions,explorer}/**': { lines: 85, branches: 80 },
       },
     },
   },
