@@ -33,7 +33,6 @@
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "6.0.1",
     "@eslint/js": "10.0.1",
-    "@sonar/scan": "5.0.1",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",

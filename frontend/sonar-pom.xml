@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SonarQube analysis of the frontend (plan section 8.3), run with the SonarScanner for Maven that the backend already
+  pins, so no npm scanner (and none of its dependencies) is needed. Analysis only: this file builds nothing.
+  Run from frontend\ after `npm run test:coverage`:
+    mvn -B -o -s ..\offline\maven-settings.xml -f sonar-pom.xml sonar:sonar
+  SONAR_HOST_URL and SONAR_TOKEN come from the environment (CI variables, or scripts\sonar\Start-LocalSonar.ps1).
+  Keep the plugin version equal to sonar.plugin.version in backend\pom.xml.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>pgweb</groupId>
+  <artifactId>pgweb-frontend-sonar</artifactId>
+  <version>0.1.0</version>
+  <packaging>pom</packaging>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <sonar.plugin.version>5.8.0.7211</sonar.plugin.version>
+    <sonar.projectKey>pgweb-frontend</sonar.projectKey>
+    <sonar.projectName>pgweb frontend</sonar.projectName>
+    <sonar.sources>src,scripts</sonar.sources>
+    <sonar.tests>src,scripts</sonar.tests>
+    <sonar.test.inclusions>**/*.test.js,**/*.test.jsx,src/test/**,src/mocks/**</sonar.test.inclusions>
+    <sonar.exclusions>src/test/**,src/mocks/**,**/*.test.js,**/*.test.jsx</sonar.exclusions>
+    <sonar.coverage.exclusions>src/main.jsx,scripts/**</sonar.coverage.exclusions>
+    <sonar.javascript.lcov.reportPaths>coverage/lcov.info</sonar.javascript.lcov.reportPaths>
+    <sonar.sourceEncoding>UTF-8</sonar.sourceEncoding>
+    <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
+    <sonar.qualitygate.timeout>300</sonar.qualitygate.timeout>
+  </properties>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin><groupId>org.sonarsource.scanner.maven</groupId><artifactId>sonar-maven-plugin</artifactId><version>${sonar.plugin.version}</version></plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

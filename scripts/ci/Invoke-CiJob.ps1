@@ -94,7 +94,8 @@ switch ($Job) {
         Assert-SonarToken
         $env:PGWEB_TEST_SEED = "$Seed"
         Step 'vitest' 'npm run test:coverage' $frontend
-        Step 'sonar' 'node sonar-project.js' $frontend
+        # SonarScanner for Maven (pinned for the backend), not the npm scanner: no extra npm dependencies (node-forge).
+        Step 'sonar' "$mvn -f sonar-pom.xml sonar:sonar" $frontend
         Set-Content -Path (Join-Path $LogDir 'sonar-pgweb-frontend.sources') -Value (Get-SourceHash -RepoRoot $repoRoot -Dir 'frontend/src') -Encoding ASCII
     }
     'package' {

@@ -33,7 +33,7 @@
 | Rollback within the documented time (≤ 15 min) | **Tested**: 3.5 s in the final rehearsal (24.6 s in an earlier one); the rehearsal fails if it exceeds 900 s |
 | Production config turns execution on only after sign-off | **Done**: the template ships `execution.enabled=false`; the deployment guide (§9) requires G4 sign-off first |
 | Someone other than the author deploys from the docs alone | **Not met yet**: needs a second person and a server (checklist D7) |
-| All gates green | See test evidence. The dependency scan still fails on one **proposed** exception awaiting approval (Phase 11). |
+| All gates green | **Yes, on the workstation**: loop, E2E, rehearsal, both Sonar gates, and the dependency scan (0 findings, no exception: P12-7) |
 | Stakeholder sign-off; MVP tagged | **Not given yet**; no tag |
 
 ## Findings
@@ -45,8 +45,8 @@
 | P12-3 | The audit verifier checks the chain from seq 1, so purging old partitions (approved retention: 12 months online) would make it report a break. | **Open, post-MVP, due before the first purge (12 months after go-live):** verification from an archived anchor. The runbook says not to purge until then. |
 | P12-4 | `-NewHmacKey` never shows the key, but it must be kept in a vault to check old HMACs. | Runbook procedure to copy it from the `dpapi:` value with a second person present |
 | P12-5 | WinSW 2.12.0 is not Authenticode-signed and GitHub publishes no checksum for it. | Pinned by SHA-256 at first download (two downloads matched); AppLocker/WDAC hash rule in the deployment guide; checklist D6 |
-
 | P12-6 | Install and upgrade left the expanded bundle (about 56 MB) in `%TEMP%` each time; noticed when the workstation ran short of memory and disk during the test loop. | Both scripts remove their staging folder whatever the outcome (an expanded folder passed as `-Bundle` is never touched); the rehearsal fails if one is left |
+| P12-7 | The only High dependency finding, `node-forge` GHSA-86w9-cpqp-85rv (CVE-2026-85393, no fixed version up to 1.4.0), came from the npm SonarQube scanner `@sonar/scan` (build-only, never shipped; it used node-forge only to read an optional truststore, not to verify RSA signatures). The stakeholder asked to fix rather than accept it. | The frontend is analysed by the **SonarScanner for Maven** already pinned for the backend (`frontend/sonar-pom.xml`, analysis only; no new download). `@sonar/scan` and the 43 other lockfile entries only it needed (axios, adm-zip, tar-stream, node-forge, …) left the lockfile; nothing else changed in it. Same analysis: 38 files indexed, 34 excluded, 23 measured files, ncloc 1,853, coverage 96.2% (lines 99.1%, branches 93.0%), the same 13 code smells on the same lines, 0 bugs, vulnerabilities and hotspots; a failing gate still fails the job (checked with a temporary stricter gate). The dependency scan passes with 0 findings. The proposed exception in `offline/vulnerability-exceptions.json` no longer matches anything and was left for the stakeholder to remove. |
 
 Also seen, harmless: Flyway's warning `schema audit already exists, skipping` during `migrate`.
 
@@ -63,17 +63,17 @@ Also seen, harmless: Flyway's warning `schema audit already exists, skipping` du
 
 | What | Result | File |
 |---|---|---|
-| Randomised loop: frontend lint + 99 Vitest tests; backend 82 unit + 135 integration tests with coverage | **PASS 5/5**, master seed `439519006` | `docs/evidence/phase-12/loop-20261016-170739.json` |
-| End-to-end in Edge, 5 repetitions (11 tests each) | **PASS 5/5**, master seed `1587229637`, about 87 s per repetition. Run with `-SkipBuild` on a JAR built from the final sources just before (SPA `index.html` in the JAR identical to a fresh build), so the run fitted the session's time limit. An earlier run passed 3 repetitions and was then stopped by Claude Code for low memory on the workstation; it counts for nothing. | `docs/evidence/phase-12/e2e-20261016-181104.json` |
+| Randomised loop: frontend lint + 99 Vitest tests; backend 82 unit + 135 integration tests with coverage | **PASS 5/5**, master seed `722418829` (after P12-7) | `docs/evidence/phase-12/loop-20261016-233043.json` |
+| End-to-end in Edge, 5 repetitions (11 tests each) | **PASS 5/5**, master seed `1593501048` (after P12-7), about 87 s per repetition. Run with `-SkipBuild` on a JAR built from the final sources just before (SPA `index.html` in the JAR identical to a fresh build), so the run fitted the session's time limit. An earlier run passed 3 repetitions and was then stopped by Claude Code for low memory on the workstation; it counts for nothing. | `docs/evidence/phase-12/e2e-20261016-233855.json` |
 | Deployment rehearsal (process mode) | **PASS**: rollback 3.5 s; no user backend after the stop; ACLs; no staging folder left | `docs/evidence/phase-12/rehearsal-20261016-181309.json` |
-| Dependency scan | **FAIL**, unchanged from Phase 11: the one **proposed** `node-forge` exception awaits the stakeholder; Maven runtime 0 findings | `docs/evidence/phase-12/vuln-scan-20261016-182235.json` |
+| Dependency scan | **PASS** after P12-7: 0 findings (Maven runtime 20 components; npm frontend and e2e), no exception used. Before the change: FAIL on `node-forge` (`vuln-scan-20261016-182235.json`) | `docs/evidence/phase-12/vuln-scan-20261016-231309.json` |
 | Toolchain scripts, including the new single-file scenario | **PASS 5/5** | `scripts/toolchain/tests/results/toolchain-20261016-141332.json` |
-| Text files (no control characters) | **PASS**, 408 files | lint-backend job |
-| SonarQube "pgweb gate", both projects | **OK**: 0 vulnerabilities, 0 security hotspots, 0 bugs, 0 blocker/high issues; coverage backend 92.5%, frontend 96.2% | `docs/evidence/phase-12/sonar-20261016-182218.json` |
+| Text files (no control characters) | **PASS**, 412 files | lint-backend job |
+| SonarQube "pgweb gate", both projects | **OK**: 0 vulnerabilities, 0 security hotspots, 0 bugs, 0 blocker/high issues; coverage backend 92.5%, frontend 96.2% | `docs/evidence/phase-12/sonar-20261016-234331.json` (frontend analysed with the Maven scanner) |
 
 ## Open items for the stakeholder and the target environment
 
-1. **Decisions awaiting the stakeholder:** re-confirm T31 after P7-5 (intermittent native crash in the parser, mitigated by a single parser thread); confirm EXE-03 (no multi-statement scripts in the MVP); approve or reject the `node-forge` exception (build-only, `offline/vulnerability-exceptions.json`).
+1. **Decisions awaiting the stakeholder:** re-confirm T31 after P7-5 (intermittent native crash in the parser, mitigated by a single parser thread); confirm EXE-03 (no multi-statement scripts in the MVP); remove the obsolete proposed `node-forge` entry from `offline/vulnerability-exceptions.json` (P12-7).
 2. **Gate G4 sign-off** before `execution.enabled=true` anywhere outside tests.
 3. **Target environment** ([`target-environment-checklist.md`](target-environment-checklist.md)): Kerberos and delegation K1–K6, PostgreSQL P1–P7, the GitLab runner and organisation SonarQube C1–C5 (including the clean-VM offline rehearsal), the Windows service on a server D1–D7 (service mode, TLS, GPO, monitoring, AppLocker/WDAC, deployment by a second person).
 4. **Post-MVP:** chain verification from an archive anchor (P12-3), cursor streaming (P9-3), multi-statement scripts (EXE-03).

@@ -48,7 +48,7 @@ export default [
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
   {
-    files: ['vite.config.js', 'eslint.config.js', 'scripts/**', 'sonar-project.js'],
+    files: ['vite.config.js', 'eslint.config.js', 'scripts/**'],
     languageOptions: { globals: { ...globals.node } },
   },
 ];
