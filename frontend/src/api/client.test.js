@@ -60,6 +60,19 @@ describe('api client', () => {
     expect(handler).toHaveBeenCalledWith(err);
   });
 
+  it('treats a renewed session (403 SESSION_RENEWED) like an expired one, but not a CSRF failure', async () => {
+    const handler = vi.fn();
+    setUnauthenticatedHandler(handler);
+    server.use(http.post('/api/db-sessions/external', () => envelope(403, 'SESSION_RENEWED', 'renewed')));
+    const renewed = await api('/api/db-sessions/external', { method: 'POST', body: {} }).catch((e) => e);
+    expect(renewed.kind).toBe('unauthenticated');
+    expect(handler).toHaveBeenCalledTimes(1);
+    server.use(http.post('/api/db-sessions/external', () => envelope(403, 'CSRF_FAILED', 'blocked')));
+    const csrf = await api('/api/db-sessions/external', { method: 'POST', body: {} }).catch((e) => e);
+    expect(csrf.kind).toBe('forbidden');
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
   it('handles non-JSON errors and network failures', async () => {
     server.use(http.get('/api/plain', () => new HttpResponse('oops', { status: 502, statusText: 'Bad Gateway' })));
     const err = await api('/api/plain').catch((e) => e);

@@ -84,6 +84,7 @@ $role = $env:USERNAME.ToLowerInvariant()
 $pgPort = Get-FreePort
 $appPort = Get-FreePort
 $app = $null
+$app2 = $null
 $results = @()
 try {
     New-Item -ItemType Directory -Force -Path $root | Out-Null
@@ -119,7 +120,9 @@ try {
         Set-Content -Path $seedSql -Encoding ASCII -Value @(
             "SET ROLE `"$role`";",
             'CREATE TABLE public.items (id int PRIMARY KEY, name text);',
-            "INSERT INTO public.items SELECT g, 'item ' || g FROM generate_series(1, 2500) g;")
+            "INSERT INTO public.items SELECT g, 'item ' || g FROM generate_series(1, 2500) g;",
+            '-- An object whose name is markup: the browser must show it as text (Phase 11).',
+            'CREATE TABLE public."<img src=x onerror=alert(1)>" (a int);')
         Run 'seed' "$psql -d e2e_db -f `"$seedSql`""
     } finally { Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue }
 
@@ -132,24 +135,49 @@ try {
         "audit.hmacKey=plain:$hmac", ('audit.spoolDir=' + (& $fwd (Join-Path $root 'spool'))),
         'audit.migrator.user=pgweb_migrator', "audit.migrator.password=plain:$migrator",
         'profile.external.host=localhost', "profile.external.port=$pgPort", 'profile.external.statementTimeoutSeconds=20',
+        # The internal profile (DataAdmin only) points at the same throwaway cluster, with a banner.
+        'profile.internal.host=localhost', "profile.internal.port=$pgPort", 'profile.internal.bannerText=INTERNAL', 'profile.internal.bannerTone=danger',
         'execution.enabled=true', ('parser.library=' + (& $fwd $dll)),
         ('logging.dir=' + (& $fwd (Join-Path $root 'logs'))), ('server.workDir=' + (& $fwd (Join-Path $root 'work'))))
     Run 'migrate' "`"$java`" -jar `"$jar`" migrate --config `"$config`""
 
+    # A second instance (Phase 11): the same cluster, but you are NOT DataAdmin there (a SID nobody has), and the app
+    # session expires after 1 idle minute (session-expiry journey).
+    $appPort2 = Get-FreePort
+    $config2 = Join-Path $root 'pgweb-noadmin.properties'
+    (Get-Content $config) | ForEach-Object {
+        if ($_ -like 'server.port=*') { "server.port=$appPort2" }
+        elseif ($_ -like 'auth.dataAdminSid=*') { 'auth.dataAdminSid=S-1-5-21-1-2-3-999999' }
+        elseif ($_ -like 'logging.dir=*') { 'logging.dir=' + (& $fwd (Join-Path $root 'logs2')) }
+        elseif ($_ -like 'server.workDir=*') { 'server.workDir=' + (& $fwd (Join-Path $root 'work2')) }
+        elseif ($_ -like 'audit.spoolDir=*') { 'audit.spoolDir=' + (& $fwd (Join-Path $root 'spool2')) }
+        else { $_ }
+    } | Set-Content -Path $config2 -Encoding ASCII
+    Add-Content -Path $config2 -Encoding ASCII -Value 'auth.session.idleMinutes=1'
+
     $app = Start-Process -FilePath $java -ArgumentList @('-jar', "`"$jar`"", 'serve', '--config', "`"$config`"") -PassThru -WindowStyle Hidden `
         -RedirectStandardOutput (Join-Path $logDir 'app.out.log') -RedirectStandardError (Join-Path $logDir 'app.err.log')
-    $up = $false
-    for ($i = 0; $i -lt 120 -and -not $up; $i++) {
-        Start-Sleep -Milliseconds 500
-        try { $up = (Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$appPort/api/ready" -TimeoutSec 2).StatusCode -eq 200 } catch { $up = $false }
+    $app2 = Start-Process -FilePath $java -ArgumentList @('-jar', "`"$jar`"", 'serve', '--config', "`"$config2`"") -PassThru -WindowStyle Hidden `
+        -RedirectStandardOutput (Join-Path $logDir 'app2.out.log') -RedirectStandardError (Join-Path $logDir 'app2.err.log')
+    foreach ($port in $appPort, $appPort2) {
+        $up = $false
+        for ($i = 0; $i -lt 120 -and -not $up; $i++) {
+            Start-Sleep -Milliseconds 500
+            try { $up = (Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$port/api/ready" -TimeoutSec 2).StatusCode -eq 200 } catch { $up = $false }
+        }
+        if (-not $up) { throw "pgweb on port $port did not become ready; see $logDir" }
     }
-    if (-not $up) { throw "pgweb did not become ready; see $logDir\app.out.log" }
 
     $e2e = Join-Path $repoRoot 'e2e'
     Run 'e2e-ci' 'npm ci --offline --no-audit --no-fund' $e2e
     for ($r = 1; $r -le $Repeat; $r++) {
         $runSeed = $master.Next(1, [int]::MaxValue)
         $env:E2E_BASE_URL = "http://localhost:$appPort"
+        $env:E2E_BASE_URL_NOADMIN = "http://localhost:$appPort2"
+        # For the audit-outage journey: the test switches the throwaway cluster's audit login off and on with psql.
+        $env:E2E_PSQL = Join-Path $pgBin 'psql.exe'
+        $env:E2E_PG_PORT = "$pgPort"
+        $env:E2E_PG_SUPER_PASSWORD = $super
         $env:E2E_ROLE = $role
         $env:E2E_SEED = "$runSeed"
         $json = Join-Path $e2e 'test-results\results.json'
@@ -170,7 +198,8 @@ try {
         foreach ($f in $failed) { Write-Host "      failed: $f" }
     }
 } finally {
-    if ($app -and -not $app.HasExited) { Stop-Process -Id $app.Id -Force }
+    foreach ($a in @($app, $app2)) { if ($a -and -not $a.HasExited) { Stop-Process -Id $a.Id -Force } }
+    Remove-Item Env:\E2E_PG_SUPER_PASSWORD -ErrorAction SilentlyContinue
     if (Test-Path $data) {
         [void](Invoke-LoggedCommand -CommandLine "`"$(Join-Path $pgBin 'pg_ctl.exe')`" stop -D `"$data`" -m immediate -w -t 30" -Log (Join-Path $logDir 'pg-stop.log') -WorkDir $repoRoot)
     }

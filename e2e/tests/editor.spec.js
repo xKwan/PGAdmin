@@ -21,6 +21,10 @@ function rng(name) {
 /** Collects CSP violations and page errors; the test fails if any occur. */
 async function watch(page) {
   const problems = [];
+  const origin = new URL(process.env.E2E_BASE_URL).origin;
+  page.on('request', (r) => {
+    if (!r.url().startsWith(origin) && !r.url().startsWith('data:')) problems.push(`request to another origin: ${r.url()}`);
+  });
   page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
     if (m.type() === 'error' && /Content Security Policy|Refused to/.test(m.text())) problems.push(`console: ${m.text()}`);

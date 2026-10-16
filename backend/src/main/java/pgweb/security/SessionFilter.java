@@ -41,6 +41,8 @@ public final class SessionFilter extends HttpFilter {
     static final String LOGIN_AT = "pgweb.loginAt";
     static final String MECHANISM = "pgweb.mechanism";
     public static final String CSRF_TOKEN = "pgweb.csrfToken";
+    /** Request attribute: this request signed in and created the app session (the page can't hold its token yet). */
+    public static final String SIGNED_IN_NOW = "pgweb.signedInNow";
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final transient Config.Auth auth;
@@ -107,6 +109,7 @@ public final class SessionFilter extends HttpFilter {
         }
         if (fresh) {
             audit.record(AuditEvent.of("app_login").user(user).request(req).detail("mechanism", user.mechanism()));
+            req.setAttribute(SIGNED_IN_NOW, Boolean.TRUE);
         }
         req.setAttribute(UserContext.ATTRIBUTE, user);
         chain.doFilter(req, res);

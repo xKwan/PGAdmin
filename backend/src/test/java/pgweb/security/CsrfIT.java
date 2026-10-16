@@ -113,6 +113,29 @@ class CsrfIT {
     }
 
     @Test
+    void aRequestThatSignsInAgainWithAStaleTokenIsToldToReload() throws Exception {
+        // The page's app session expired; the browser signed in again by itself on an unsafe request, which therefore
+        // carries the old session's token (finding P11-2). Nothing runs; SESSION_RENEWED makes the page reload.
+        MockClient old = signedIn(Seeds.random("csrf-renew"));
+        String staleToken = old.csrf();
+        MockClient renewed = MockClient.user(app.port(), "TEST\\csrfrenew", "S-1-5-21-5-5-5-77"); // no session yet
+        int before = SIDE_EFFECTS.get();
+        HttpResponse<String> r = post(renewed, Map.of("Origin", renewed.origin(), "X-CSRF-Token", staleToken));
+        assertThat(r.statusCode()).isEqualTo(403);
+        assertThat(r.body()).contains("SESSION_RENEWED");
+        assertThat(r.headers().firstValue("WWW-Authenticate")).isEmpty();
+        assertThat(SIDE_EFFECTS.get()).isEqualTo(before);
+        // A cross-site request in the same situation is still refused as CSRF.
+        HttpResponse<String> forged = post(MockClient.user(app.port(), "TEST\\csrfrenew", "S-1-5-21-5-5-5-77"),
+                Map.of("Origin", "http://evil.example", "X-CSRF-Token", staleToken));
+        assertThat(forged.statusCode()).isEqualTo(403);
+        assertThat(forged.body()).contains("CSRF_FAILED");
+        // With the session established, a wrong token is plain CSRF again.
+        renewed.me();
+        assertThat(post(renewed, Map.of("Origin", renewed.origin(), "X-CSRF-Token", staleToken)).body()).contains("CSRF_FAILED");
+    }
+
+    @Test
     void otherUnsafeMethodsAreProtectedToo() throws Exception {
         MockClient c = signedIn(Seeds.random("csrf-methods"));
         for (String m : List.of("PUT", "DELETE", "PATCH")) {

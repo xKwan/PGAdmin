@@ -84,6 +84,15 @@ public final class CsrfFilter extends HttpFilter {
             if (user != null) {
                 e.user(user);
             }
+            if ("token".equals(reason) && Boolean.TRUE.equals(req.getAttribute(SessionFilter.SIGNED_IN_NOW))) {
+                // Same origin, but the app session was created by this very request: the old one expired and the
+                // browser signed in again by itself (Negotiate), so the page still holds the old token. Nothing runs;
+                // the page reloads once on SESSION_RENEWED and picks up the new session (finding P11-2). Not 401: a 401
+                // on the request that completed an NTLM handshake makes Chromium send the request again.
+                audit.record(e.detail("sessionRenewed", true));
+                ErrorEnvelope.write(res, 403, "SESSION_RENEWED", "Your session had expired and was renewed; the page will reload");
+                return;
+            }
             audit.record(e);
             ErrorEnvelope.write(res, 403, "CSRF_FAILED", "Request blocked: missing or invalid CSRF protection");
             return;

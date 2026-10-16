@@ -16,7 +16,7 @@ export class ApiError extends Error {
 
   get kind() {
     if (this.status === 401 && this.code === 'DELEGATION_HANDSHAKE') return 'delegation';
-    if (this.status === 401) return 'unauthenticated';
+    if (this.status === 401 || this.code === 'SESSION_RENEWED') return 'unauthenticated';
     if (this.status === 403) return 'forbidden';
     if (this.status === 503 && this.code === 'AUDIT_UNAVAILABLE') return 'audit-unavailable';
     if (this.status === 0) return 'network';
@@ -85,6 +85,9 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
   const apiError = new ApiError(response.status, code, message, requestId ?? null, details);
   // DELEGATION_HANDSHAKE: the browser could not complete the Windows sign-in for a database connection; the app
   // session itself is fine, so this is an ordinary error, not a reason to reload.
-  if (response.status === 401 && apiError.code !== 'DELEGATION_HANDSHAKE') handlers.unauthenticated(apiError);
+  // SESSION_RENEWED (403): the app session expired and the browser signed in again by itself; reload to pick it up.
+  if ((response.status === 401 && apiError.code !== 'DELEGATION_HANDSHAKE') || apiError.code === 'SESSION_RENEWED') {
+    handlers.unauthenticated(apiError);
+  }
   throw apiError;
 }

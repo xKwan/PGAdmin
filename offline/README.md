@@ -32,7 +32,7 @@ esbuild/Rolldown ship platform-specific native packages, so the npm cache must b
    powershell -ExecutionPolicy Bypass -File scripts\ci\Invoke-LocalPipeline.ps1 -Sonar -Package
    ```
 4. **Build the bundle:** `powershell -ExecutionPolicy Bypass -File offline\New-DependencyBundle.ps1` → `tools\bundles\pgweb-deps-<timestamp>\`.
-5. **Scan and check.** Scan the SBOMs in `sbom\` (OWASP Dependency-Check, Trivy, or the organisation's tool) and run the organisation's malware scan over the folder. A **second person** checks `SHA256SUMS.txt` against the folder, using `offline\Write-Sha256Manifest.ps1 -Verify`.
+5. **Scan and check.** On the connected staging side, run `powershell -NoProfile -ExecutionPolicy Bypass -File offline\Invoke-VulnerabilityScan.ps1 -Tag <release>`. It runs `npm audit` on both lockfiles and checks the backend SBOM against OSV (only package names and versions are sent), and writes `docs\evidence\<release>\vuln-scan-*.json`. It fails on any High or Critical finding that isn't an **approved** exception in `offline\vulnerability-exceptions.json`. Add the organisation's own scanner (OWASP Dependency-Check, Trivy, …) if required, and run the organisation's malware scan over the folder. A **second person** checks `SHA256SUMS.txt` against the folder, using `offline\Write-Sha256Manifest.ps1 -Verify`.
 6. **Transfer** through the approved media process.
 
 ### In the air gap

@@ -15,6 +15,16 @@ describe('App', () => {
   beforeEach(() => window.history.replaceState(null, '', '/'));
   afterEach(() => vi.restoreAllMocks());
 
+  it('shows a username containing markup as text', async () => {
+    const account = 'CORP\\<img src=x onerror="window.__xssUser=1"><script>window.__xssUser=2</script>';
+    server.use(http.get('/api/me', () => HttpResponse.json(meBody({ account }))));
+    const { container } = renderApp();
+    expect(await screen.findByRole('heading', { name: 'Choose a database server' })).toBeInTheDocument();
+    expect(screen.getAllByText(account).length).toBeGreaterThanOrEqual(2); // top bar and landing page
+    expect(container.querySelector('img, script')).toBeNull();
+    expect(window.__xssUser).toBeUndefined();
+  });
+
   it('shows both servers to a DataAdmin and opens a workspace', async () => {
     server.use(http.get('/api/me', () => HttpResponse.json(meBody({ dataAdmin: true, account: 'CORP\\dba' }))));
     const { container } = renderApp();

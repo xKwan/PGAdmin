@@ -53,6 +53,11 @@ public abstract class ApiServlet extends HttpServlet {
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
+            // Every route, including those that ignore the body, refuses a declared body over its limit (finding
+            // P11-1). Chunked bodies are bounded where they are read (LimitedInputStream) and by Tomcat's swallow limit.
+            if (req.getContentLengthLong() > maxBodyBytes()) {
+                throw ApiException.tooLarge("Request body exceeds " + maxBodyBytes() + " bytes");
+            }
             Object result = switch (req.getMethod()) {
                 case "GET" -> get(req);
                 case "POST" -> post(req);
