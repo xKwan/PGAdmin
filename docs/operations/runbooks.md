@@ -15,7 +15,7 @@ Exit codes of the `pgweb` commands: 0 OK, 1 failed, 2 bad configuration, 3 audit
 
 **Every configuration change** follows the same pattern: edit `pgweb.properties`, run `pgweb check-config` (it must print `configuration OK`), then `Restart-Service pgweb`. A restart closes every database session; PostgreSQL rolls back their open transactions, and users see their session as closed. Announce restarts during working hours.
 
-Contents: [upgrade](#1-upgrade) · [rollback](#2-rollback) · [uninstall](#3-uninstall) · [kill switch](#4-kill-switch-sql-execution-off) · [secret and key rotation](#5-secret-and-key-rotation) · [server profiles](#6-adding-or-changing-server-profiles) · [DataAdmin](#7-granting-and-removing-dataadmin) · [audit investigation](#8-audit-investigation-and-chain-verification) · [spool recovery](#9-spool-recovery) · [audit DB outage](#10-audit-database-outage) · [partition archive and purge](#11-audit-partition-archive-and-purge) · [dependency intake](#12-dependency-update-intake) · [troubleshooting](#13-troubleshooting)
+Contents: [upgrade](#1-upgrade) · [rollback](#2-rollback) · [uninstall](#3-uninstall) · [kill switch](#4-kill-switch-sql-execution-off) · [secret and key rotation](#5-secret-and-key-rotation) · [server profiles](#6-adding-or-changing-server-profiles) · [DataAdmin](#7-granting-and-removing-dataadmin) · [audit investigation](#8-audit-investigation-and-chain-verification) · [spool recovery](#9-spool-recovery) · [audit DB outage](#10-audit-database-outage) · [partition archive, purging prohibited](#11-audit-partition-archive-purging-prohibited) · [dependency intake](#12-dependency-update-intake) · [troubleshooting](#13-troubleshooting)
 
 ## 1. Upgrade
 
@@ -220,9 +220,11 @@ When an audit record can't be written, pgweb writes it to `C:\ProgramData\pgweb\
 3. When the database is back, pgweb recovers by itself within 30 seconds: `/api/ready` = 200, the spool is replayed ([section 9](#9-spool-recovery)), executions work again. No restart needed.
 4. Run `pgweb verify-audit-chain` and record the outage window in the incident log.
 
-## 11. Audit partition archive and purge
+## 11. Audit partition archive (purging prohibited)
 
-Retention (approved): **12 months online, 7 years archived**. `audit.event` is partitioned by month (`audit.event_yYYYYmMM`, created three months ahead by pgweb at start-up through `audit.ensure_partitions`; rows outside any partition go to `audit.event_default`). The DBA does this; purging needs **two people**.
+> **PURGING IS PROHIBITED.** Do not detach, drop, truncate or delete any part of `audit.event` in the audit database, whatever its age, until audit-chain verification from an archived anchor has been **implemented, tested and verified, and the stakeholder has approved this runbook section in writing**. Reaching 12 months, or any other age, does **not** permit a purge. Partitions simply stay online until then. This applies to the online audit database only; archiving (below) is required and allowed.
+
+Retention (approved): **at least 12 months online, 7 years archived**. The 12 months is the minimum time records stay online, not a date by which they must be removed. `audit.event` is partitioned by month (`audit.event_yYYYYmMM`, created three months ahead by pgweb at start-up through `audit.ensure_partitions`; rows outside any partition go to `audit.event_default`). The DBA does the archiving.
 
 **Monthly archive** (each closed month, keeps it online too):
 
@@ -235,13 +237,13 @@ Get-FileHash event_y2026m10.* -Algorithm SHA256 | Format-List >> MANIFEST.txt
 
 Copy the files and the manifest to the ACL-restricted archive share. Record in the manifest the first and last `seq` of the month and the `row_hash` of the last row: `SELECT min(seq), max(seq) FROM audit.event_y2026m10;` and `SELECT encode(row_hash,'hex') FROM audit.event WHERE seq = <max>;`. That last hash anchors the next month's chain.
 
-**Purge** (partitions older than 12 months, already archived and checked):
+**Purge: not authorised.** There is no purge procedure in this release.
 
-> **Known limitation.** `verify-audit-chain` checks the chain from the very first record (seq 1). After the first partition is dropped it will report `AUDIT CHAIN BROKEN at seq <first remaining>`. Verification from an archived anchor (the last `row_hash` recorded in the manifest) is not implemented yet. The first purge falls due 12 months after go-live; implement anchor verification before then (tracked in `docs/phase-12-status.md`). **Until then, don't purge.**
+- **Why:** `verify-audit-chain` checks the chain from the very first record (seq 1). After any partition is dropped it would report `AUDIT CHAIN BROKEN at seq <first remaining>` from then on, so the integrity of the remaining records could no longer be shown. Verification from an archived anchor (the last `row_hash` recorded in the manifest) is not implemented (finding P12-3; deferred by the stakeholder on 2026-10-17).
+- **What lifts the prohibition:** anchor verification implemented and tested, a purge rehearsed on a test audit database with the chain verified from the anchor afterwards, this section rewritten with the approved procedure (two people, verified archive and manifest), and the stakeholder's written approval. All of these together; none of them alone.
+- **Until then**, if the audit database runs short of space, add storage. Never remove records.
 
-When it is available, the procedure will be: verify the chain; check the archive files against the manifest (second person); `ALTER TABLE audit.event DETACH PARTITION audit.event_y2025m10; DROP TABLE audit.event_y2025m10;` as `pgweb_migrator`; verify from the anchor.
-
-The 7-year archive is purged from the share by the records-management process.
+The 7-year archive on the archive share is a separate matter, handled by the records-management process; nothing in this section permits removing records from the audit database.
 
 ## 12. Dependency update intake
 

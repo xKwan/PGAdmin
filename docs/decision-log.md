@@ -19,14 +19,17 @@ Records instructions from the stakeholder that affect how work proceeds. Entries
 | 2026-10-15 | Parser: "In-process, accept risk" | T31 accepted; the stakeholder is the risk owner |
 | 2026-10-15 | Downloads: "Yes, pinned + recorded"; SonarQube: "Local Community Build"; risk owners: "Me (stakeholder)" | ADR-0008 workstation intake. SonarQube Community Build runs project-locally. The stakeholder owns residual risks T12, T21, T28, T29 and T31, to be reassigned within the organisation as needed. |
 | 2026-10-15 | "Clarify everything you need now, and once we have ironed out everything, complete all phases by your own" | Phases 2–12 proceed without further check-ins, under the delivery workflow (5× randomised loops, docs, commit and push per phase). Spike code stays under `spikes/` on `main` as evidence, and is never built into the application. |
+| 2026-10-16 | node-forge (GHSA-86w9-cpqp-85rv): investigate first, "Prioritize fixing the vulnerability over accepting an exception"; then "Yes, proceed with the Maven-scanner fix" | No exception approved. The frontend is scanned with the SonarScanner for Maven and `@sonar/scan` removed (finding P12-7); the dependency scan has 0 findings. |
+| 2026-10-17 | "I approve removing the obsolete node-forge exception"; "Do not enable SQL execution in production or proceed with production deployment yet"; "Defer implementing the audit-chain anchor for now, but preserve the runbook restriction prohibiting audit purges"; T31 and EXE-03: "Do not implement either feature yet. Keep both decisions open" | `offline/vulnerability-exceptions.json` now lists no exceptions. Execution stays off; no production deployment, tag or release-scope change. Purging the online audit database is prohibited until all four conditions in runbooks §11 are met. T31 and EXE-03 remain open below. |
 
 ## Still needs explicit stakeholder approval
 
 | Item | Raised | Where |
 |---|---|---|
-| Re-confirm the accepted parser risk T31 after finding P7-5 (an intermittent native crash in libpg_query, mitigated by running every parser call on one thread) | Phase 7 | `docs/phase-7-status.md`, `docs/threat-model.md` |
-| Confirm EXE-03: no multi-statement scripts in the MVP | Phase 7 | `docs/sql-execution-behaviour.md` §2 |
+| T31: keep the in-process parser (accepted risk) or isolate it in a separate process, after finding P7-5 (an intermittent native crash in libpg_query, mitigated by running every parser call on one thread). Open; not to be implemented until decided | Phase 7 | `docs/phase-7-status.md`, `docs/threat-model.md` |
+| EXE-03: multi-statement scripts in the MVP or not (currently one statement per request). Open; not to be implemented until decided | Phase 7 | `docs/sql-execution-behaviour.md` §2 |
 | Gate G4 sign-off before SQL execution is turned on outside tests; MVP sign-off and release tag (Phase 12 acceptance) | Phase 12 | `docs/phase-12-status.md` |
+| Audit-chain anchor verification (P12-3): implementation deferred. Purging stays prohibited until all four conditions in runbooks §11 are met, the last being the stakeholder's written approval of the purge procedure | Phase 12 | `docs/operations/runbooks.md` §11 |
 
 Implementation choices made within the approved ADRs (bundled `jlink` runtime, WinSW 2.12.0, a test-only `-NoService` mode) are listed in `docs/phase-12-status.md`; they are not stakeholder decisions.
 

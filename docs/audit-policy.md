@@ -80,7 +80,7 @@ The fail mode is one configuration switch, tested in both positions.
 - Monthly declarative partitions.
 - Proposed placeholders: **12 months online, 7 years archived**. To be aligned with the actual legal and policy requirement.
 - Closed partitions are exported daily to an ACL-restricted share with a SHA-256 manifest.
-- Purging requires two-person approval and follows a documented runbook.
+- Purging requires two-person approval and follows a documented runbook. **Purging the online audit database is prohibited until all four conditions in `docs/operations/runbooks.md` §11 are met: anchor verification implemented and tested; a purge rehearsed on a test audit database with the chain verified from the anchor; the approved two-person procedure written into §11; and the stakeholder's written approval** (finding P12-3); the 12-month figure is a minimum online period, not permission to purge.
 - Audit data is never dropped during upgrades or rollbacks; the audit DB is dumped and its chain verified before every upgrade.
 
 ## 8. Approval checklist
