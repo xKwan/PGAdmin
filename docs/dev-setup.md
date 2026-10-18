@@ -43,6 +43,8 @@ java -jar $jar serve --config .dev-db\pgweb.properties               # http://12
 java -jar $jar verify-audit-chain --config .dev-db\pgweb.properties  # exit 3 if the chain is broken
 ```
 
+> **Port 8080 may be taken.** Docker Desktop and the WSL relay can listen on 8080 over IPv6, and a browser opening `http://localhost:8080` then reaches them instead of pgweb. Check with `Get-NetTCPConnection -State Listen -LocalPort 8080`; if anything but pgweb is listed, set `server.port` to a free port in `.dev-db\pgweb.properties`. All ports: [`ports-and-services.md`](ports-and-services.md).
+
 | Command | Purpose | Exit codes |
 |---|---|---|
 | `serve` (default) | Run the service. Starts even if the audit DB is down; `/api/ready` then answers 503 and audited operations are refused (fail-closed). | 0 after a clean shutdown, 1 if startup fails |
@@ -89,7 +91,7 @@ Unknown keys are errors, so a misspelt setting can't silently fall back to a def
 
 ## 5. Signing in locally
 
-The workstation has no domain, so test mode allows NTLM (`auth.protocols=Negotiate NTLM`, `auth.kerberosOnly=false`). Edge signs in automatically to `http://localhost:8080` with your Windows account. `GET /api/me` shows the account, SID, DataAdmin flag, mechanism and CSRF token. `.dev-db\pgweb.properties` sets `auth.dataAdminSid=S-1-5-32-545` (BUILTIN\Users), so you are DataAdmin locally; set any other SID to see the non-DataAdmin view.
+The workstation has no domain, so test mode allows NTLM (`auth.protocols=Negotiate NTLM`, `auth.kerberosOnly=false`). Edge signs in automatically to `http://localhost:8080` (or the port you set, section 3) with your Windows account. `GET /api/me` shows the account, SID, DataAdmin flag, mechanism and CSRF token. `.dev-db\pgweb.properties` sets `auth.dataAdminSid=S-1-5-32-545` (BUILTIN\Users), so you are DataAdmin locally; set any other SID to see the non-DataAdmin view.
 
 State-changing requests (POST, PUT, DELETE) need the `X-CSRF-Token` header from `/api/me` and an own-origin `Origin` header.
 
@@ -103,7 +105,48 @@ The script builds the JAR with the SPA (skip with `-SkipBuild`). It creates a th
 
 This exercises the production connection path in a real browser: Windows sign-in, the fresh Negotiate handshake on the request that opens a session, impersonation and an SSPI logon. On a workstation this is NTLM loopback. Kerberos is a target-environment item.
 
-## 7. Security notes for developers
+## 7. Manual verification environment
+
+To try the application by hand in Edge, with real database sessions, start the verification environment. It is the E2E set-up (section 6) with fixed ports, left running until you stop it. Ports at a glance: [`ports-and-services.md`](ports-and-services.md).
+
+```powershell
+. .\scripts\toolchain\Use-Toolchain.ps1
+# Build the JAR with the SPA once (as Invoke-E2E.ps1 does):
+cd frontend; npm ci --offline --no-audit --no-fund; npm run build; cd ..
+cd backend; mvn -B -o -q -s ..\offline\maven-settings.xml -Pwith-spa -DskipTests package; cd ..
+
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\dev\Start-VerifyEnv.ps1      # start (again: restarts what is stopped, keeps the data)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\dev\Stop-VerifyEnv.ps1       # graceful stop (Ctrl+C: open transactions are rolled back)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\dev\Stop-VerifyEnv.ps1 -Destroy   # stop and delete .verify-env\
+```
+
+| URL or port | What | Use it to check |
+|---|---|---|
+| `http://localhost:8090/` | pgweb, **SQL execution OFF** (as shipped) | The kill switch: running a query gives `EXECUTION_DISABLED`. Sign-in, server tiles, sessions and the object browser work. |
+| `http://localhost:8091/` | pgweb, **SQL execution ON** (local test only, never a server) | Queries, results and limits, transactions, confirmations (`DROP`, `DELETE` without `WHERE`), multi-statement input refused (EXE-03) |
+| `localhost:55434` | PostgreSQL 18 cluster in `.verify-env\` | `demo_db` (owned by you): `public.items` (2,500 rows), view `public.cheap_items`, `sales.orders` (200 rows). Also the audit database `pgweb_audit`. |
+
+Both instances run in test mode (NTLM, plain secrets in `.verify-env\`), share the audit database, and make you DataAdmin (`auth.dataAdminSid=S-1-5-32-545`). The internal tile (red "INTERNAL - LOCAL TEST" banner) and the external tile both point at the same cluster. The script refuses to start if a port is already taken (see the [8080 conflict](ports-and-services.md#3-the-port-8080-conflict)); choose others with `-OffPort`, `-OnPort` and, on first start, `-PgPort`.
+
+**Checking the audit trail** after trying things:
+
+```powershell
+. .\scripts\toolchain\Use-Toolchain.ps1 -Quiet
+$jar = (Get-ChildItem backend\target\pgweb-backend-*.jar)[0].FullName
+& "$env:JAVA_HOME\bin\java.exe" -jar $jar verify-audit-chain --config .verify-env\exec-off\pgweb.properties   # exit 0 = intact
+$psql = 'S:\Program Files\PostgreSQL\18\bin\psql.exe'   # preexisting.postgresql.path in configuration.properties
+$env:PGPASSWORD = (Get-Content -Raw .verify-env\state.json | ConvertFrom-Json).super
+& $psql -X -h localhost -p 55434 -U pgweb_verify_super -d pgweb_audit -c "SELECT seq, occurred_at, event_type, windows_user, profile, statement_class, outcome FROM audit.event ORDER BY seq DESC LIMIT 20"
+$env:PGPASSWORD = $null
+```
+
+Logs: `.verify-env\exec-off\logs\`, `.verify-env\exec-on\logs\`, PostgreSQL in `.verify-env\server.log`.
+
+What this does **not** show: Kerberos (NTLM is used here), the non-DataAdmin view, HTTPS, the Windows service, or separate internal, external and audit servers. Those are target-environment checks ([`target-environment-checklist.md`](target-environment-checklist.md)).
+
+**Start it from an ordinary PowerShell window.** PostgreSQL's server processes inherit the console of whoever started them. If that console is closed by force (a killed terminal or task), new server processes fail to start (`terminated by exception 0xC0000142` in `server.log`), and pgweb answers `AUDIT_UNAVAILABLE` (fail-closed). `Stop-VerifyEnv.ps1` then `Start-VerifyEnv.ps1` recovers. For the same reason, don't wrap the start script in `Start-Process -Wait` or pipe its output: both wait for the servers, which keep running.
+
+## 8. Security notes for developers
 
 - **Heap dumps:** the JVM default (`-XX:-HeapDumpOnOutOfMemoryError`) is kept. Don't enable heap dumps on servers: a dump can contain the audit HMAC key, the audit DB password and query results (threat T10/T27). The service wrapper configuration (`deploy/windows/pgweb-service.xml.template`) turns them off explicitly.
 - **Logs** are not audit records. The redactor masks `password=`, `token`, `secret`, `hmacKey` and `Authorization` values, but code must still never log secrets on purpose.

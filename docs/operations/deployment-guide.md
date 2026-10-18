@@ -20,7 +20,7 @@ Roles in this guide: **AD admin** (SPN, delegation, groups, GPO), **DBA** (Postg
 | PostgreSQL 18: internal (port 5433) and external (5432) | Both with Kerberos (`gss` or `sspi`) authentication for the users (section 5). |
 | A **separate** PostgreSQL cluster for the audit database | Not administered by DataAdmin members (D4, `docs/audit-policy.md`). Password authentication for the two pgweb roles, over TLS. |
 | The DataAdmin AD group | Its SID goes into the configuration. |
-| Firewall | Users → app host on 8443/tcp. App host → both PostgreSQL hosts (5432, 5433) and the audit cluster. |
+| Firewall | Users → app host on 8443/tcp. App host → both PostgreSQL hosts (5432, 5433) and the audit cluster (port chosen by the DBA). All ports at a glance: [`../ports-and-services.md`](../ports-and-services.md). |
 
 ### Release bundle contents
 

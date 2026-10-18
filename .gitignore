@@ -21,3 +21,5 @@ native/libpg_query/build/
 # Local throwaway dev clusters (scripts/dev-db.ps1)
 .dev-db/
 frontend/dist-report.json
+# Local manual-verification environment (scripts/dev/Start-VerifyEnv.ps1)
+.verify-env/

@@ -20,6 +20,7 @@ Collected on 2026-10-15 by running read-only commands on the workstation. **This
 | JDK / Maven | Not installed system-wide. Since 2026-10-15, installed **project-locally** in `tools\` by `scripts/toolchain`: Temurin JDK 21.0.12.1+1 and Maven 3.9.16 (see `software-list.md`) | Verified | `Get-Command`, directory scan; `java -version`, `mvn -v` from `tools\` |
 | PostgreSQL | 18.6, Windows service `postgresql-x64-18`, binaries in `S:\Program Files\PostgreSQL\18\bin` (`initdb`, `pg_ctl`, `psql` present) | Verified | `psql --version`, service query |
 | Docker | Docker Desktop installed and running | Verified | service `com.docker.service` |
+| Listening ports that matter to pgweb (2026-10-19) | PostgreSQL service on **5432**, all interfaces. Docker Desktop and the WSL relay on **8080** over IPv6, which conflicts with pgweb's test-mode default port. Details: [`ports-and-services.md`](ports-and-services.md) | Verified | `Get-NetTCPConnection -State Listen` |
 | Microsoft Edge | 155.0.4283.45 | Verified | `msedge.exe` file version |
 | GitLab Runner, SonarScanner | Not on PATH | Verified | `Get-Command` |
 | Network access | Not checked; assumed **not** air-gapped (a development machine) | Assumed | — |
@@ -89,14 +90,14 @@ Collected on 2026-10-15 by running read-only commands on the workstation. **This
 | Windows Server version for the app host | | Unresolved |
 | Can the app host reach both PostgreSQL instances (firewall rules for 5432/5433)? | | Unresolved |
 | Internal CA available for the HTTPS certificate | | Unresolved |
-| Where the audit DB may be hosted (separate cluster/port permitted?) | | Unresolved (D4) |
+| Where the audit DB may be hosted (separate cluster/port permitted?) | **Decided:** a separate cluster/port, not administered by DataAdmin members (stakeholder, 2026-10-15; `audit-policy.md` §8, D4). Host and port still to be supplied by the DBA. | Stated (decision); host and port Unresolved |
 | Monitoring or alerting system available for audit-failure alerts (Windows Event Log forwarding, SIEM) | | Unresolved |
 
 ## 6. Audit and governance
 
 | Item | Value | Status |
 |---|---|---|
-| Required audit retention (online / archived) and its legal or policy basis | | Unresolved (D13) |
-| Named auditor group or accounts | | Unresolved (D13) |
-| Is storing normalised SQL text (literals removed) acceptable? Are identifiers (table and column names) acceptable? | | Unresolved (D4) |
-| Fail-closed or fail-open when audit can't be written | | Unresolved (D4) |
+| Required audit retention (online / archived) and its legal or policy basis | **Decided:** at least 12 months online, 7 years archived (stakeholder, 2026-10-15; `audit-policy.md` §8). Purging the online audit database is prohibited until P12-3 is done and approved (`operations/runbooks.md` §11). The legal or policy basis is not recorded. | Stated (retention); basis Unresolved (D13) |
+| Named auditor group or accounts | **Decided:** a named auditor group, through `pgweb_audit_reader` (stakeholder, 2026-10-15; `audit-policy.md` §8). The group's name is still to be supplied. | Stated (decision); group name Unresolved |
+| Is storing normalised SQL text (literals removed) acceptable? Are identifiers (table and column names) acceptable? | **Decided:** normalised text plus HMAC, raw text off; identifiers stored (stakeholder, 2026-10-15; `audit-policy.md` §8, D4) | Stated |
+| Fail-closed or fail-open when audit can't be written | **Decided:** fail-closed, both profiles (stakeholder, 2026-10-15; `audit-policy.md` §8, D4) | Stated |

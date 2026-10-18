@@ -22,7 +22,8 @@ An internal web application, similar to DBeaver for everyday workflows, that let
 | **Runbooks**: upgrade, rollback, kill switch, rotation, DataAdmin, audit, spool, outage, partitions | [`docs/operations/runbooks.md`](docs/operations/runbooks.md) |
 | **User guide**: supported SQL behaviour and limitations | [`docs/operations/user-guide.md`](docs/operations/user-guide.md) |
 | SQL execution behaviour (gate, limits, timeout, cancel, outcomes, audit) | [`docs/sql-execution-behaviour.md`](docs/sql-execution-behaviour.md) |
-| Developer setup: build, local audit DB, run, configuration reference | [`docs/dev-setup.md`](docs/dev-setup.md) |
+| Developer setup: build, local audit DB, run, manual verification environment, configuration reference | [`docs/dev-setup.md`](docs/dev-setup.md) |
+| **Ports and services** at a glance (production and workstation) | [`docs/ports-and-services.md`](docs/ports-and-services.md) |
 | Requirements, threat model, audit policy | [`docs/requirements.md`](docs/requirements.md), [`docs/threat-model.md`](docs/threat-model.md), [`docs/audit-policy.md`](docs/audit-policy.md) |
 | Environment inventory, compatibility matrix | [`docs/environment-inventory.md`](docs/environment-inventory.md), [`docs/compatibility-matrix.md`](docs/compatibility-matrix.md) |
 | Offline dependency intake | [`offline/README.md`](offline/README.md) |
