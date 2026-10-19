@@ -22,8 +22,7 @@ async function connect(executionEnabled = true) {
     http.post('/api/db-sessions/external', () => HttpResponse.json(SESSION, { status: 201 })),
   );
   render(<Workspace profile="external" executionEnabled={executionEnabled} onBack={() => {}} />);
-  await userEvent.click(screen.getByRole('button', { name: 'Show my databases' }));
-  await userEvent.click(await screen.findByRole('button', { name: /sales/ }));
+  await userEvent.click(await screen.findByRole('button', { name: /sales/ })); // listed as soon as the workspace opens
   await screen.findByRole('textbox', { name: 'SQL editor' });
 }
 
@@ -75,8 +74,9 @@ describe('Workspace execution', () => {
     await userEvent.click(within(screen.getByRole('region', { name: 'Results' })).getByRole('button', { name: 'Refresh' }));
     expect(await screen.findByText('Stopped: the time limit was reached')).toBeInTheDocument();
     expect(screen.getByText(/closed by the server. Anything not committed was rolled back/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Connect again' }));
-    expect(await screen.findByRole('button', { name: 'Show my databases' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reconnect to sales' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Choose another database' }));
+    expect(await screen.findByText('No database open')).toBeInTheDocument();
   });
 
   it('an ended session reported as 410 also asks to connect again', async () => {

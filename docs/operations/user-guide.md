@@ -23,8 +23,27 @@ If you were just added to DataAdmin and the internal tile is missing, sign out o
 
 ## 3. Sessions
 
-Choosing a database opens a **session**: a connection to PostgreSQL as your own role. You can have up to 3 sessions open at once. The session bar shows the server, database and your PostgreSQL user, and the transaction state.
+### The status line
 
+The top of the workspace shows four things separately:
+
+| Item | What it means |
+|---|---|
+| **Signed in** | Your Windows account, and how you signed in (Kerberos; NTLM only on a test machine) |
+| **Server** | Whether the PostgreSQL server answered **for you**. When the workspace opens, pgweb asks the server which databases you may use; it does that by connecting as you. **Reachable** means that worked. Otherwise it says why: *Could not connect*, *Windows sign-in incomplete*, *Access refused*, *Too many failed attempts*, *Audit service unavailable*, *Application server unreachable*. |
+| **Database** | The database of your open session, or *none open* |
+| **Session** | *No session*, *Opening …*, *Open*, *Switching to …*, or *Ended* |
+
+"Server: Reachable" with "Session: No session" is normal: the server answered, and you haven't opened a database yet. Nothing is reported as open until the server has confirmed it.
+
+### Opening, switching and reconnecting
+
+Your databases are listed as soon as the workspace opens. Choosing one opens a **session**: a connection to PostgreSQL as your own role. pgweb doesn't open one by itself, because every session is recorded and counts against your limit; the database you used last on that server is offered first (**Connect to …**). You can have up to 3 sessions open at once. The session bar shows the database, your PostgreSQL user, the server version, and the transaction state. **Refresh list** asks the server again.
+
+- **Switch database** (in the session bar) lists your databases with the current one marked. Choosing another opens the new session first; only when that worked is the old one closed. If it fails (no access, the limit reached, the server down), you stay connected to the database you had, and the message says so. The editor keeps your text; results and the object browser start afresh for the new database.
+- **An open transaction is never discarded silently.** If you switch while a transaction is open, pgweb asks first: switching closes the session, and PostgreSQL rolls back everything not committed. Nothing is committed for you. To keep the changes, cancel and **Commit** first. While a statement runs, switching isn't offered.
+- At the session limit a switch can't open the new session; disconnect this or another session first.
+- When a session ends (timeout, server restart, a lost connection), the session bar offers **Reconnect to …** (the same database) and **Choose another database**.
 - **Disconnect** when you are done. A session also closes after 15 minutes without running anything, after 10 minutes idle inside an open transaction (you are warned at 8), and an hour after a transaction began. Viewing the page doesn't count as activity.
 - If you reach the limit, pgweb lists your open sessions so you can disconnect one.
 - A session marked **Limited** works, but object browsing and the cancel escalation aren't available in it.
@@ -83,6 +102,11 @@ Every sign-in, connection and statement is recorded in an audit trail the admini
 | Could not connect to the database. Check that you have access to it, or ask the administrator. | No role, no `CONNECT`, or the server refused your sign-in |
 | Windows sign-in for the database connection did not complete. … | Open pgweb by its full host name, from a domain-joined computer |
 | Superuser roles cannot be used through this application. | Your role is a PostgreSQL superuser; ask the DBA for a normal role |
-| The database session has ended. Connect again. | The session timed out, was closed after a cancel, or pgweb restarted |
+| The database session has ended. Connect again. | The session timed out, was closed after a cancel, or pgweb restarted; use **Reconnect to …** |
+| Could not switch to … You are still connected to … | The other database couldn't be opened; your current session is unchanged |
+| The current session has an open transaction. … | Commit or roll back first, or confirm that switching rolls it back |
+| A statement is still running in this session. … | Wait for it or cancel it, then switch |
+| Server: Could not connect (with no session) | The server didn't answer for you: it may be down, or you have no access to its maintenance database. **Refresh list** tries again |
+| Server: Windows sign-in incomplete | Open pgweb by its full host name, from a domain-joined computer |
 | permission denied for … | Your PostgreSQL role lacks the privilege; ask the database owner |
 | You have no database on this server that you can connect to. | Nobody shared a database with you on that server |

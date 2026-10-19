@@ -27,5 +27,6 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
 afterEach(() => {
   cleanup();
   server.resetHandlers();
+  window.localStorage.clear(); // e.g. the remembered last database: each test starts with a fresh browser
 });
 afterAll(() => server.close());

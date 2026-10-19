@@ -236,7 +236,6 @@ describe('Workspace transactions', () => {
     );
     if (profiles) server.use(http.get('/api/profiles', () => HttpResponse.json({ profiles })));
     render(<Workspace profile="external" executionEnabled onBack={() => {}} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Show my databases' }));
     await userEvent.click(await screen.findByRole('button', { name: /sales/ }));
     return screen.findByRole('textbox', { name: 'SQL editor' });
   }

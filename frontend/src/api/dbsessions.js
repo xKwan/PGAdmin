@@ -11,8 +11,16 @@ export function listDatabases(profile) {
   return api(`/api/profiles/${encodeURIComponent(profile)}/databases`, { method: 'POST' }).then((r) => r.databases);
 }
 
-export function openSession(profile, database) {
-  return api(`/api/db-sessions/${encodeURIComponent(profile)}`, { method: 'POST', body: { database } });
+/**
+ * Opens a session. With `replaces` (the current session's ID) it switches database: the server opens the new session
+ * first and closes the old one only if that worked, and refuses (TRANSACTION_OPEN) to discard an open transaction
+ * unless `discardTransaction` is true.
+ */
+export function openSession(profile, database, { replaces, discardTransaction } = {}) {
+  const body = { database };
+  if (replaces) body.replaces = replaces;
+  if (discardTransaction) body.discardTransaction = true;
+  return api(`/api/db-sessions/${encodeURIComponent(profile)}`, { method: 'POST', body });
 }
 
 export function listSessions() {
@@ -37,7 +45,16 @@ export function describeConnectionError(error) {
     case 'SESSION_LIMIT':
     case 'SERVER_BUSY':
     case 'RATE_LIMITED':
+    case 'TRANSACTION_OPEN':
       return error.message;
+    case 'SESSION_BUSY':
+      return 'A statement is still running in this session. Wait for it to finish, or cancel it, then switch.';
+    case 'INVALID_REPLACE':
+      return 'A session can only be switched to another database on the same server.';
+    case 'AUDIT_UNAVAILABLE':
+      return 'The audit service is unavailable, so the server refused the request. Try again shortly.';
+    case 'NETWORK':
+      return 'The application server could not be reached. Check your network connection.';
     case 'DELEGATION_HANDSHAKE':
       return 'Windows sign-in for the database connection did not complete. Open the application by its full host name from a domain-joined computer.';
     case 'FORBIDDEN':

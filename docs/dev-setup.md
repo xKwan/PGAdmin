@@ -124,7 +124,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\dev\Stop-VerifyEnv.p
 |---|---|---|
 | `http://localhost:8090/` | pgweb, **SQL execution OFF** (as shipped) | The kill switch: running a query gives `EXECUTION_DISABLED`. Sign-in, server tiles, sessions and the object browser work. |
 | `http://localhost:8091/` | pgweb, **SQL execution ON** (local test only, never a server) | Queries, results and limits, transactions, confirmations (`DROP`, `DELETE` without `WHERE`), multi-statement input refused (EXE-03) |
-| `localhost:55434` | PostgreSQL 18 cluster in `.verify-env\` | `demo_db` (owned by you): `public.items` (2,500 rows), view `public.cheap_items`, `sales.orders` (200 rows). Also the audit database `pgweb_audit`. |
+| `localhost:55434` | PostgreSQL 18 cluster in `.verify-env\` | `demo_db` (owned by you): `public.items` (2,500 rows), view `public.cheap_items`, `sales.orders` (200 rows). Also the audit database `pgweb_audit`. Switching database (admin Phase 1) works between `demo_db` and `postgres`. |
 
 Both instances run in test mode (NTLM, plain secrets in `.verify-env\`), share the audit database, and make you DataAdmin (`auth.dataAdminSid=S-1-5-32-545`). The internal tile (red "INTERNAL - LOCAL TEST" banner) and the external tile both point at the same cluster. The script refuses to start if a port is already taken (see the [8080 conflict](ports-and-services.md#3-the-port-8080-conflict)); choose others with `-OffPort`, `-OnPort` and, on first start, `-PgPort`.
 

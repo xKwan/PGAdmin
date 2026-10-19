@@ -58,8 +58,7 @@ async function connect(page) {
   await page.goto('/');
   await expect(page.getByText('pgweb', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: /External PostgreSQL/ }).click();
-  await page.getByRole('button', { name: 'Show my databases' }).click();
-  await page.getByRole('button', { name: /e2e_db/ }).click();
+  await page.getByRole('list', { name: 'Databases', exact: true }).getByRole('button', { name: /^e2e_db\b/ }).click();
   await expect(page.getByLabel('Database session')).toContainText(`as ${role}`);
   const editor = page.getByRole('textbox', { name: 'SQL editor' });
   await expect(editor).toBeVisible();

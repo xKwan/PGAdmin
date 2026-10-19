@@ -15,6 +15,18 @@ function superSql(sql) {
   });
 }
 
+/** Runs a query as the superuser in `db` and returns its single value (to check audit records). */
+function superValue(db, sql) {
+  return execFileSync(process.env.E2E_PSQL, ['-X', '-q', '-t', '-A', '-h', 'localhost', '-p', process.env.E2E_PG_PORT, '-U', 'pgweb_e2e_super', '-d', db, '-c', sql], {
+    env: { ...process.env, PGPASSWORD: process.env.E2E_PG_SUPER_PASSWORD },
+  }).toString().trim();
+}
+
+/** The database list of the connect panel (not the "Connect to <last used>" shortcut). */
+function databaseButton(page, name) {
+  return page.getByRole('list', { name: 'Databases', exact: true }).getByRole('button', { name: new RegExp(`^${name}\\b`) });
+}
+
 function guard(page, base) {
   const problems = [];
   const origin = new URL(base).origin;
@@ -41,8 +53,7 @@ test('a DataAdmin sees both servers and can use the internal one, with its banne
   await expect(page.getByRole('button', { name: /External PostgreSQL/ })).toBeVisible();
   await page.getByRole('button', { name: /Internal PostgreSQL/ }).click();
   await expect(page.getByRole('note').filter({ hasText: 'INTERNAL' })).toBeVisible();
-  await page.getByRole('button', { name: 'Show my databases' }).click();
-  await page.getByRole('button', { name: /e2e_db/ }).click();
+  await databaseButton(page, 'e2e_db').click(); // listed as soon as the workspace opens
   await expect(page.getByLabel('Database session')).toContainText(`as ${role}`);
   await signOut(page);
   expect(problems).toEqual([]);
@@ -88,9 +99,9 @@ test('an expired app session signs in again by itself', async ({ page }) => {
   const problems = guard(page, noAdmin);
   await page.goto(`${noAdmin}/`);
   await page.getByRole('button', { name: /External PostgreSQL/ }).click();
-  await expect(page.getByRole('button', { name: 'Show my databases' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Refresh list' })).toBeEnabled();
   await page.waitForTimeout(65_000); // idle timeout of that instance: 1 minute
-  await page.getByRole('button', { name: 'Show my databases' }).click();
+  await page.getByRole('button', { name: 'Refresh list' }).click();
   // 401 → one reload with ?reauth=1 → Windows sign-in again → the landing page, in a fresh app session.
   await expect(page.getByRole('heading', { name: 'Choose a database server' })).toBeVisible({ timeout: 30_000 });
   await expect(page).not.toHaveURL(/reauth/);
@@ -104,8 +115,7 @@ test('an audit outage refuses execution but not sign-in, and then recovers', asy
   const problems = guard(page, admin);
   await page.goto(`${admin}/`);
   await page.getByRole('button', { name: /External PostgreSQL/ }).click();
-  await page.getByRole('button', { name: 'Show my databases' }).click();
-  await page.getByRole('button', { name: /e2e_db/ }).click();
+  await databaseButton(page, 'e2e_db').click(); // listed as soon as the workspace opens
   const editor = page.getByRole('textbox', { name: 'SQL editor' });
   await editor.click();
   await page.keyboard.insertText('SELECT 1 AS during_outage');
@@ -138,14 +148,67 @@ test('an object named with markup is shown as text', async ({ page }) => {
   const problems = guard(page, admin);
   await page.goto(`${admin}/`);
   await page.getByRole('button', { name: /External PostgreSQL/ }).click();
-  await page.getByRole('button', { name: 'Show my databases' }).click();
-  await page.getByRole('button', { name: /e2e_db/ }).click();
+  await databaseButton(page, 'e2e_db').click(); // listed as soon as the workspace opens
   const objects = page.getByRole('region', { name: 'Objects' });
   await objects.getByRole('button', { name: 'public', exact: true }).click();
   await expect(objects.getByText('<img src=x onerror=alert(1)>', { exact: true })).toBeVisible();
   await expect(objects.locator('img')).toHaveCount(0);
   await objects.getByRole('button', { name: '<img src=x onerror=alert(1)>', exact: true }).click();
   await expect(objects.getByText('Columns')).toBeVisible();
+  await signOut(page);
+  expect(problems).toEqual([]);
+});
+
+// Admin Phase 1: the status says what the backend confirmed; switching database keeps an open transaction unless the
+// user confirms rolling it back; a session the server ended can be reconnected in one step.
+test('connection status, switching database and reconnecting', async ({ page }) => {
+  const problems = guard(page, admin);
+  const status = page.getByRole('region', { name: 'Connection status' });
+  const results = page.getByRole('region', { name: 'Results' });
+  const editor = page.getByRole('textbox', { name: 'SQL editor' });
+  const run = async (sql) => {
+    await editor.click();
+    await page.keyboard.press('Control+A');
+    await page.keyboard.press('Delete');
+    await page.keyboard.insertText(sql);
+    await page.keyboard.press('Control+Enter');
+  };
+  await page.goto(`${admin}/`);
+  await page.getByRole('button', { name: /External PostgreSQL/ }).click();
+  // Discovery ran by itself: the server is reachable, and no session is claimed.
+  await expect(status).toContainText('Reachable');
+  await expect(status).toContainText('No session');
+  await expect(page.getByLabel('Database session')).toHaveCount(0);
+  await databaseButton(page, 'e2e_db').click();
+  await expect(page.getByLabel('Database session')).toContainText('e2e_db');
+  await expect(status).toContainText('Open');
+
+  // An open transaction: switching asks first; cancelling keeps the session and the transaction.
+  await run('BEGIN');
+  await expect(page.getByRole('button', { name: 'Commit' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Switch database' }).click();
+  const picker = page.getByRole('region', { name: 'Switch database' });
+  await picker.getByRole('button', { name: /^e2e_other\b/ }).click();
+  await page.getByRole('dialog', { name: 'Switch with an open transaction?' }).getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByLabel('Database session')).toContainText('e2e_db');
+  await picker.getByRole('button', { name: /^e2e_other\b/ }).click();
+  await page.getByRole('button', { name: 'Roll back and switch' }).click();
+  await expect(page.getByLabel('Database session')).toContainText('e2e_other');
+  await expect(status).toContainText('e2e_other');
+  await run('SELECT current_database() AS here');
+  await expect(results.locator('td', { hasText: 'e2e_other' })).toBeVisible();
+  const switched = superValue('pgweb_audit', "SELECT count(*) FROM audit.event WHERE event_type = 'db_disconnect' AND details->>'reason' = 'switched'");
+  expect(Number(switched)).toBeGreaterThan(0);
+
+  // The server ends the session (its backends are terminated): reconnect to the same database in one step.
+  superValue('postgres', `SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity WHERE usename = '${role}' AND datname = 'e2e_other'`);
+  await run('SELECT 1');
+  await expect(page.getByRole('button', { name: 'Reconnect to e2e_other' })).toBeVisible({ timeout: 45_000 });
+  await expect(status).toContainText('Ended');
+  await page.getByRole('button', { name: 'Reconnect to e2e_other' }).click();
+  await expect(page.getByLabel('Database session')).toContainText('e2e_other');
+  await run('SELECT current_database() AS again');
+  await expect(results.getByRole('columnheader', { name: /again/ })).toBeVisible();
   await signOut(page);
   expect(problems).toEqual([]);
 });

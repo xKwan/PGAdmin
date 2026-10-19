@@ -19,6 +19,7 @@ import java.util.Map;
  *   GET    /api/profiles                          servers this user may use
  *   POST   /api/profiles/{profile}/databases      databases the user may connect to (fresh Windows handshake)
  *   POST   /api/db-sessions/{profile}             open: {"database": "..."}  (fresh Windows handshake)
+ *                                                 switch: {"database", "replaces": id, "discardTransaction"?}
  *   GET    /api/db-sessions                       own sessions
  *   GET    /api/db-sessions/{id}                  one session
  *   DELETE /api/db-sessions/{id}                  close
@@ -34,8 +35,12 @@ public final class DbSessionServlets {
     private DbSessionServlets() {
     }
 
-    /** Body of an open request. */
-    public record OpenRequest(String database) {
+    /**
+     * Body of an open request. With {@code replaces} (one of the user's own session IDs on the same server) it is a
+     * database switch: the new session opens first and replaces that one only if it succeeded.
+     * {@code discardTransaction} confirms that switching away from an open transaction rolls it back.
+     */
+    public record OpenRequest(String database, String replaces, Boolean discardTransaction) {
     }
 
     /** Body of an execute request; {@code confirmed} answers a CONFIRMATION_REQUIRED for a destructive statement. */
@@ -128,7 +133,10 @@ public final class DbSessionServlets {
         @Override
         protected Object post(HttpServletRequest req) {
             OpenRequest body = body(req, OpenRequest.class);
-            DbSession s = manager.open(user(req), profile, body.database(), credential(req), requestId(req));
+            DbSession s = body.replaces() == null
+                    ? manager.open(user(req), profile, body.database(), credential(req), requestId(req))
+                    : manager.replace(user(req), profile, body.replaces(), body.database(), Boolean.TRUE.equals(body.discardTransaction()),
+                            credential(req), requestId(req));
             status(req, 201);
             return s.view();
         }

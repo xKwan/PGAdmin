@@ -1,0 +1,58 @@
+﻿{
+    "tag":  "admin-phase-1",
+    "suite":  "all",
+    "overall":  "PASS",
+    "masterSeed":  614185438,
+    "requiredConsecutivePasses":  1,
+    "started":  "2026-10-19T00:53:16.1895258+08:00",
+    "finished":  "2026-10-19T00:57:29.4292042+08:00",
+    "os":  "Microsoft Windows NT 10.0.26200.0",
+    "java":  "C:\\Users\\cheek\\AppData\\Local\\Temp\\claude\\S--Code-PGAdmin\\c0cdd174-9665-49a7-ba2f-d8e189b06805\\scratchpad\\baseline-wt\\tools\\jdk-21.0.12.1+1",
+    "node":  "v24.20.0",
+    "commit":  "b7b8a97",
+    "dirty":  false,
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  308772681,
+                     "pass":  true,
+                     "seconds":  253.2,
+                     "consecutive":  1,
+                     "leftovers":  0,
+                     "failed":  [
+
+                                ],
+                     "suites":  [
+                                    {
+                                        "suite":  "frontend",
+                                        "lintExit":  0,
+                                        "testExit":  0,
+                                        "tests":  99,
+                                        "failures":  0,
+                                        "coverage":  {
+                                                         "lines":  98.96,
+                                                         "branches":  92.97,
+                                                         "functions":  96.38,
+                                                         "statements":  97.91
+                                                     }
+                                    },
+                                    {
+                                        "suite":  "backend",
+                                        "exit":  0,
+                                        "unit":  82,
+                                        "integration":  135,
+                                        "failures":  0,
+                                        "errors":  0,
+                                        "coverage":  {
+                                                         "branch":  88.8,
+                                                         "instruction":  95.8,
+                                                         "method":  97.6,
+                                                         "complexity":  87.5,
+                                                         "line":  94.1,
+                                                         "class":  100
+                                                     }
+                                    }
+                                ]
+                 }
+             ]
+}

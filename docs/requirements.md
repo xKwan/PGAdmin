@@ -42,8 +42,8 @@
 | ID | Requirement | Phase | Verified by | Status |
 |---|---|---|---|---|
 | FN-01 | Landing page offering internal (DataAdmin only) and external options | P5 | RTL; E2E | Tested (P5; E2E in P11) |
-| FN-02 | External connection: choose a database from those the user may CONNECT to (no password) | P6 | RTL; integration | Tested (P6) |
-| FN-03 | Connection status and session info; multiple sessions; expired/lost handling | P6 | RTL; integration | Tested (P6) |
+| FN-02 | External connection: choose a database from those the user may CONNECT to (no password) | P6, admin P1 | RTL; integration; E2E | Tested (P6). Admin P1: the list loads when the workspace opens; the last database used is offered first (name only, in the browser) |
+| FN-03 | Connection status and session info; multiple sessions; expired/lost handling | P6, admin P1 | RTL; integration; E2E | Tested (P6). Admin P1: server reachability, database and session state shown separately, from backend-confirmed facts only; switch database (new session first, old one closed only on success; open transaction never discarded without confirmation, enforced by the server); one-step reconnect. `DbSessionSwitchIT`, `connections.test.jsx`, E2E journey |
 | FN-04 | SQL editor with PostgreSQL highlighting and practical editing features | P8 | RTL | Tested (P8): CodeMirror 6 with PostgreSQL highlighting, bracket matching, search, comment toggle, keyword completion; RTL and E2E (Edge) |
 | FN-05 | Execute selection or current statement; cancel; running timer | P8 | RTL; E2E | Tested (P8): Ctrl+Enter runs the selection or the statement at the cursor; running timer; Cancel; RTL and E2E |
 | FN-06 | Bounded, locally sortable, paginated results with NULL and type-aware display | P8 | RTL | Tested (P8): virtualised grid, type names, NULL vs '' vs 'NULL', truncation markers, local sort (labelled), pages of 200; RTL and E2E |
@@ -68,6 +68,8 @@
 ## 5. Deferred (post-MVP; each needs separate approval)
 
 Inline data editing; result export; server-side "fetch more"; multiple editor tabs; query history and saved queries; schema-aware autocomplete; EXPLAIN visualiser; DDL designers; audit viewer UI; two-person approval for high-risk statements; dark mode and keyboard customisation.
+
+The stakeholder's administration-workspace plan of 2026-10-19 (`docs/decision-log.md`) schedules most of these, plus database/schema management, data import, SQL file handling, backup and restore, and role administration, in phases after admin Phase 1. They stay deferred here until each phase is started; the conflicts with approved decisions that must be settled first are listed in `docs/admin-phase-1-status.md`.
 
 ## 6. Operational scaling (only when justified by measured need)
 

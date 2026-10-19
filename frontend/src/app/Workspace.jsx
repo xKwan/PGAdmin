@@ -4,8 +4,11 @@ import { listProfiles } from '../api/dbsessions.js';
 import { ConfirmDialog, EmptyState, Spinner, StatusBadge } from '../components/common/index.jsx';
 import { Splitter } from '../components/common/Splitter.jsx';
 import ConnectPanel from '../features/connections/ConnectPanel.jsx';
+import ConnectionStatus from '../features/connections/ConnectionStatus.jsx';
+import { getLastDatabase, setLastDatabase } from '../features/connections/lastDatabase.js';
+import useServerDiscovery from '../features/connections/useServerDiscovery.js';
 import ObjectExplorer from '../features/explorer/ObjectExplorer.jsx';
-import SessionBar from '../features/connections/SessionBar.jsx';
+import SessionBar, { LostSession } from '../features/connections/SessionBar.jsx';
 import ResultView from '../features/results/ResultView.jsx';
 import useExecution from '../features/results/useExecution.js';
 import TransactionBar, { LifetimeWarning } from '../features/transactions/TransactionBar.jsx';
@@ -15,7 +18,7 @@ const SqlEditor = lazy(() => import('../features/editor/SqlEditor.jsx'));
 
 const NAMES = { internal: 'Internal PostgreSQL', external: 'External PostgreSQL' };
 
-function EditorPane({ session, executionEnabled, execution, controllerRef }) {
+function EditorPane({ session, executionEnabled, execution, controllerRef, initialDoc }) {
   if (!session) {
     return <EmptyState title="SQL editor">Available once you are connected.</EmptyState>;
   }
@@ -34,7 +37,7 @@ function EditorPane({ session, executionEnabled, execution, controllerRef }) {
       {executionEnabled ? <TransactionBar execution={execution} /> : null}
       <LifetimeWarning lifetime={execution.tx.lifetime} transaction={execution.tx.state} />
       <Suspense fallback={<Spinner label="Loading the editor" />}>
-        <SqlEditor key={session.id} onRun={execution.run} canRun={canRun} controllerRef={controllerRef} />
+        <SqlEditor key={session.id} initialDoc={initialDoc} onRun={execution.run} canRun={canRun} controllerRef={controllerRef} />
       </Suspense>
     </>
   );
@@ -59,43 +62,78 @@ function useProfileBanner(profile) {
   return banner;
 }
 
+const CLOSED_BY_SERVER = 'The database session was closed by the server. Anything not committed was rolled back.';
+
 /**
  * The DBeaver-style workspace: object explorer on the left, editor above results on the right.
+ *
+ * Connection state (admin Phase 1): server discovery runs as soon as the workspace opens and is the evidence that the
+ * PostgreSQL server is reachable for this user; a database session exists only once the server has confirmed it
+ * (open, switch or reconnect). No session is opened automatically: each one is audited and counts against the
+ * per-user limit, so the user chooses (the last database used is offered first). `user` is /api/me's user.
  */
-export default function Workspace({ profile, onBack, executionEnabled = false }) {
+export default function Workspace({ profile, onBack, executionEnabled = false, user = null }) {
   const [session, setSession] = useState(null);
-  const [ended, setEnded] = useState(false);
+  const [lost, setLost] = useState(null);
+  const [opening, setOpening] = useState(null);
+  const [switchingTo, setSwitchingTo] = useState(null);
+  const [carryDoc, setCarryDoc] = useState('');
+  const [lastDatabase, setLast] = useState(() => getLastDatabase(profile, user?.sid));
   const controllerRef = useRef(null);
-  const execution = useExecution(session?.id, { onSessionEnded: () => setEnded(true) });
+  const discovery = useServerDiscovery(profile);
+  const execution = useExecution(session?.id, { onSessionEnded: () => setLost(CLOSED_BY_SERVER) });
   const banner = useProfileBanner(profile);
+  const name = NAMES[profile] || profile;
 
   const connected = (s) => {
-    setEnded(false);
+    setLost(null);
+    setOpening(null);
     setSession(s);
+    setLastDatabase(profile, user?.sid, s.database);
+    setLast(s.database);
+  };
+  /** Switch or reconnect: the editor keeps its text; results, explorer and transaction state start afresh. */
+  const replaced = (s) => {
+    setCarryDoc(controllerRef.current?.text?.() ?? '');
+    connected(s);
   };
   const disconnected = () => {
-    setEnded(false);
+    setCarryDoc(controllerRef.current?.text?.() ?? '');
+    setLost(null);
     setSession(null);
+    discovery.refresh();
+  };
+  const sessionLost = (message) => {
+    setLost(message);
+    discovery.refresh();
   };
   const showPosition = (position) => controllerRef.current?.showPosition(execution.lastFrom, position);
 
-  let bar = <StatusBadge tone="neutral">Not connected</StatusBadge>;
-  if (session && ended) {
-    bar = (
-      <div className="session-bar session-lost" role="alert">
-        <StatusBadge tone="danger">Disconnected</StatusBadge>
-        <span>The database session was closed by the server. Anything not committed was rolled back.</span>
-        <button type="button" className="btn" onClick={disconnected}>
-          Connect again
-        </button>
-      </div>
-    );
+  let phase = opening ? 'opening' : 'none';
+  if (session) phase = lost ? 'lost' : switchingTo ? 'switching' : 'open';
+
+  let bar = null;
+  if (session && lost) {
+    bar = <LostSession profile={profile} database={session.database} message={lost} onReconnected={replaced} onChooseAnother={disconnected} />;
   } else if (session) {
-    bar = <SessionBar session={session} onClosed={disconnected} onHeartbeat={execution.observeHeartbeat} transactionOpen={execution.tx.state !== 'IDLE'} />;
+    bar = (
+      <SessionBar
+        session={session}
+        profile={profile}
+        discovery={discovery}
+        onClosed={disconnected}
+        onLost={sessionLost}
+        onSwitched={replaced}
+        onSwitching={setSwitchingTo}
+        onHeartbeat={execution.observeHeartbeat}
+        transactionOpen={execution.tx.state !== 'IDLE'}
+        busy={execution.running}
+      />
+    );
   }
 
   return (
-    <section className="workspace" aria-label={`${NAMES[profile] || profile} workspace`}>
+    <section className="workspace" aria-label={`${name} workspace`}>
       {banner ? (
         <div className={`profile-banner profile-banner-${banner.tone}`} role="note">
           {banner.text}
@@ -105,9 +143,17 @@ export default function Workspace({ profile, onBack, executionEnabled = false })
         <button type="button" className="btn btn-link" onClick={onBack}>
           ← Servers
         </button>
-        <span className="workspace-title">{NAMES[profile] || profile}</span>
-        {bar}
+        <span className="workspace-title">{name}</span>
+        <ConnectionStatus
+          user={user}
+          serverName={name}
+          discovery={discovery}
+          phase={phase}
+          database={session && !lost ? session.database : null}
+          target={switchingTo || opening}
+        />
       </div>
+      {bar ? <div className="workspace-session">{bar}</div> : null}
       <Splitter
         direction="horizontal"
         initial={25}
@@ -119,7 +165,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false })
             {session ? (
               <ObjectExplorer key={session.id} sessionId={session.id} onInsert={(text) => controllerRef.current?.insert(text)} />
             ) : (
-              <ConnectPanel profile={profile} onConnected={connected} />
+              <ConnectPanel profile={profile} discovery={discovery} lastDatabase={lastDatabase} onConnected={connected} onConnecting={setOpening} />
             )}
           </aside>
         }
@@ -132,7 +178,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false })
             label="Resize editor and results"
             first={
               <section className="pane pane-editor" aria-label="SQL editor">
-                <EditorPane session={session} executionEnabled={executionEnabled} execution={execution} controllerRef={controllerRef} />
+                <EditorPane session={session} executionEnabled={executionEnabled} execution={execution} controllerRef={controllerRef} initialDoc={carryDoc} />
               </section>
             }
             second={

@@ -114,7 +114,9 @@ try {
         $setup = Join-Path $root 'setup.sql'
         Set-Content -Path $setup -Encoding ASCII -Value @(
             "CREATE ROLE `"$role`" LOGIN NOSUPERUSER;",
-            "CREATE DATABASE e2e_db OWNER `"$role`";")
+            "CREATE DATABASE e2e_db OWNER `"$role`";",
+            # A second database of the same role, to switch to (admin Phase 1).
+            "CREATE DATABASE e2e_other OWNER `"$role`";")
         Run 'roles' "$psql -d postgres -f `"$setup`""
         $seedSql = Join-Path $root 'seed.sql'
         Set-Content -Path $seedSql -Encoding ASCII -Value @(

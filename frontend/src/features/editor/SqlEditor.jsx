@@ -79,6 +79,8 @@ export default function SqlEditor({ initialDoc = '', onRun, canRun = true, contr
       controllerRef.current = {
         run: () => runCommand(v),
         focus: () => v.focus(),
+        /** The whole text (kept when the workspace switches to another database). */
+        text: () => v.state.doc.toString(),
         selection: () => ({ from: v.state.selection.main.from, to: v.state.selection.main.to }),
         /** Replaces the selection (or inserts at the cursor), for example a quoted name from the object browser. */
         insert: (text) => {

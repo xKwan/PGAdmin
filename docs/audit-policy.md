@@ -15,8 +15,8 @@ The audit trail records who did what, through this application, against which Po
 |---|---|
 | `app_login`, `app_logout` | App session created or ended |
 | `authz_denied` | Any request rejected by authorisation |
-| `db_connect_attempt`, `db_connect_result` | DB session open requested, and its outcome (Kerberos; no credential recorded) |
-| `db_disconnect`, `session_reaped`, `session_lost` | DB session closed, by the user, a timeout or a failure |
+| `db_connect_attempt`, `db_connect_result` | DB session open requested, and its outcome (Kerberos; no credential recorded). For a database switch, `details.replaces` holds the ID of the session being replaced. |
+| `db_disconnect`, `session_reaped`, `session_lost` | DB session closed, by the user, a timeout or a failure. `details.reason`: `user`, `switched` (replaced by a successful switch, after the new session's `db_connect_result`), `shutdown`, `idle`, … |
 | `exec_intent` | **Before** SQL is sent to PostgreSQL |
 | `exec_outcome` | After execution ends (success, error, timeout, cancelled, indeterminate) |
 | `cancel_requested`, `cancel_result` | Cancel requested, and its outcome (`confirmed`, `escalated_terminated`, `unconfirmed`) |

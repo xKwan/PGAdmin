@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { closeSession, describeConnectionError, listDatabases, listSessions, openSession } from '../../api/dbsessions.js';
+import { closeSession, describeConnectionError, listSessions, openSession } from '../../api/dbsessions.js';
 import { EmptyState, ErrorPanel, Spinner, StatusBadge } from '../../components/common/index.jsx';
 
 /**
@@ -49,75 +49,109 @@ function OpenSessions({ onDone }) {
         ))}
       </ul>
       <button type="button" className="btn btn-primary" onClick={onDone}>
-        Show my databases
+        Back to my databases
       </button>
     </section>
   );
 }
 
+/** The databases from discovery, each a button that connects; `current` (when switching) is marked, not a button. */
+export function DatabaseList({ databases, current, lastDatabase, onChoose, label = 'Databases' }) {
+  return (
+    <ul className="db-list" aria-label={label}>
+      {databases.map((d) => (
+        <li key={d.name}>
+          {d.name === current ? (
+            <span className="db-item db-current" aria-current="true">
+              <span className="db-name">{d.name}</span>
+              <StatusBadge tone="info">current</StatusBadge>
+            </span>
+          ) : (
+            <button type="button" className="db-item" onClick={() => onChoose(d.name)}>
+              <span className="db-name">{d.name}</span>
+              <span>
+                {d.name === lastDatabase ? <StatusBadge tone="info">last used</StatusBadge> : null}
+                {d.owned ? <StatusBadge tone="ok">owner</StatusBadge> : <StatusBadge tone="neutral">shared</StatusBadge>}
+              </span>
+            </button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /**
  * Choose a database and connect (FN-02). There is no username or password: the server connects as you with your
- * Windows sign-in, and only lists databases you may connect to (ADR-0003).
+ * Windows sign-in, and only lists databases you may connect to (ADR-0003). The list comes from the workspace's
+ * server discovery (`discovery`, see useServerDiscovery), which runs as soon as the workspace opens. A session is
+ * opened only when the user chooses a database; `onConnected` receives it once the server has confirmed it.
  */
-export default function ConnectPanel({ profile, onConnected }) {
+export default function ConnectPanel({ profile, discovery, lastDatabase, onConnected, onConnecting }) {
   const [state, setState] = useState({ phase: 'idle' });
 
-  const load = async () => {
-    setState({ phase: 'listing' });
-    try {
-      const databases = await listDatabases(profile);
-      setState({ phase: 'listed', databases });
-    } catch (error) {
-      setState({ phase: 'error', error });
-    }
-  };
-
   const connect = async (database) => {
-    setState((s) => ({ ...s, phase: 'connecting', target: database }));
+    setState({ phase: 'connecting', target: database });
+    onConnecting?.(database);
     try {
       const session = await openSession(profile, database);
       setState({ phase: 'idle' });
       onConnected(session);
     } catch (error) {
-      setState((s) => ({ ...s, phase: 'error', error }));
+      setState({ phase: 'error', error, target: database });
+      onConnecting?.(null);
     }
   };
+  const backToList = () => {
+    setState({ phase: 'idle' });
+    discovery.refresh();
+  };
 
-  if (state.phase === 'listing') return <Spinner label="Finding your databases" />;
   if (state.phase === 'connecting') return <Spinner label={`Connecting to ${state.target}`} />;
+  const listed = discovery.status === 'reachable' || (discovery.status === 'failed' && discovery.databases.length > 0);
+  const offerLast = lastDatabase && discovery.databases.some((d) => d.name === lastDatabase);
   return (
     <div className="connect-panel">
+      <div className="connect-intro">
+        <p className="empty-title">No database open</p>
+        <p className="muted">Choose a database to open a session. You connect as your own PostgreSQL role, with your Windows sign-in.</p>
+      </div>
       {state.phase === 'error' ? (
-        <ErrorPanel title="Connection problem" error={{ ...state.error, message: describeConnectionError(state.error) }} onRetry={load} />
+        <ErrorPanel
+          title={`Could not open ${state.target}`}
+          error={{ ...state.error, message: describeConnectionError(state.error) }}
+          onRetry={() => connect(state.target)}
+        />
       ) : null}
-      {state.phase === 'error' && state.error?.code === 'SESSION_LIMIT' ? <OpenSessions onDone={load} /> : null}
-      {state.phase === 'listed' ? (
-        state.databases.length === 0 ? (
-          <EmptyState title="No databases">You have no database on this server that you can connect to.</EmptyState>
-        ) : (
-          <ul className="db-list" aria-label="Databases">
-            {state.databases.map((d) => (
-              <li key={d.name}>
-                <button type="button" className="db-item" onClick={() => connect(d.name)}>
-                  <span className="db-name">{d.name}</span>
-                  {d.owned ? <StatusBadge tone="ok">owner</StatusBadge> : <StatusBadge tone="neutral">shared</StatusBadge>}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )
+      {state.phase === 'error' && state.error?.code === 'SESSION_LIMIT' ? <OpenSessions onDone={backToList} /> : null}
+      {discovery.status === 'checking' ? <Spinner label="Finding your databases" /> : null}
+      {discovery.status === 'failed' ? (
+        <ErrorPanel
+          title="Could not list your databases"
+          error={{ ...discovery.error, message: describeConnectionError(discovery.error) }}
+          onRetry={discovery.refresh}
+        />
       ) : null}
-      {state.phase === 'idle' ? (
-        <EmptyState
-          title="Not connected"
-          action={
-            <button type="button" className="btn btn-primary" onClick={load}>
-              Show my databases
+      {listed ? (
+        <>
+          {offerLast ? (
+            <div className="connect-last">
+              <button type="button" className="btn btn-primary" onClick={() => connect(lastDatabase)}>
+                Connect to {lastDatabase}
+              </button>
+            </div>
+          ) : null}
+          {discovery.databases.length === 0 ? (
+            <EmptyState title="No databases">You have no database on this server that you can connect to.</EmptyState>
+          ) : (
+            <DatabaseList databases={discovery.databases} lastDatabase={lastDatabase} onChoose={connect} />
+          )}
+          <div className="connect-refresh">
+            <button type="button" className="btn btn-link" onClick={discovery.refresh} disabled={discovery.refreshing}>
+              {discovery.refreshing ? 'Refreshing…' : 'Refresh list'}
             </button>
-          }
-        >
-          You connect as your own PostgreSQL role, with your Windows sign-in.
-        </EmptyState>
+          </div>
+        </>
       ) : null}
     </div>
   );

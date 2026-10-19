@@ -40,6 +40,7 @@ public final class DbSessionManager implements AutoCloseable {
     private static final String EV_DISCONNECT = "db_disconnect";
     private static final String OUTCOME_FAILURE = "failure";
     private static final String REASON = "reason";
+    private static final String REPLACES = "replaces";
     /** How long before a non-idle-transaction close the heartbeat starts warning. */
     private static final Duration WARN_BEFORE = Duration.ofMinutes(2);
     private static final String CONNECT_FAILED = "Could not connect to the database. Check that you have access to it, or ask the administrator.";
@@ -89,6 +90,11 @@ public final class DbSessionManager implements AutoCloseable {
      * through the connector, verifies {@code session_user} and refuses superusers (D14c). Everything is audited.
      */
     public DbSession open(UserContext user, String profileName, String database, Object credential, String requestId) {
+        return open(user, profileName, database, credential, requestId, null);
+    }
+
+    /** {@link #open}; {@code replaces} (the session being switched from, or null) is recorded with the audit events. */
+    private DbSession open(UserContext user, String profileName, String database, Object credential, String requestId, String replaces) {
         Config.DbProfile profile = profileFor(user, profileName);
         validateDatabaseName(database);
         if (failedOpens.blocked(user.sid())) {
@@ -105,7 +111,8 @@ public final class DbSessionManager implements AutoCloseable {
             }
         }
         String role = roles.roleFor(user);
-        audit.record(AuditEvent.of("db_connect_attempt").user(user).target(profile.name(), database, null, null, null).detail("requestId", requestId));
+        audit.record(AuditEvent.of("db_connect_attempt").user(user).target(profile.name(), database, null, null, null)
+                .detail("requestId", requestId).detail(REPLACES, replaces));
 
         Connection main = null;
         Connection companion = null;
@@ -132,7 +139,8 @@ public final class DbSessionManager implements AutoCloseable {
             sessions.put(id, s);
             failedOpens.reset(user.sid());
             audit.record(AuditEvent.of(EV_CONNECT_RESULT).user(user).target(profile.name(), database, role, facts.pid, id)
-                    .outcome("success", null, null, null, null).detail("companion", companion != null).detail("serverVersion", facts.version));
+                    .outcome("success", null, null, null, null).detail("companion", companion != null).detail("serverVersion", facts.version)
+                    .detail(REPLACES, replaces));
             return s;
         } catch (RefusedException e) {
             closeQuietly(main);
@@ -151,6 +159,38 @@ public final class DbSessionManager implements AutoCloseable {
             audit.record(AuditEvent.of(EV_CONNECT_RESULT).user(user).target(profile.name(), database, role, null, null)
                     .outcome(OUTCOME_FAILURE, sqlstate(e), null, null, null));
             throw new ApiException(422, "CONNECT_FAILED", CONNECT_FAILED);
+        }
+    }
+
+    /**
+     * Switches a session to another database (FN-03): opens a new session through {@link #open} (same checks, caps,
+     * handshake and audit), and only when that succeeded closes the replaced one, so a failed switch leaves the
+     * current session as it was. The replaced session is held (its statement lock) for the whole switch, so nothing
+     * can start in it meanwhile. A session in a transaction (or in an unknown state) is not switched unless the user
+     * confirmed that the transaction is discarded: closing it makes PostgreSQL roll the transaction back, and nothing
+     * is ever committed on the user's behalf. The caps count the replaced session too (no temporary extra session).
+     */
+    public DbSession replace(UserContext user, String profileName, String replacesId, String database, boolean discardTransaction,
+                             Object credential, String requestId) {
+        DbSession old = get(user, replacesId);
+        if (!old.profile().equals(profileName)) {
+            throw ApiException.badRequest("INVALID_REPLACE", "A session can only be switched to a database on the same server");
+        }
+        validateDatabaseName(database);
+        if (!old.lock().tryLock()) {
+            throw ApiException.conflict("SESSION_BUSY", "A statement is running in the current session; wait for it or cancel it before switching");
+        }
+        try {
+            String tx = old.transactionState();
+            if (!"IDLE".equals(tx) && !discardTransaction) {
+                throw new ApiException(409, "TRANSACTION_OPEN", "The current session has an open transaction. Commit or roll it back "
+                        + "first, or confirm that switching rolls it back.", Map.of("transaction", tx));
+            }
+            DbSession opened = open(user, profileName, database, credential, requestId, old.id());
+            close(old, "switched", EV_DISCONNECT);
+            return opened;
+        } finally {
+            old.lock().unlock();
         }
     }
 
