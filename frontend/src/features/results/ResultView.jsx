@@ -1,5 +1,6 @@
 import { describeCancelOutcome, describeExecutionError, describeScriptStop, explainSqlstate } from '../../api/execution.js';
 import { EmptyState, StatusBadge } from '../../components/common/index.jsx';
+import PlanView, { parsePlan } from './PlanView.jsx';
 import ResultGrid from './ResultGrid.jsx';
 
 const TX_LABEL = { IDLE: null, OPEN: 'Transaction open', FAILED: 'Transaction failed: roll back to continue' };
@@ -92,15 +93,19 @@ export function commandSummary(results) {
 function Outcome({ result, onShowPosition, paging = null }) {
   switch (result.kind) {
     case 'rows':
-      return result.results.map((r, i) => (
-        <ResultGrid
-          key={`${result.executionId}-${i}`}
-          result={r}
-          onLoadMore={i === 0 ? paging?.onLoadMore : null}
-          loadingMore={Boolean(paging?.loading)}
-          onRunReadOnly={i === 0 ? paging?.onRunReadOnly : null}
-        />
-      ));
+      return result.results.map((r, i) => {
+        const grid = (
+          <ResultGrid
+            key={`${result.executionId}-${i}`}
+            result={r}
+            onLoadMore={i === 0 ? paging?.onLoadMore : null}
+            loadingMore={Boolean(paging?.loading)}
+            onRunReadOnly={i === 0 ? paging?.onRunReadOnly : null}
+          />
+        );
+        const plan = result.statementClass === 'explain' ? parsePlan(r) : null;
+        return plan ? <PlanView key={`${result.executionId}-${i}`} plan={plan} raw={grid} /> : grid;
+      });
     case 'command':
       return (
         <p className="result-command" role="status">

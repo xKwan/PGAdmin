@@ -3,6 +3,7 @@ import { describeReasons } from '../api/execution.js';
 import { listProfiles } from '../api/dbsessions.js';
 import { ConfirmDialog, StatusBadge } from '../components/common/index.jsx';
 import { Splitter } from '../components/common/Splitter.jsx';
+import { ActivityPanel, DatabasePanel, RolesPanel } from '../features/admin/AdminPanels.jsx';
 import ConnectPanel from '../features/connections/ConnectPanel.jsx';
 import ConnectionStatus from '../features/connections/ConnectionStatus.jsx';
 import { getLastDatabase, setLastDatabase } from '../features/connections/lastDatabase.js';
@@ -18,6 +19,16 @@ import useExecution from '../features/results/useExecution.js';
 import TransactionBar, { LifetimeWarning } from '../features/transactions/TransactionBar.jsx';
 
 const NAMES = { internal: 'Internal PostgreSQL', external: 'External PostgreSQL' };
+
+/** What Explain and Explain analyze put in front of the statement (admin Phase 3). */
+export const EXPLAIN_PREFIX = { plan: 'EXPLAIN (FORMAT JSON) ', analyze: 'EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ' };
+
+/** The text Explain sends: an EXPLAIN the user typed is sent as written, anything else gets the prefix. */
+export function explainText(text, analyze) {
+  if (/^\s*explain\b/i.test(text)) return { text, prefix: 0 };
+  const prefix = analyze ? EXPLAIN_PREFIX.analyze : EXPLAIN_PREFIX.plan;
+  return { text: prefix + text, prefix: prefix.length };
+}
 
 /** Statement classes after which the object explorer is out of date once they are committed. */
 const CHANGES_OBJECTS = new Set(['ddl', 'dcl']);
@@ -35,7 +46,7 @@ function changedObjects(result) {
  * time, stopping at the first failure), the execution mode, transaction controls, then the editor tabs. Without a
  * session or with execution switched off, SQL can still be written, opened and saved; nothing can be run.
  */
-function EditorPane({ session, executionEnabled, execution, tabs, controllers, onRun, onRunScript }) {
+function EditorPane({ session, executionEnabled, execution, tabs, controllers, onRun, onRunScript, onExplain }) {
   const failed = execution.tx.state === 'FAILED';
   const canRun = Boolean(session) && executionEnabled && !execution.running && !execution.fetching && !failed;
   return (
@@ -52,6 +63,18 @@ function EditorPane({ session, executionEnabled, execution, tabs, controllers, o
           title="Runs every statement in this tab (or in the selection), one at a time, and stops at the first one that fails"
         >
           Run script
+        </button>
+        <button type="button" className="btn" onClick={() => onExplain(false)} disabled={!canRun} title="Shows the plan PostgreSQL would use for the statement at the cursor, without running it">
+          Explain
+        </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => onExplain(true)}
+          disabled={!canRun}
+          title="Runs the statement at the cursor and shows the plan with actual times. ANALYZE really runs it: you are asked first"
+        >
+          Explain analyze
         </button>
         <span className="muted">Ctrl+Enter runs the selection, or the statement at the cursor. Run script runs them all.</span>
         {executionEnabled ? null : <StatusBadge tone="warn">Running SQL is switched off by the administrator</StatusBadge>}
@@ -96,6 +119,14 @@ function useUnsavedWarning(active) {
     return () => window.removeEventListener('beforeunload', warn);
   }, [active]);
 }
+
+/** Read-only administration tabs next to Results and History (admin Phase 3), shown while a session is open. */
+const ADMIN_TABS = [
+  ['activity', 'Activity'],
+  ['database', 'Database'],
+  ['roles', 'Roles'],
+];
+const ADMIN_TAB_IDS = new Set(ADMIN_TABS.map(([id]) => id));
 
 const CLOSED_BY_SERVER = 'The database session was closed by the server. Anything not committed was rolled back.';
 
@@ -177,6 +208,17 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
     setLowerTab('results');
     execution.runScript(text, from);
   };
+  /** Explain (admin Phase 3): the statement at the cursor through the normal Run path, with EXPLAIN in front. */
+  const explain = (analyze) => {
+    const c = controllers.current[tabs.active.id];
+    if (!c) return;
+    const { text, from } = c.statement();
+    if (!text.trim()) return;
+    const sent = explainText(text, analyze);
+    setResultTab(tabs.active.id);
+    setLowerTab('results');
+    execution.run(sent.text, from - sent.prefix);
+  };
   /** The editor the shown result came from (it may since have been closed). */
   const resultEditor = () => {
     const id = resultTab && controllers.current[resultTab] ? resultTab : null;
@@ -215,6 +257,8 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
     );
   }
   const source = tabs.tabs.find((t) => t.id === resultTab)?.title ?? null;
+  // The administration tabs need a live session; without one the results are shown.
+  const lower = ADMIN_TAB_IDS.has(lowerTab) && (!session || lost) ? 'results' : lowerTab;
 
   return (
     <section className="workspace" aria-label={`${name} workspace`}>
@@ -254,6 +298,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                 databases={discovery.databases}
                 refreshKey={explorerVersion}
                 onInsert={insert}
+                onOpen={(text, title) => tabs.open(text, title)}
                 onSwitch={lost ? null : (db) => switchTo.current?.switchTo(db)}
               />
             ) : (
@@ -278,20 +323,31 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                   controllers={controllers}
                   onRun={runFrom}
                   onRunScript={runScript}
+                  onExplain={explain}
                 />
               </section>
             }
             second={
               <section className="pane pane-results" aria-label="Results">
                 <div role="tablist" aria-label="Results and history" className="tab-strip lower-tabs">
-                  <button type="button" role="tab" aria-selected={lowerTab === 'results'} className="tab-button" onClick={() => setLowerTab('results')}>
+                  <button type="button" role="tab" aria-selected={lower === 'results'} className="tab-button" onClick={() => setLowerTab('results')}>
                     Results
                   </button>
-                  <button type="button" role="tab" aria-selected={lowerTab === 'history'} className="tab-button" onClick={() => setLowerTab('history')}>
+                  <button type="button" role="tab" aria-selected={lower === 'history'} className="tab-button" onClick={() => setLowerTab('history')}>
                     History ({history.length})
                   </button>
+                  {session && !lost
+                    ? ADMIN_TABS.map(([id, label]) => (
+                        <button key={id} type="button" role="tab" aria-selected={lower === id} className="tab-button" onClick={() => setLowerTab(id)}>
+                          {label}
+                        </button>
+                      ))
+                    : null}
                 </div>
-                {lowerTab === 'results' ? (
+                {lower === 'activity' ? <ActivityPanel key={session.id} sessionId={session.id} /> : null}
+                {lower === 'database' ? <DatabasePanel key={session.id} sessionId={session.id} /> : null}
+                {lower === 'roles' ? <RolesPanel key={session.id} sessionId={session.id} /> : null}
+                {ADMIN_TAB_IDS.has(lower) ? null : lower === 'results' ? (
                   <ResultView
                     execution={execution}
                     onCancel={execution.cancel}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { describeMetadataError, describeRelation, listExtensions, listObjects, listSchemas, qualified, quoteIdent } from '../../api/metadata.js';
+import { describeMetadataError, describeRelation, getDefinition, listExtensions, listObjects, listSchemas, qualified, quoteIdent } from '../../api/metadata.js';
 import { Spinner, StatusBadge } from '../../components/common/index.jsx';
+import { GrantList } from '../admin/AdminPanels.jsx';
 
 const GROUPS = [
   ['table', 'Tables'],
@@ -15,6 +16,8 @@ const GROUPS = [
   ['window', 'Window functions'],
 ];
 const RELATIONS = new Set(['table', 'partitioned_table', 'view', 'materialized_view', 'foreign_table']);
+/** Kinds whose definition the server can give (admin Phase 3). */
+const DEFINABLE = new Set(['table', 'partitioned_table', 'view', 'materialized_view', 'sequence', 'function', 'procedure']);
 
 function time(iso) {
   const d = new Date(iso);
@@ -70,6 +73,17 @@ function RelationDetails({ sessionId, schema, name, version, onInsert }) {
   if (error) return <LoadError error={error} onRetry={retry} />;
   return (
     <div className="tree-details">
+      {data.owner ? (
+        <p className="tree-meta">
+          <span className="muted">Owner</span> <span>{data.owner}</span>
+          {data.myPrivileges ? (
+            <>
+              {' · '}
+              <span className="muted">Your privileges</span> <span>{data.myPrivileges.length ? data.myPrivileges.join(', ') : 'none'}</span>
+            </>
+          ) : null}
+        </p>
+      ) : null}
       <p className="tree-group-title">Columns</p>
       <ul className="tree-list">
         {data.columns.map((c) => (
@@ -125,11 +139,52 @@ function RelationDetails({ sessionId, schema, name, version, onInsert }) {
           </ul>
         </>
       ) : null}
+      {data.grants?.length ? (
+        <>
+          <p className="tree-group-title">Privileges</p>
+          <GrantList grants={data.grants} label={`Privileges on ${schema}.${name}`} />
+        </>
+      ) : null}
     </div>
   );
 }
 
-function ObjectNode({ sessionId, schema, object, version, onInsert }) {
+/** Opens the object's definition (SQL text from the server) in a new editor tab; nothing is run. */
+function DefinitionButton({ sessionId, schema, object, onOpen }) {
+  const [state, setState] = useState({ loading: false, error: null });
+  const label = `${schema}.${object.name}`;
+  const open = () => {
+    setState({ loading: true, error: null });
+    getDefinition(sessionId, { kind: object.kind, schema, name: object.name, arguments: object.arguments }).then(
+      (d) => {
+        setState({ loading: false, error: null });
+        onOpen(d.definition, `${object.name}.sql`);
+      },
+      (error) => setState({ loading: false, error }),
+    );
+  };
+  return (
+    <>
+      <button
+        type="button"
+        className="btn btn-link tree-insert"
+        onClick={open}
+        disabled={state.loading}
+        aria-label={`Open definition of ${label}`}
+        title="Open its SQL definition in a new editor tab (nothing is run)"
+      >
+        Definition
+      </button>
+      {state.error ? (
+        <span className="tree-error" role="alert">
+          {describeMetadataError(state.error)}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+function ObjectNode({ sessionId, schema, object, version, onInsert, onOpen }) {
   const [open, setOpen] = useState(false);
   const expandable = RELATIONS.has(object.kind) && object.accessible !== false;
   const label = object.arguments === undefined ? object.name : `${object.name}(${object.arguments})`;
@@ -146,12 +201,13 @@ function ObjectNode({ sessionId, schema, object, version, onInsert }) {
       <NoAccess accessible={object.accessible} />
       {object.partition ? <StatusBadge tone="neutral" title="A partition of a partitioned table">partition</StatusBadge> : null}
       <InsertButton text={qualified(schema, object.name)} label={`${schema}.${object.name}`} onInsert={onInsert} />
+      {onOpen && DEFINABLE.has(object.kind) && object.accessible !== false ? <DefinitionButton sessionId={sessionId} schema={schema} object={object} onOpen={onOpen} /> : null}
       {open ? <RelationDetails sessionId={sessionId} schema={schema} name={object.name} version={version} onInsert={onInsert} /> : null}
     </li>
   );
 }
 
-function SchemaNode({ sessionId, schema, all, version, onInsert }) {
+function SchemaNode({ sessionId, schema, all, version, onInsert, onOpen, filter }) {
   const [open, setOpen] = useState(false);
   return (
     <li className="tree-node">
@@ -160,27 +216,30 @@ function SchemaNode({ sessionId, schema, all, version, onInsert }) {
         <span className="tree-name">{schema.name}</span>
       </button>
       <NoAccess accessible={schema.accessible} />
-      {open ? <SchemaObjects sessionId={sessionId} schema={schema.name} all={all} version={version} onInsert={onInsert} /> : null}
+      {open ? <SchemaObjects sessionId={sessionId} schema={schema.name} all={all} version={version} onInsert={onInsert} onOpen={onOpen} filter={filter} /> : null}
     </li>
   );
 }
 
-function SchemaObjects({ sessionId, schema, all, version, onInsert }) {
+function SchemaObjects({ sessionId, schema, all, version, onInsert, onOpen, filter = '' }) {
   const { data, error, loading, retry } = useLoad(() => listObjects(sessionId, schema, all), `${version}:${all}:${schema}`);
   if (loading) return <Spinner label={`Loading ${schema}`} />;
   if (error) return <LoadError error={error} onRetry={retry} />;
   if (data.objects.length === 0) return <p className="muted tree-empty">No objects you can use.</p>;
+  const f = filter.trim().toLowerCase();
+  const shown = f ? data.objects.filter((o) => o.name.toLowerCase().includes(f)) : data.objects;
+  if (shown.length === 0) return <p className="muted tree-empty">No objects match the filter.</p>;
   return (
     <div className="tree-details">
       {GROUPS.map(([kind, title]) => {
-        const items = data.objects.filter((o) => o.kind === kind);
+        const items = shown.filter((o) => o.kind === kind);
         if (items.length === 0) return null;
         return (
           <div key={kind}>
             <p className="tree-group-title">{title}</p>
             <ul className="tree-list">
               {items.map((o) => (
-                <ObjectNode key={`${o.kind}:${o.name}(${o.arguments ?? ''})`} sessionId={sessionId} schema={schema} object={o} version={version} onInsert={onInsert} />
+                <ObjectNode key={`${o.kind}:${o.name}(${o.arguments ?? ''})`} sessionId={sessionId} schema={schema} object={o} version={version} onInsert={onInsert} onOpen={onOpen} />
               ))}
             </ul>
           </div>
@@ -228,9 +287,12 @@ function Group({ title, children }) {
  * connection as your own role. By default only objects you have privileges on are shown; "Show everything" lists all
  * the catalog shows you, marking those you can't use. Insert puts a correctly quoted name at the editor's cursor.
  * The tree shows committed objects only; `refreshKey` changes (after a committed change to objects) reload it.
+ * Admin Phase 3: a name filter for the objects of opened schemas, a relation's owner, grants and your privileges,
+ * and Definition, which hands the object's SQL to `onOpen(text, title)` (a new editor tab; nothing is run).
  */
-export default function ObjectExplorer({ sessionId, onInsert, database = null, databases = [], refreshKey = 0, onSwitch = null }) {
+export default function ObjectExplorer({ sessionId, onInsert, onOpen = null, database = null, databases = [], refreshKey = 0, onSwitch = null }) {
   const [all, setAll] = useState(false);
+  const [filter, setFilter] = useState('');
   const [ownVersion, setVersion] = useState(0);
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
   const version = `${refreshKey}.${ownVersion}`;
@@ -248,6 +310,14 @@ export default function ObjectExplorer({ sessionId, onInsert, database = null, d
         <input type="checkbox" checked={all} onChange={(e) => setAll(e.target.checked)} />{' '}
         Show everything in the catalog
       </label>
+      <input
+        type="search"
+        className="tree-filter"
+        aria-label="Filter objects"
+        placeholder="Filter objects by name"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      />
       {loading ? <Spinner label="Loading schemas" /> : null}
       {error ? <LoadError error={error} onRetry={retry} /> : null}
       {database ? (
@@ -258,7 +328,7 @@ export default function ObjectExplorer({ sessionId, onInsert, database = null, d
       {data ? (
         <ul className="tree-list tree-root">
           {data.schemas.map((s) => (
-            <SchemaNode key={`${version}:${all}:${s.name}`} sessionId={sessionId} schema={s} all={all} version={version} onInsert={onInsert} />
+            <SchemaNode key={`${version}:${all}:${s.name}`} sessionId={sessionId} schema={s} all={all} version={version} onInsert={onInsert} onOpen={onOpen} filter={filter} />
           ))}
           <Group title="Extensions">
             <Extensions sessionId={sessionId} version={version} />

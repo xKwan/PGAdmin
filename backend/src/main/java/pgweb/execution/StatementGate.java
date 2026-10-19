@@ -165,13 +165,18 @@ public final class StatementGate {
     /**
      * Why a statement deserves a confirmation before it runs (plan Phase 9): {@code drop}, {@code truncate},
      * {@code privileges} (GRANT/REVOKEâ€¦), {@code ddl}, {@code no_where} (an UPDATE or DELETE without WHERE anywhere
-     * in the statement, including in a CTE) and {@code procedural} (a DO block can do anything). Empty: none.
+     * in the statement, including in a CTE) and {@code procedural} (a DO block can do anything). EXPLAIN only plans
+     * and needs none; EXPLAIN ANALYZE runs the statement, so it gets {@code explain_analyze} (admin Phase 3) plus what
+     * the statement itself would get. Empty: none.
      * <p>A UX safeguard against mistakes, <b>not a security control</b>: the user's PostgreSQL privileges decide what
      * the statement may do, and the user can always confirm.
      */
     public static List<String> destructiveReasons(SqlParser.Statement s) {
-        List<String> reasons = new ArrayList<>();
         String kind = s.kind();
+        if (kind.equals("ExplainStmt")) {
+            return explainReasons(s.node());
+        }
+        List<String> reasons = new ArrayList<>();
         String cls = classify(kind);
         if (kind.startsWith("Drop")) {
             reasons.add("drop");
@@ -188,6 +193,48 @@ public final class StatementGate {
             reasons.add("no_where");
         }
         return List.copyOf(reasons);
+    }
+
+    private static List<String> explainReasons(JsonNode explain) {
+        if (!analyzes(explain.path("options"))) {
+            return List.of();
+        }
+        List<String> reasons = new ArrayList<>();
+        reasons.add("explain_analyze");
+        JsonNode query = explain.path("query");
+        if (query.has("CreateTableAsStmt")) {
+            reasons.add("ddl"); // EXPLAIN ANALYZE CREATE TABLE … AS creates the table
+        }
+        if (modifiesWithoutWhere(query)) {
+            reasons.add("no_where");
+        }
+        return List.copyOf(reasons);
+    }
+
+    /**
+     * Whether EXPLAIN's options turn ANALYZE on: the last {@code analyze} option wins, as in PostgreSQL. Only an
+     * explicit false, off or 0 counts as off; anything unclear counts as on (the safe side for a confirmation).
+     */
+    static boolean analyzes(JsonNode options) {
+        boolean on = false;
+        for (JsonNode o : options) {
+            JsonNode d = o.path("DefElem");
+            if (!"analyze".equals(d.path("defname").asText())) {
+                continue;
+            }
+            JsonNode arg = d.path("arg");
+            if (arg.has("String")) {
+                String v = arg.path("String").path("sval").asText().toLowerCase(java.util.Locale.ROOT);
+                on = !(v.equals("false") || v.equals("off") || v.equals("0"));
+            } else if (arg.has("Integer")) {
+                on = arg.path("Integer").path("ival").asInt(0) != 0;
+            } else if (arg.has("Boolean")) {
+                on = arg.path("Boolean").path("boolval").asBoolean(false);
+            } else {
+                on = true;
+            }
+        }
+        return on;
     }
 
     private static boolean modifiesWithoutWhere(String kind, JsonNode node) {

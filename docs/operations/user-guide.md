@@ -78,7 +78,11 @@ Your databases are listed as soon as the workspace opens. Choosing one opens a *
 
 ### Confirmations
 
-Before `DROP`, `TRUNCATE`, `GRANT`/`REVOKE`, other `CREATE`/`ALTER`, `DO` blocks, and an `UPDATE` or `DELETE` without `WHERE`, pgweb asks you to confirm. This guards against mistakes; it doesn't limit what you may do. Your PostgreSQL privileges decide that.
+Before `DROP`, `TRUNCATE`, `GRANT`/`REVOKE`, other `CREATE`/`ALTER`, `DO` blocks, an `UPDATE` or `DELETE` without `WHERE`, and `EXPLAIN ANALYZE`, pgweb asks you to confirm. This guards against mistakes; it doesn't limit what you may do. Your PostgreSQL privileges decide that.
+
+### Explain
+
+**Explain** shows how PostgreSQL would run the statement at the cursor (or the selection), without running it: the plan as a tree, with each step's estimated cost and rows and its conditions (filters, join and index conditions). **Explain analyze** runs the statement and shows the actual times and rows next to the estimates, and marks steps whose estimate was off by ten times or more. Because ANALYZE really runs the statement (an `UPDATE` really updates), pgweb always asks first, also when you type `EXPLAIN ANALYZE` yourself; run it inside a transaction and roll back if you only want the measurement. **Show as table** shows PostgreSQL's raw output. If you type your own `EXPLAIN`, it is sent as written.
 
 ## 5. Results
 
@@ -108,11 +112,19 @@ Each statement is committed on its own unless you start a transaction:
 
 ## 7. Browsing objects
 
-The object panel shows the database you're connected to, its schemas, and their tables, partitioned tables (each partition is marked **partition**), views, sequences, functions and other objects, with columns, indexes, constraints and triggers (a disabled trigger is marked). **Extensions** lists the extensions installed in the database, and **Other databases** the databases you can switch to (**Switch** works like Switch database, including the question about an open transaction). Objects you can see in the catalog but have no privilege on are marked **no access**. The panel shows committed objects: it reloads by itself after a change to objects is committed, and **Refresh** reloads it any time.
+The object panel shows the database you're connected to, its schemas, and their tables, partitioned tables (each partition is marked **partition**), views, sequences, functions and other objects, with columns, indexes, constraints and triggers (a disabled trigger is marked). **Extensions** lists the extensions installed in the database, and **Other databases** the databases you can switch to (**Switch** works like Switch database, including the question about an open transaction). Objects you can see in the catalog but have no privilege on are marked **no access**. **Filter objects by name** narrows the objects of the schemas you have opened. An opened table or view also shows its **owner**, **your privileges** on it and who was granted what. **Definition** opens an object's SQL (`CREATE …`) in a new editor tab, for reading or as a starting point; nothing is run. A table's definition is rebuilt from the catalog (columns, constraints, indexes, triggers, comment), not a full dump: ownership, privileges and storage options are left out, as its first lines say. The panel shows committed objects: it reloads by itself after a change to objects is committed, and **Refresh** reloads it any time.
+
+## 7a. Administration views
+
+Next to **Results** and **History**, three tabs show information about the server, read as your own role. Each is read when you open it and when you press **Refresh**; nothing is refreshed automatically, and nothing on these tabs changes anything.
+
+- **Activity**: the sessions on the server (your session is marked **this session**, and **browser** marks the connection pgweb uses to read the catalog for you), what they wait for, how long their statement has run, and which session blocks a waiting one (**blocked by**). Below, the locks other sessions hold or wait for. For other users' sessions PostgreSQL shows the details only to roles allowed to see them; otherwise you see "not visible to your role".
+- **Database**: the database's owner, your role and what it may do here, size, encoding, collation and other properties, who was granted which privileges on it, the sizes of the databases you may connect to, and the 100 largest tables you can use.
+- **Roles**: the roles on the server with their attributes, what each is a member of and who its members are, and which roles you belong to. **Show predefined roles** adds PostgreSQL's built-in `pg_*` roles. Roles and privileges are changed with SQL (`GRANT`, `REVOKE`, `ALTER ROLE`), under your own role.
 
 ## 8. What is recorded
 
-Every sign-in, connection and statement (each statement of a script separately, and each extra page of rows you load) is recorded in an audit trail the administrators and named auditors can review. For each statement: when, who, which server and database, the kind of statement, its outcome and row count, and the statement **with every literal value replaced** (`WHERE id = $1`). The values you type aren't stored, and neither is the full text; a keyed fingerprint lets an investigator confirm whether a given text was run. When the audit trail can't be written, statements are refused until it is back; this protects you and the organisation from unrecorded changes.
+Every sign-in, connection and statement (each statement of a script separately, and each extra page of rows you load) is recorded in an audit trail the administrators and named auditors can review. For each statement: when, who, which server and database, the kind of statement, its outcome and row count, and the statement **with every literal value replaced** (`WHERE id = $1`). The values you type aren't stored, and neither is the full text; a keyed fingerprint lets an investigator confirm whether a given text was run. Opening an object, a definition or an administration tab is recorded by name only (for example "activity"), never what was shown. When the audit trail can't be written, statements are refused until it is back; this protects you and the organisation from unrecorded changes.
 
 ## 9. Messages you may see
 
@@ -138,3 +150,6 @@ Every sign-in, connection and statement (each statement of a script separately, 
 | Server: Windows sign-in incomplete | Open pgweb by its full host name, from a domain-joined computer |
 | permission denied for … | Your PostgreSQL role lacks the privilege; ask the database owner |
 | You have no database on this server that you can connect to. | Nobody shared a database with you on that server |
+| This statement is EXPLAIN ANALYZE, which runs the statement to measure it … | Confirm to run it; inside a transaction you can roll back afterwards |
+| not visible to your role (Activity) | Another user's session: PostgreSQL shows its details only to roles allowed to see them |
+| Only the first … are shown. | An administration list reached its limit |

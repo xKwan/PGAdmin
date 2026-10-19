@@ -116,6 +116,9 @@ test('an audit outage refuses execution but not sign-in, and then recovers', asy
   await page.goto(`${admin}/`);
   await page.getByRole('button', { name: /External PostgreSQL/ }).click();
   await databaseButton(page, 'e2e_db').click(); // listed as soon as the workspace opens
+  // The editor is there before the session (admin Phase 2): wait until the session is open and Run is possible,
+  // or the outage below would start while connecting.
+  await expect(page.getByRole('button', { name: 'Run', exact: true })).toBeEnabled();
   const editor = page.getByRole('textbox', { name: 'SQL editor' });
   await editor.click();
   await page.keyboard.insertText('SELECT 1 AS during_outage');

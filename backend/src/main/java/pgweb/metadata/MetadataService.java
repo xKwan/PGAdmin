@@ -20,7 +20,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * The object browser (plan Phase 10; admin Phase 2): schemas, the objects in a schema (partitioned tables and
- * partitions marked), a relation's columns, indexes, constraints and triggers, and the database's extensions, read from PostgreSQL's catalog on the session's <b>companion</b> connection, as the user's own role.
+ * partitions marked), a relation's columns, indexes, constraints, triggers, owner and grants (admin Phase 3), and the
+ * database's extensions, read from PostgreSQL's catalog on the session's <b>companion</b> connection, as the user's
+ * own role. {@link AdminCatalog} reads the administration views the same way.
  * <ul>
  *   <li>Every query is a constant with parameters; names are only ever bound values (never part of SQL text). An
  *       ArchUnit rule forbids plain {@code Statement} here.</li>
@@ -61,11 +63,12 @@ public final class MetadataService {
             WHERE n.nspname = ? AND p.prokind IN ('f', 'p', 'a', 'w')
             ORDER BY 1, 2""";
 
-    /** The relation itself (to tell "not found" from "empty"). Parameters: schema, name. */
+    /** The relation itself (to tell "not found" from "empty") and its owner. Parameters: schema, name. */
     static final String RELATION = """
             SELECT c.oid, c.relkind,
                    pg_catalog.has_table_privilege(c.oid, 'SELECT,INSERT,UPDATE,DELETE')
-                   OR pg_catalog.has_any_column_privilege(c.oid, 'SELECT,INSERT,UPDATE')
+                   OR pg_catalog.has_any_column_privilege(c.oid, 'SELECT,INSERT,UPDATE'),
+                   pg_catalog.pg_get_userbyid(c.relowner)
             FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
             WHERE n.nspname = ? AND c.relname = ?""";
 
@@ -99,6 +102,23 @@ public final class MetadataService {
             WHERE t.tgrelid = ? AND NOT t.tgisinternal
             ORDER BY 1""";
 
+    /** Grants on a relation (the owner's defaults when none were ever changed). Parameter: relation oid. */
+    static final String RELATION_GRANTS = """
+            SELECT CASE WHEN a.grantee = 0 THEN 'PUBLIC' ELSE pg_catalog.pg_get_userbyid(a.grantee) END,
+                   pg_catalog.pg_get_userbyid(a.grantor), a.privilege_type, a.is_grantable
+            FROM pg_catalog.pg_class c,
+                 pg_catalog.aclexplode(COALESCE(c.relacl, pg_catalog.acldefault((CASE WHEN c.relkind = 'S' THEN 's' ELSE 'r' END)::"char", c.relowner))) a
+            WHERE c.oid = ?
+            ORDER BY 1, 3""";
+
+    /** The table privileges the current role has on a relation, directly or through its roles. Parameter: relation oid. */
+    static final String MY_PRIVILEGES = """
+            SELECT p.priv
+            FROM pg_catalog.unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']::text[])
+                 WITH ORDINALITY AS p(priv, n)
+            WHERE pg_catalog.has_table_privilege(CAST(? AS pg_catalog.oid), p.priv)
+            ORDER BY p.n""";
+
     /** Extensions installed in the connected database (catalog data every role can read). */
     static final String EXTENSIONS = """
             SELECT e.extname, e.extversion, n.nspname, pg_catalog.obj_description(e.oid, 'pg_extension')
@@ -128,11 +148,11 @@ public final class MetadataService {
     }
 
     /** One catalog read on the companion, serialised per session; a busy or missing companion is reported, not waited on. */
-    private interface Read<T> {
+    interface Read<T> {
         T run(Connection c) throws SQLException;
     }
 
-    private <T> T onCompanion(UserContext user, DbSession s, String object, String schema, Read<T> read) {
+    <T> T onCompanion(UserContext user, DbSession s, String object, String schema, Read<T> read) {
         Connection companion = s.companion();
         if (companion == null) {
             throw ApiException.conflict("METADATA_UNAVAILABLE", "Object browsing isn't available for this session (Limited): connect again later.");
@@ -159,7 +179,7 @@ public final class MetadataService {
         }
     }
 
-    private Map<String, Object> envelope(String key, Object value) {
+    Map<String, Object> envelope(String key, Object value) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put(key, value);
         m.put("loadedAt", clock.instant().toString());
@@ -167,7 +187,7 @@ public final class MetadataService {
     }
 
     /** A prepared catalog query with the timeout set; closed again if setting it fails. */
-    private static PreparedStatement prepare(Connection c, String sql) throws SQLException {
+    static PreparedStatement prepare(Connection c, String sql) throws SQLException {
         PreparedStatement ps = c.prepareStatement(sql);
         try {
             ps.setQueryTimeout(QUERY_TIMEOUT_SECONDS);
@@ -258,6 +278,7 @@ public final class MetadataService {
                     m.put(NAME, name);
                     m.put("kind", RELKINDS.getOrDefault(rs.getString(2), OTHER));
                     m.put(ACCESSIBLE, rs.getBoolean(3));
+                    m.put("owner", rs.getString(4));
                 }
             }
             m.put("columns", list(c, COLUMNS, oid, rs -> {
@@ -276,6 +297,9 @@ public final class MetadataService {
                     "type", CONTYPES.getOrDefault(rs.getString(2), OTHER), "definition", rs.getString(3))));
             m.put("triggers", list(c, TRIGGERS, oid, rs -> Map.of(NAME, rs.getString(1), "definition", rs.getString(2),
                     "enabled", rs.getBoolean(3))));
+            m.put("grants", list(c, RELATION_GRANTS, oid, AdminCatalog::grant));
+            m.put("myPrivileges", list(c, MY_PRIVILEGES, oid, rs -> Map.of("privilege", rs.getString(1))).stream()
+                    .map(x -> x.get("privilege")).toList());
             return m;
         });
         if (rel == null) {

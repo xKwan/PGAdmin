@@ -223,6 +223,12 @@ reason:
 | `ddl` | Other `CREATE`, `ALTER`, `COMMENT`, … |
 | `no_where` | An `UPDATE` or `DELETE` without `WHERE` anywhere in the statement, including inside a `WITH` |
 | `procedural` | `DO` blocks (they can do anything) |
+| `explain_analyze` | `EXPLAIN ANALYZE …` (admin Phase 3): ANALYZE runs the statement. Any `analyze` option that isn't explicitly `false`, `off` or `0` counts. The statement's own reasons are added (`no_where`; `ddl` for `CREATE TABLE … AS`) |
+
+Plain `EXPLAIN` only plans, so it needs no confirmation, whatever the statement (`EXPLAIN DELETE FROM t` changes
+nothing). The editor's **Explain** and **Explain analyze** buttons only put `EXPLAIN (FORMAT JSON)` or
+`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)` in front of the statement and use the normal `/execute` path: the gate,
+kill switch, limits, timeout, confirmation and audit are unchanged.
 
 **This is a safeguard against mistakes, not a security control.** The user can always confirm, and functions or
 procedures can do the same things without asking. Privileges decide what a role may do. Each refusal is audited as

@@ -25,7 +25,7 @@ The audit trail records who did what, through this application, against which Po
 | `exec_fetch_outcome` | After the page was read: outcome, SQLSTATE, rows in the page, truncated, duration. Best effort |
 | `cancel_requested`, `cancel_result` | Cancel requested, and its outcome (`confirmed`, `escalated_terminated`, `unconfirmed`). Cancelling a script also records `details.scriptId` |
 | `tx_commit`, `tx_rollback` | Explicit transaction control |
-| `metadata_browse` | Metadata request (object path only; `details.object` is `schemas`, `objects`, `relation` or `extensions`) |
+| `metadata_browse` | Metadata request (object path only; `details.object` is `schemas`, `objects`, `relation` or `extensions`, or, for the read-only administration views of admin Phase 3, `database`, `activity`, `sizes`, `roles` or `definition`; `details.schema` where one was named). Nothing that was shown is recorded |
 | `audit_spool_replayed`, `audit_failure` | Audit infrastructure events |
 
 ## 3. Fields

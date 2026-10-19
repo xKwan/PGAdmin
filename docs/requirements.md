@@ -56,6 +56,9 @@
 | FN-13 | Editor tabs; open, save and save-as local `.sql` files; unsaved changes confirmed before they are discarded; opening never runs anything | admin P2 | RTL (`files.test.jsx`, `Workspace.admin.test.jsx`) | Tested (admin P2): tabs survive switching database; File System Access API in Edge, upload/download otherwise; UTF-8 only, at most 5 MB; files never reach the server |
 | FN-14 | Query history of the user's own statements and scripts | admin P2 | RTL; E2E | Tested (admin P2). Decided 2026-10-19 "this browser tab only": full text, last 50, `sessionStorage` per user and server, Clear history; nothing new on the server |
 | FN-15 | Explorer: partitioned tables and partitions, triggers, extensions, other databases; refresh after committed object changes | admin P2 | `MetadataIT`; RTL | Tested (admin P2): same companion connection, parameterised catalog queries, ownership and DataAdmin checks, `metadata_browse` audit |
+| FN-16 | Read-only administration views: database properties and grants; sessions, blocking and locks; database and table sizes; roles and memberships | admin P3 | `AdminCatalogIT`; RTL; E2E | Tested (admin P3): as the user's role on the companion, PostgreSQL's visibility rules, on request only, row caps, `metadata_browse` audit; nothing can be changed |
+| FN-17 | Object definitions as SQL in a new editor tab (tables, views, materialised views, sequences, functions, procedures); a relation's owner, grants and the user's privileges; explorer name filter | admin P3 | `AdminCatalogIT` (table round trip); RTL; E2E | Tested (admin P3): never run; identifiers quoted by PostgreSQL |
+| FN-18 | EXPLAIN viewer; EXPLAIN ANALYZE only after a warning | admin P3 | `StatementGateTest`; `AdminCatalogIT`; RTL; E2E | Tested (admin P3): plan tree from `EXPLAIN (FORMAT JSON)` through the normal execution path; `explain_analyze` confirmation on the server. Was on the deferred list as "EXPLAIN visualiser"; built because the stakeholder's plan asks for it (`docs/decision-log.md`, 2026-10-20) |
 
 ## 4. MVP: quality and operations
 
@@ -70,9 +73,9 @@
 
 ## 5. Deferred (post-MVP; each needs separate approval)
 
-Inline data editing; result export; saved queries (server-side); schema-aware autocomplete; EXPLAIN visualiser; DDL designers; audit viewer UI; two-person approval for high-risk statements; dark mode and keyboard customisation.
+Inline data editing; result export; saved queries (server-side); schema-aware autocomplete; DDL designers; audit viewer UI; two-person approval for high-risk statements; dark mode and keyboard customisation.
 
-The stakeholder's administration-workspace plan of 2026-10-19 (`docs/decision-log.md`) schedules most of these, plus database/schema management, data import, SQL file handling, backup and restore, and role administration, in phases after admin Phase 1. They stay deferred here until each phase is started; the conflicts with approved decisions that must be settled first are listed in `docs/admin-phase-1-status.md`. Admin Phase 2 (2026-10-19) delivered "fetch more", editor tabs, local SQL files and a browser-tab query history (FN-13 to FN-15, EXE-03).
+The stakeholder's administration-workspace plan of 2026-10-19 (`docs/decision-log.md`) schedules most of these, plus database/schema management, data import, SQL file handling, backup and restore, and role administration, in phases after admin Phase 1. They stay deferred here until each phase is started; the conflicts with approved decisions that must be settled first are listed in `docs/admin-phase-1-status.md`. Admin Phase 2 (2026-10-19) delivered "fetch more", editor tabs, local SQL files and a browser-tab query history (FN-13 to FN-15, EXE-03). Admin Phase 3 (2026-10-20) delivered the read-only parts of the remaining plan, including the EXPLAIN visualiser (FN-16 to FN-18); everything that changes something is listed with a proposed decision in `docs/admin-phase-3-status.md` §8.
 
 ## 6. Operational scaling (only when justified by measured need)
 

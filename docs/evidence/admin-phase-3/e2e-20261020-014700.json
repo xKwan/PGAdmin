@@ -1,0 +1,61 @@
+﻿{
+    "tag":  "admin-phase-3",
+    "when":  "2026-10-20T01:47:00.9009061+08:00",
+    "masterSeed":  1648663460,
+    "repeat":  5,
+    "overall":  "FAIL",
+    "edge":  "155.0.4283.62",
+    "commit":  "aec554f",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  1737069964,
+                     "ok":  true,
+                     "passed":  14,
+                     "failed":  [
+
+                                ],
+                     "seconds":  82.6
+                 },
+                 {
+                     "run":  2,
+                     "seed":  261499586,
+                     "ok":  false,
+                     "passed":  13,
+                     "failed":  [
+                                    "an expired app session signs in again by itself"
+                                ],
+                     "seconds":  113.8
+                 },
+                 {
+                     "run":  3,
+                     "seed":  1389939033,
+                     "ok":  false,
+                     "passed":  13,
+                     "failed":  [
+                                    "an audit outage refuses execution but not sign-in, and then recovers"
+                                ],
+                     "seconds":  93.3
+                 },
+                 {
+                     "run":  4,
+                     "seed":  20833444,
+                     "ok":  true,
+                     "passed":  14,
+                     "failed":  [
+
+                                ],
+                     "seconds":  87.8
+                 },
+                 {
+                     "run":  5,
+                     "seed":  146884435,
+                     "ok":  true,
+                     "passed":  14,
+                     "failed":  [
+
+                                ],
+                     "seconds":  84.6
+                 }
+             ]
+}

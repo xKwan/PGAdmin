@@ -227,6 +227,49 @@ test('admin Phase 2: a script stops at its first error, a large result is paged,
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 3: explain a query, open a definition, and read the activity, database and roles', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const results = page.getByRole('region', { name: 'Results' });
+
+  // Explain: the plan as a tree, and the statement is not run.
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+  await page.keyboard.insertText('SELECT name FROM items WHERE id = 42');
+  await page.getByRole('button', { name: 'Explain', exact: true }).click();
+  await expect(results.getByText(/Estimated plan \(EXPLAIN\): the statement was not run/)).toBeVisible();
+  await expect(results.getByRole('list', { name: 'Query plan' })).toContainText('on items');
+
+  // Explain analyze asks first, because ANALYZE runs the statement.
+  await page.getByRole('button', { name: 'Explain analyze', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Run this statement?' });
+  await expect(dialog).toContainText('runs the statement to measure it');
+  await dialog.getByRole('button', { name: 'Run it' }).click();
+  await expect(results.getByText(/Plan with actual times \(EXPLAIN ANALYZE\)/)).toBeVisible();
+  await expect(results.getByRole('list', { name: 'Query plan' })).toContainText('rows ×');
+
+  // A table's definition opens in its own editor tab; nothing runs.
+  const objects = page.getByRole('region', { name: 'Objects' });
+  await objects.getByRole('button', { name: 'public', exact: true }).click();
+  await objects.getByRole('button', { name: 'Open definition of public.items' }).click();
+  await expect(page.getByRole('button', { name: 'items.sql', exact: true })).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByRole('textbox', { name: 'SQL editor' })).toContainText('CREATE TABLE public.items (');
+  await expect(page.getByRole('textbox', { name: 'SQL editor' })).toContainText('CONSTRAINT items_pkey PRIMARY KEY (id)');
+
+  // Read-only administration views.
+  await page.getByRole('tab', { name: 'Activity', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Server activity' }).getByText('this session')).toBeVisible();
+  await page.getByRole('tab', { name: 'Database', exact: true }).click();
+  const database = page.getByRole('region', { name: 'Database', exact: true });
+  await expect(database.getByText(role, { exact: true }).first()).toBeVisible();
+  await expect(database.getByRole('table', { name: /Largest tables you can use/ })).toContainText('public.items');
+  await page.getByRole('tab', { name: 'Roles', exact: true }).click();
+  const roles = page.getByRole('region', { name: 'Roles', exact: true });
+  await expect(roles.getByRole('row').filter({ hasText: role }).getByText('you', { exact: true })).toBeVisible();
+  expect(await problems()).toEqual([]);
+});
+
 test('the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling', async ({ page }) => {
   for (const size of [{ width: 1366, height: 768 }, { width: 1920, height: 1080 }]) {
     await page.setViewportSize(size);

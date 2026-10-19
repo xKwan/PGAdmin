@@ -22,6 +22,35 @@ export function listExtensions(sessionId) {
   return api(`${base(sessionId)}/extensions`);
 }
 
+// Read-only administration (admin Phase 3), read as the user's own role.
+
+/** The connected database: properties, your privileges, grants. */
+export function getDatabaseInfo(sessionId) {
+  return api(`${base(sessionId)}/database`);
+}
+
+/** Client sessions on the server (as far as your role may see them) and the locks of other sessions. */
+export function getActivity(sessionId) {
+  return api(`${base(sessionId)}/activity`);
+}
+
+/** Sizes of the databases you may connect to and of the largest tables you can use. */
+export function getSizes(sessionId) {
+  return api(`${base(sessionId)}/sizes`);
+}
+
+/** Roles and memberships; `all` includes the predefined pg_* roles. */
+export function getRoles(sessionId, all = false) {
+  return api(`${base(sessionId)}/roles${all ? '?all=true' : ''}`);
+}
+
+/** An object's definition as SQL text (never run). Routines are chosen by their identity arguments. */
+export function getDefinition(sessionId, { kind, schema, name, arguments: args }) {
+  const q = new URLSearchParams({ kind, schema, name });
+  if (args !== undefined) q.set('arguments', args);
+  return api(`${base(sessionId)}/definition?${q}`);
+}
+
 // PostgreSQL keywords that can't be used as bare identifiers (reserved, and reserved-but-allowed-as-function/type).
 const RESERVED = new Set(
   (

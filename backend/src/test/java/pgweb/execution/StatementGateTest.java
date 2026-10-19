@@ -161,6 +161,19 @@ class StatementGateTest {
         assertThat(reasons("CREATE TABLE t2 (a int)")).containsExactly("ddl");
         assertThat(reasons("ALTER TABLE t ADD COLUMN b int")).containsExactly("ddl");
         assertThat(reasons("DO $$ BEGIN DELETE FROM t; END $$")).containsExactly("procedural");
+        // EXPLAIN only plans; EXPLAIN ANALYZE runs the statement (admin Phase 3).
+        assertThat(reasons("EXPLAIN DELETE FROM t")).isEmpty();
+        assertThat(reasons("EXPLAIN (FORMAT JSON) UPDATE t SET a = 1")).isEmpty();
+        assertThat(reasons("EXPLAIN ANALYZE SELECT 1")).containsExactly("explain_analyze");
+        assertThat(reasons("EXPLAIN (ANALYZE, FORMAT JSON) DELETE FROM t")).containsExactly("explain_analyze", "no_where");
+        assertThat(reasons("EXPLAIN (ANALYZE true) DELETE FROM t WHERE a = 1")).containsExactly("explain_analyze");
+        assertThat(reasons("EXPLAIN (ANALYZE on) SELECT 1")).containsExactly("explain_analyze");
+        assertThat(reasons("EXPLAIN (ANALYZE 1) SELECT 1")).containsExactly("explain_analyze");
+        assertThat(reasons("EXPLAIN (ANALYZE false) DELETE FROM t")).isEmpty();
+        assertThat(reasons("EXPLAIN (ANALYZE off) SELECT 1")).isEmpty();
+        assertThat(reasons("EXPLAIN (ANALYZE 0) SELECT 1")).isEmpty();
+        assertThat(reasons("EXPLAIN (ANALYZE false, ANALYZE) SELECT 1")).containsExactly("explain_analyze");
+        assertThat(reasons("EXPLAIN ANALYZE CREATE TABLE t3 AS SELECT 1")).containsExactly("explain_analyze", "ddl");
         assertThat(StatementGate.isCommit(gate.check("COMMIT", true).statement())).isTrue();
         assertThat(StatementGate.isCommit(gate.check("END", true).statement())).isTrue();
         assertThat(StatementGate.isCommit(gate.check("ROLLBACK", true).statement())).isFalse();

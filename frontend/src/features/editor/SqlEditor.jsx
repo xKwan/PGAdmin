@@ -17,7 +17,7 @@ export function cspNonce(doc = document) {
  * CodeMirror 6 SQL editor (plan Phase 8): PostgreSQL highlighting, bracket matching, search (Ctrl+F), comment
  * toggle (Ctrl+/), keyword completion, and Ctrl+Enter to run the selection or the statement at the cursor.
  *
- * `controllerRef` receives {run(), script(), showPosition(from, position), select(from, to), focus(), text(), selection(),
+ * `controllerRef` receives {run(), script(), statement(), showPosition(from, position), select(from, to), focus(), text(), selection(),
  * insert(text)} so the page can drive the editor. `onChange` is called whenever the text changes (unsaved changes).
  */
 export default function SqlEditor({ initialDoc = '', onRun, onChange, canRun = true, controllerRef, label = 'SQL editor' }) {
@@ -98,6 +98,8 @@ export default function SqlEditor({ initialDoc = '', onRun, onChange, canRun = t
         /** The whole text (kept when the workspace switches to another database). */
         text: () => v.state.doc.toString(),
         selection: () => ({ from: v.state.selection.main.from, to: v.state.selection.main.to }),
+        /** What Run would send, without running it: {text, from} (for Explain). */
+        statement: () => textToRun(v.state),
         /** Replaces the selection (or inserts at the cursor), for example a quoted name from the object browser. */
         insert: (text) => {
           v.dispatch(v.state.replaceSelection(text));
@@ -105,7 +107,8 @@ export default function SqlEditor({ initialDoc = '', onRun, onChange, canRun = t
         },
         /** Selects the character at `position` (1-based, in the text that was run, which started at `from`). */
         showPosition: (from, position) => {
-          const at = Math.min(v.state.doc.length, from + Math.max(0, position - 1));
+          // `from` can be before the text (Explain adds a prefix): such positions land on the text's start.
+          const at = Math.max(0, Math.min(v.state.doc.length, from + Math.max(0, position - 1)));
           const word = v.state.wordAt(at);
           v.dispatch({ selection: word ? EditorSelection.range(word.from, word.to) : EditorSelection.cursor(at), scrollIntoView: true });
           v.focus();

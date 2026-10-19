@@ -1,0 +1,58 @@
+﻿{
+    "tag":  "admin-phase-3",
+    "suite":  "all",
+    "overall":  "FAIL",
+    "masterSeed":  633703413,
+    "requiredConsecutivePasses":  5,
+    "started":  "2026-10-20T01:06:02.7032347+08:00",
+    "finished":  "2026-10-20T01:09:54.1028193+08:00",
+    "os":  "Microsoft Windows NT 10.0.26200.0",
+    "java":  "S:\\Code\\PGAdmin\\tools\\jdk-21.0.12.1+1",
+    "node":  "v24.20.0",
+    "commit":  "aec554f",
+    "dirty":  true,
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  784892658,
+                     "pass":  false,
+                     "seconds":  231.3,
+                     "consecutive":  0,
+                     "leftovers":  0,
+                     "failed":  [
+                                    "[backend] mvn verify failed (build, Enforcer or coverage); see log"
+                                ],
+                     "suites":  [
+                                    {
+                                        "suite":  "frontend",
+                                        "lintExit":  0,
+                                        "testExit":  0,
+                                        "tests":  172,
+                                        "failures":  0,
+                                        "coverage":  {
+                                                         "lines":  99.3,
+                                                         "branches":  91.76,
+                                                         "functions":  97.35,
+                                                         "statements":  98.16
+                                                     }
+                                    },
+                                    {
+                                        "suite":  "backend",
+                                        "exit":  1,
+                                        "unit":  84,
+                                        "integration":  169,
+                                        "failures":  0,
+                                        "errors":  0,
+                                        "coverage":  {
+                                                         "branch":  87.1,
+                                                         "instruction":  95.2,
+                                                         "method":  97.9,
+                                                         "complexity":  85.4,
+                                                         "line":  93.6,
+                                                         "class":  100
+                                                     }
+                                    }
+                                ]
+                 }
+             ]
+}

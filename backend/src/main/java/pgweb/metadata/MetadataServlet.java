@@ -12,6 +12,9 @@ import pgweb.web.ApiServlet;
  *   GET /api/metadata/{session}/objects?schema=…[&amp;all=true]
  *   GET /api/metadata/{session}/relation?schema=…&amp;name=…
  *   GET /api/metadata/{session}/extensions
+ *   GET /api/metadata/{session}/database | activity | sizes        (admin Phase 3, read-only)
+ *   GET /api/metadata/{session}/roles[?all=true]                     (all: include predefined pg_* roles)
+ *   GET /api/metadata/{session}/definition?kind=…&amp;schema=…&amp;name=…[&amp;arguments=…]
  * </pre>
  * The session must belong to the caller (404 otherwise); internal sessions re-check DataAdmin on every call.
  */
@@ -19,9 +22,11 @@ public final class MetadataServlet extends ApiServlet {
 
     private static final long serialVersionUID = 1L;
     private final transient MetadataService metadata;
+    private final transient AdminCatalog admin;
 
-    public MetadataServlet(MetadataService metadata) {
+    public MetadataServlet(MetadataService metadata, AdminCatalog admin) {
         this.metadata = metadata;
+        this.admin = admin;
     }
 
     @Override
@@ -41,6 +46,12 @@ public final class MetadataServlet extends ApiServlet {
             case "objects" -> metadata.objects(user, p[0], req.getParameter("schema"), all);
             case "relation" -> metadata.relation(user, p[0], req.getParameter("schema"), req.getParameter("name"));
             case "extensions" -> metadata.extensions(user, p[0]);
+            case "database" -> admin.database(user, p[0]);
+            case "activity" -> admin.activity(user, p[0]);
+            case "sizes" -> admin.sizes(user, p[0]);
+            case "roles" -> admin.roles(user, p[0], all);
+            case "definition" -> admin.definition(user, p[0], req.getParameter("kind"), req.getParameter("schema"),
+                    req.getParameter("name"), req.getParameter("arguments"));
             default -> throw ApiException.notFound();
         };
     }

@@ -40,6 +40,7 @@ const REASONS = {
   ddl: 'changes the database structure',
   no_where: 'updates or deletes rows without a WHERE clause',
   procedural: 'runs procedural code (DO)',
+  explain_analyze: 'is EXPLAIN ANALYZE, which runs the statement to measure it: any change it makes is real',
 };
 
 /** Why a statement asks for confirmation, in words. */
