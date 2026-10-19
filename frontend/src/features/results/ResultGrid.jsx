@@ -22,12 +22,58 @@ function rowsLabel(n) {
   return `${n.toLocaleString('en-GB')} ${n === 1 ? 'row' : 'rows'}`;
 }
 
+/** Why not every row is shown, and what the user can do about it. */
+function Truncation({ result, count, onLoadMore, loadingMore, onRunReadOnly }) {
+  if (result.more) {
+    return (
+      <span className="result-truncated" role="note">
+        {rowsLabel(count)} loaded; more rows are waiting on the server.{' '}
+        {onLoadMore ? (
+          <button type="button" className="btn" onClick={onLoadMore} disabled={loadingMore}>
+            {loadingMore ? 'Loading…' : 'Load more rows'}
+          </button>
+        ) : null}
+      </span>
+    );
+  }
+  if (!result.truncated) return null;
+  if (result.truncatedBy === 'bytes') {
+    return (
+      <span className="result-truncated" role="note">
+        Result cut short: the size limit was reached. Refine the query to see the rest.
+      </span>
+    );
+  }
+  if (result.truncatedBy === 'limit') {
+    return (
+      <span className="result-truncated" role="note">
+        Stopped at {rowsLabel(count)}, the most that can be loaded. Refine the query (WHERE, LIMIT) to see the rest.
+      </span>
+    );
+  }
+  return (
+    <span className="result-truncated" role="note">
+      Only the first {rowsLabel(count)} are shown (limit reached).
+      {onRunReadOnly ? (
+        <>
+          {' '}
+          <button type="button" className="btn btn-link" onClick={onRunReadOnly} title="Begins a read-only transaction and runs the statement again; then Load more fetches the rest a page at a time">
+            Run again in a read-only transaction to load more
+          </button>
+        </>
+      ) : null}
+    </span>
+  );
+}
+
 /**
  * One row-returning result (plan Phase 8): virtualised rows, headers with PostgreSQL type names, SQL NULL shown
  * distinctly from text, truncated cells and results marked, a local sort that says so, and pages of 200 rows.
- * Values are always rendered as text (React escapes them), never as HTML.
+ * Values are always rendered as text (React escapes them), never as HTML. When the rest of the rows waits on the
+ * server (`more`, inside a transaction), `onLoadMore` fetches the next page (P9-3); outside a transaction
+ * `onRunReadOnly` offers to run the statement again in a read-only transaction so that it can be paged.
  */
-export default function ResultGrid({ result }) {
+export default function ResultGrid({ result, onLoadMore = null, loadingMore = false, onRunReadOnly = null }) {
   const { columns, rows } = result;
   const cut = useMemo(() => new Set((result.truncatedCells || []).map(([r, c]) => `${r}:${c}`)), [result.truncatedCells]);
   // Columns have no identity besides position and name (names can repeat: SELECT 1 AS a, 2 AS a).
@@ -73,13 +119,7 @@ export default function ResultGrid({ result }) {
     <div className="result-grid">
       <div className="result-meta">
         <span>{rowsLabel(rows.length)}</span>
-        {result.truncated ? (
-          <span className="result-truncated" role="note">
-            {result.truncatedBy === 'bytes'
-              ? 'Result cut short: the size limit was reached. Refine the query to see the rest.'
-              : `Only the first ${rowsLabel(rows.length)} are shown (limit reached).`}
-          </span>
-        ) : null}
+        <Truncation result={result} count={rows.length} onLoadMore={onLoadMore} loadingMore={loadingMore} onRunReadOnly={onRunReadOnly} />
         {sort ? <span className="result-sorted">Sorted locally (only the rows shown here; not ORDER BY)</span> : null}
       </div>
       <div className="result-scroll" ref={scroller}>

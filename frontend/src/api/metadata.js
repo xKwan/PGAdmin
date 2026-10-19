@@ -17,6 +17,11 @@ export function describeRelation(sessionId, schema, name) {
   return api(`${base(sessionId)}/relation?schema=${encodeURIComponent(schema)}&name=${encodeURIComponent(name)}`);
 }
 
+/** Extensions installed in the connected database. */
+export function listExtensions(sessionId) {
+  return api(`${base(sessionId)}/extensions`);
+}
+
 // PostgreSQL keywords that can't be used as bare identifiers (reserved, and reserved-but-allowed-as-function/type).
 const RESERVED = new Set(
   (

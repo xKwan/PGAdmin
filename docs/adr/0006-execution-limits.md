@@ -30,6 +30,18 @@ Limits must be enforced on the server, outside anything user SQL can change. SQL
 - Unsupported in MVP: `COPY … FROM STDIN / TO STDOUT`, `LISTEN`, psql meta-commands.
 - Target PostgreSQL major version: **18** (Stated, 2026-10-15) for both instances.
 
+## Implementation note: scripts and further pages (admin Phase 2, 2026-10-19)
+
+Decided by the stakeholder on 2026-10-19 (EXE-03 "stop at first error", P9-3 "fetch more"; `docs/decision-log.md`). Not a change to the limits above; two limits were added:
+
+| Setting | Default | Effect |
+|---|---|---|
+| `limits.maxScriptStatements` | 1,000 | Statements one script may contain; more is refused before anything runs (`TOO_MANY_STATEMENTS`) |
+| `limits.maxFetchedRows` | 10,000 | Rows one statement may deliver in all through *Load more*; then the cursor is closed (`truncatedBy: limit`) |
+
+- **Scripts** are split by PostgreSQL's parser only; every statement passes the same single-statement gate (parser and pgJDBC each see exactly one statement), and nothing runs unless all of them pass. Statements run one at a time, each with its own timer, cancel, audit intent and outcome; the script stops at the first statement that doesn't succeed. A script shares one response-size budget across its statements. Statement boundaries depend on `standard_conforming_strings`, so a script stops if that setting changes while it runs.
+- **Further pages** exist only inside a transaction: pgJDBC can keep a cursor open only with autocommit off. pgweb keeps the driver's autocommit flag equal to PostgreSQL's own state (off while a transaction is open, on once it has ended), so the driver never sends a `BEGIN` or `COMMIT` of its own and auto-commit behaviour is unchanged (`ScriptAndFetchIT`). The cursor is closed by the next statement, the end of the transaction, the row cap or the end of the session. Outside a transaction a result stays capped at `maxRows`; the page offers to run the statement again in a read-only transaction.
+
 ## Inline editing (D11)
 
 Deferred to post-MVP. Data changes are made with SQL.

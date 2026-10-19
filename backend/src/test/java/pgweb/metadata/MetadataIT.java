@@ -85,12 +85,18 @@ class MetadataIT {
                     "CREATE FUNCTION shop.g(t text) RETURNS text LANGUAGE sql AS 'SELECT t'",
                     "CREATE PROCEDURE shop.p() LANGUAGE sql AS 'SELECT 1'",
                     "CREATE TABLE hidden.h (x int)",
+                    "CREATE TABLE shop.events (at date NOT NULL, what text) PARTITION BY RANGE (at)",
+                    "CREATE TABLE shop.events_2026 PARTITION OF shop.events FOR VALUES FROM ('2026-01-01') TO ('2027-01-01')",
+                    "CREATE FUNCTION shop.touch() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RETURN NEW; END'",
+                    "CREATE TRIGGER orders_touch BEFORE UPDATE ON shop.orders FOR EACH ROW EXECUTE FUNCTION shop.touch()",
+                    "CREATE TRIGGER orders_off AFTER INSERT ON shop.orders FOR EACH ROW EXECUTE FUNCTION shop.touch()",
+                    "ALTER TABLE shop.orders DISABLE TRIGGER orders_off",
                     "CREATE TABLE \"we\"\"ird / sch\".\"a\"\"; DROP TABLE shop.orders; --\" (\"col \"\"quoted\"\"\" int)",
                     "CREATE TABLE \"we\"\"ird / sch\".\"表 名\" (\"列\" text)",
                     "ALTER TABLE shop.orders OWNER TO owner_role",
                     "REVOKE ALL ON FUNCTION shop.f(integer), shop.g(text) FROM PUBLIC",
                     "GRANT USAGE ON SCHEMA shop, \"we\"\"ird / sch\" TO mia, nik",
-                    "GRANT SELECT ON shop.orders, shop.customers, shop.v_orders, shop.mv TO mia, nik",
+                    "GRANT SELECT ON shop.orders, shop.customers, shop.v_orders, shop.mv, shop.events, shop.events_2026 TO mia, nik",
                     "GRANT SELECT ON ALL TABLES IN SCHEMA \"we\"\"ird / sch\" TO mia",
                     "GRANT USAGE ON SEQUENCE shop.seq_open TO mia",
                     "GRANT EXECUTE ON FUNCTION shop.f(integer) TO mia",
@@ -260,6 +266,43 @@ class MetadataIT {
         assertThat(get("mia", "/api/metadata/" + id + "/objects").statusCode()).isEqualTo(400);
         assertThat(get("mia", "/api/metadata/" + id + "/tables").statusCode()).isEqualTo(404);
         assertThat(get("mia", "/api/metadata/" + id).statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void partitionsTriggersAndExtensionsAreShown() throws Exception {
+        String id = open("mia", "1");
+        JsonNode objects = ok("mia", "/api/metadata/" + id + "/objects?schema=shop").path("objects");
+        Map<String, JsonNode> byName = new java.util.HashMap<>();
+        objects.forEach(o -> byName.put(o.path("name").asText(), o));
+        assertThat(byName.get("events").path("kind").asText()).isEqualTo("partitioned_table");
+        assertThat(byName.get("events").has("partition")).isFalse();
+        assertThat(byName.get("events_2026").path("kind").asText()).isEqualTo("table");
+        assertThat(byName.get("events_2026").path("partition").asBoolean()).isTrue();
+        assertThat(byName.get("orders").has("partition")).isFalse();
+
+        JsonNode triggers = ok("mia", "/api/metadata/" + id + "/relation?schema=shop&name=orders").path("triggers");
+        assertThat(names(triggers)).containsExactly("orders_off", "orders_touch"); // the constraint triggers are internal: not listed
+        triggers.forEach(t -> {
+            boolean on = t.path("name").asText().equals("orders_touch");
+            assertThat(t.path("enabled").asBoolean()).isEqualTo(on);
+            assertThat(t.path("definition").asText()).contains(on ? "BEFORE UPDATE" : "AFTER INSERT").contains("shop.touch()");
+        });
+        assertThat(ok("mia", "/api/metadata/" + id + "/relation?schema=shop&name=events").path("kind").asText()).isEqualTo("partitioned_table");
+
+        JsonNode ext = ok("mia", "/api/metadata/" + id + "/extensions");
+        assertThat(ext.path("loadedAt").asText()).isNotEmpty();
+        JsonNode plpgsql = null;
+        for (JsonNode e : ext.path("extensions")) {
+            if (e.path("name").asText().equals("plpgsql")) {
+                plpgsql = e;
+            }
+        }
+        assertThat(plpgsql).isNotNull();
+        assertThat(plpgsql.path("schema").asText()).isEqualTo("pg_catalog");
+        assertThat(plpgsql.path("version").asText()).isNotEmpty();
+        client("nik", "2");
+        assertThat(get("nik", "/api/metadata/" + id + "/extensions").statusCode()).isEqualTo(404);
+        assertThat(apps.events("metadata_browse", "S-1-5-21-7-7-7-1")).anyMatch(e -> String.valueOf(e.get("details")).contains("\"extensions\""));
     }
 
     @Test

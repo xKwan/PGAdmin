@@ -40,6 +40,7 @@ public final class DbSession {
     private volatile Instant transactionStartedAt;
     private volatile State state = State.OPEN;
     private volatile String closeReason;
+    private volatile AutoCloseable cursor;
 
     DbSession(String id, String ownerSid, String ownerAccount, String appSessionHash, String profile, String database, String role,
               Connection main, Connection companion, int mainPid, Integer companionPid, String serverVersion, Instant now) {
@@ -173,6 +174,19 @@ public final class DbSession {
         return companionLock;
     }
 
+    /**
+     * The open result cursor of the last statement, if any (P9-3: "Load more"). Set and read only by code holding
+     * {@link #lock()}; closed with the session.
+     */
+    public AutoCloseable cursor() {
+        return cursor;
+    }
+
+    /** Replaces the open cursor (the caller closed the previous one), or clears it with null. */
+    public void cursor(AutoCloseable c) {
+        cursor = c;
+    }
+
     /** True if the main connection still answers (used by the reaper to detect loss). */
     boolean alive() {
         try {
@@ -189,6 +203,15 @@ public final class DbSession {
         }
         state = State.CLOSED;
         closeReason = reason;
+        AutoCloseable open = cursor;
+        cursor = null;
+        if (open != null) {
+            try {
+                open.close();
+            } catch (Exception ignored) {
+                // the connection is closed next anyway
+            }
+        }
         closeQuietly(main);
         closeQuietly(companion);
     }

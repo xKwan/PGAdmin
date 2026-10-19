@@ -95,7 +95,7 @@ describe('ResultView', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('42P01');
     expect(screen.getByText('Hint: Check the name.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Show position 15 in the editor' }));
-    expect(onShowPosition).toHaveBeenCalledWith(15);
+    expect(onShowPosition).toHaveBeenCalledWith(15, 0); // offset 0: a single statement
   });
 
   it('explains timeouts, cancels and unknown outcomes', () => {
@@ -134,7 +134,7 @@ describe('ResultView', () => {
     const { onShowPosition, unmount } = view({ error });
     expect(screen.getByRole('alert')).toHaveTextContent('Not run');
     await userEvent.click(screen.getByRole('button', { name: 'Show position 1 in the editor' }));
-    expect(onShowPosition).toHaveBeenCalledWith(1);
+    expect(onShowPosition).toHaveBeenCalledWith(1, 0);
     unmount();
     view({ error: { code: 'AUDIT_UNAVAILABLE', message: 'x' } });
     expect(screen.getByRole('alert')).toHaveTextContent('audit database is unavailable');

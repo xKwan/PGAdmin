@@ -51,6 +51,7 @@ public final class ConfigLoader {
             "limits.cancelGraceSeconds", "limits.idleSessionMinutes", "limits.idleInTransactionMinutes",
             "limits.idleInTransactionWarningMinutes", "limits.maxTransactionAgeMinutes", "limits.heartbeatAbandonSeconds",
             "limits.sessionsPerUser", "limits.sessionsGlobal", "limits.failedOpensPerWindow", "limits.failedOpenWindowMinutes",
+            "limits.maxScriptStatements", "limits.maxFetchedRows",
             "logging.dir", "identity.roleCase", "identity.roleOverrides", "parser.library");
     private static final Set<String> PROFILE_KEYS = Set.of(
             "displayName", "host", "port", "sslMode", "sslRootCert", "maintenanceDb", "requiresDataAdmin", "statementTimeoutSeconds",
@@ -356,17 +357,22 @@ public final class ConfigLoader {
             int global = intRange("limits.sessionsGlobal", 50, 1, 1000);
             int failed = intRange("limits.failedOpensPerWindow", 5, 1, 1000);
             Duration window = Duration.ofMinutes(intRange("limits.failedOpenWindowMinutes", 5, 1, 24 * 60));
+            int scriptStatements = intRange("limits.maxScriptStatements", 1000, 1, 10_000);
+            int fetchedRows = intRange("limits.maxFetchedRows", 10_000, 1, 1_000_000);
             if (idleTxWarn.compareTo(idleTx) >= 0) {
                 problems.add("limits.idleInTransactionWarningMinutes must be less than limits.idleInTransactionMinutes");
             }
             if (perUser > global) {
                 problems.add("limits.sessionsPerUser must not exceed limits.sessionsGlobal");
             }
+            if (fetchedRows < maxRows) {
+                problems.add("limits.maxFetchedRows must not be less than limits.maxRows");
+            }
             if (maxCell > maxResponse) {
                 problems.add("limits.maxCellBytes must not exceed limits.maxResponseBytes");
             }
             return new Config.Limits(maxRows, maxResponse, maxCell, maxSql, grace, idle, idleTx, idleTxWarn, maxTx, hb,
-                    perUser, global, failed, window);
+                    perUser, global, failed, window, scriptStatements, fetchedRows);
         }
 
         // ------------------------------------------------------------------

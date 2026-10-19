@@ -148,7 +148,7 @@ describe('useExecution transactions', () => {
     );
     const { result } = renderHook(() => useExecution(SID));
     await act(() => result.current.run('DELETE FROM t', 5));
-    expect(result.current.confirm).toEqual({ text: 'DELETE FROM t', from: 5, reasons: ['no_where'] });
+    expect(result.current.confirm).toEqual({ text: 'DELETE FROM t', from: 5, reasons: ['no_where'], script: false });
     expect(result.current.error).toBeNull();
     await act(async () => result.current.confirmRun());
     await waitFor(() => expect(result.current.result?.results[0].rowCount).toBe(3));

@@ -24,7 +24,7 @@ import java.util.Map;
 public final class StatementGate {
 
     /** Why text was refused before anything was sent. */
-    public enum Rejection { TOO_LARGE, SYNTAX_ERROR, EMPTY_STATEMENT, MULTIPLE_STATEMENTS, GATE_DISAGREEMENT, UNSUPPORTED }
+    public enum Rejection { TOO_LARGE, SYNTAX_ERROR, EMPTY_STATEMENT, MULTIPLE_STATEMENTS, GATE_DISAGREEMENT, UNSUPPORTED, TOO_MANY_STATEMENTS }
 
     /** The gate's verdict: either an approved statement with its class, or a rejection. */
     public record Verdict(Rejection rejection, String message, int position, SqlParser.Statement statement, String statementClass) {
@@ -89,6 +89,72 @@ public final class StatementGate {
             return reject(Rejection.UNSUPPORTED, "LISTEN/UNLISTEN is not supported in this application", -1);
         }
         return new Verdict(null, null, -1, s, classify(s.kind()));
+    }
+
+    /**
+     * A script's verdict (EXE-03, decided 2026-10-19): either every statement approved, in order, or one rejection.
+     * {@code statementIndex} is the statement that was refused (-1 for the whole text); {@code position} is in the
+     * whole text (characters, 1-based).
+     */
+    public record ScriptVerdict(Rejection rejection, String message, int position, int statementIndex, List<ScriptStatement> statements) {
+        public boolean approved() {
+            return rejection == null;
+        }
+    }
+
+    /** One approved statement of a script: its verdict and where its text starts in the script (0-based). */
+    public record ScriptStatement(Verdict verdict, int offset) {
+    }
+
+    /**
+     * Checks a script: the same limits as a single statement for the whole text, then PostgreSQL's parser finds the
+     * statements, and <b>each</b> statement's text must pass {@link #check} on its own: exactly one statement for both
+     * the parser and pgJDBC, nothing unsupported. Only those texts are ever sent, one at a time, so pgJDBC never splits
+     * anything itself. Statement boundaries depend on {@code standard_conforming_strings}: the caller must stop the
+     * script if the setting changes while it runs.
+     */
+    public ScriptVerdict checkScript(String sql, boolean standardConformingStrings, int maxStatements) {
+        if (sql == null) {
+            return scriptReject(Rejection.EMPTY_STATEMENT, "Enter a SQL statement", -1, -1);
+        }
+        if (sql.getBytes(StandardCharsets.UTF_8).length > maxSqlBytes) {
+            return scriptReject(Rejection.TOO_LARGE, "The script is longer than " + maxSqlBytes + " bytes", -1, -1);
+        }
+        int nul = sql.indexOf('\u0000');
+        if (nul >= 0) {
+            return scriptReject(Rejection.SYNTAX_ERROR, "The text contains a NUL character", nul + 1, -1);
+        }
+        SqlParser.Parsed parsed = parser.parse(sql, standardConformingStrings);
+        if (!parsed.ok()) {
+            return scriptReject(Rejection.SYNTAX_ERROR, "Syntax error: " + parsed.error(), parsed.position(), -1);
+        }
+        List<SqlParser.Statement> stmts = parsed.statements();
+        if (stmts.isEmpty()) {
+            return scriptReject(Rejection.EMPTY_STATEMENT, "There is no statement to run", -1, -1);
+        }
+        if (stmts.size() > maxStatements) {
+            return scriptReject(Rejection.TOO_MANY_STATEMENTS, "The script has " + stmts.size() + " statements; at most "
+                    + maxStatements + " can run as one script", -1, -1);
+        }
+        List<ScriptStatement> out = new ArrayList<>(stmts.size());
+        for (int i = 0; i < stmts.size(); i++) {
+            SqlParser.Statement s = stmts.get(i);
+            Verdict v = check(s.text(), standardConformingStrings);
+            if (!v.approved()) {
+                // Anything but UNSUPPORTED means the statement's own text didn't parse as exactly that one statement.
+                boolean unsupported = v.rejection() == Rejection.UNSUPPORTED;
+                return scriptReject(unsupported ? Rejection.UNSUPPORTED : Rejection.GATE_DISAGREEMENT,
+                        unsupported ? "Statement " + (i + 1) + ": " + v.message()
+                                : "Statement " + (i + 1) + " could not be checked safely, so nothing was run",
+                        s.offset() + 1, i);
+            }
+            out.add(new ScriptStatement(v, s.offset()));
+        }
+        return new ScriptVerdict(null, null, -1, -1, List.copyOf(out));
+    }
+
+    private static ScriptVerdict scriptReject(Rejection r, String message, int position, int index) {
+        return new ScriptVerdict(r, message, position, index, List.of());
     }
 
     /** Audit text for an approved statement: comments removed, constants masked (only with standard_conforming_strings on). */

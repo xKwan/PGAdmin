@@ -1,0 +1,12 @@
+run  1  seed 1836389917  PASS  frontend tests=156  backend unit=84 it=160  325.6s  consecutive=1
+run  2  seed  710114942  PASS  frontend tests=156  backend unit=84 it=160  219.3s  consecutive=2
+run  3  seed 2108142097  PASS  frontend tests=156  backend unit=84 it=160  211.7s  consecutive=3
+run  4  seed 1202650747  PASS  frontend tests=156  backend unit=84 it=160  234.2s  consecutive=4
+run  5  seed  654821798  PASS  frontend tests=156  backend unit=84 it=160  229.3s  consecutive=5
+Overall: PASS (master seed 418722924). Report: S:\Code\PGAdmin\docs\evidence\admin-phase-2\loop-20261020-004032.json
+LOOP EXIT 0
+e2e run 1  seed 1618494577  PASS  passed=13  81s
+e2e run 2  seed 1856160337  PASS  passed=13  87.2s
+e2e run 3  seed 1689030680  PASS  passed=13  86.8s
+e2e run 4  seed  834536688  PASS  passed=13  81.9s
+e2e run 5  STOPPED: the run was ended by the host (Claude Code) because the workstation was low on memory; no test had failed. No E2E report file was written.

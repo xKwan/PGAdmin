@@ -6,11 +6,17 @@ import java.util.Map;
 
 /**
  * What the session endpoints need from the execution engine ({@code POST /api/db-sessions/{id}/execute},
- * {@code /cancel} and {@code GET /activity}), so the session package doesn't depend on the execution package.
+ * {@code /script}, {@code /fetch}, {@code /cancel} and {@code GET /activity}), so the session package doesn't depend on the execution package.
  */
 public interface StatementRunner {
 
     Map<String, Object> execute(UserContext user, String sessionId, String sql, boolean confirmed, String requestId);
+
+    /** Runs a script: its statements one at a time, stopping at the first that doesn't succeed (EXE-03). */
+    Map<String, Object> script(UserContext user, String sessionId, String sql, boolean confirmed, String requestId);
+
+    /** The next page of the last statement's rows, from the cursor kept inside the transaction (P9-3). */
+    Map<String, Object> fetch(UserContext user, String sessionId, String executionId, String requestId);
 
     /** Begin, commit or rollback (manual-transaction controls). */
     Map<String, Object> transaction(UserContext user, String sessionId, String action, String isolation, boolean readOnly, String requestId);

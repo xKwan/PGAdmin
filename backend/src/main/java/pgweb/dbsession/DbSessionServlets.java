@@ -25,6 +25,8 @@ import java.util.Map;
  *   DELETE /api/db-sessions/{id}                  close
  *   POST   /api/db-sessions/{id}/heartbeat        keep alive while the page is open
  *   POST   /api/db-sessions/{id}/execute          run one statement: {"sql": "..."}  (plan Phase 7)
+ *   POST   /api/db-sessions/{id}/script           run a script, stopping at the first failure: {"sql": "..."} (EXE-03)
+ *   POST   /api/db-sessions/{id}/fetch            next page of the last result: {"executionId": "..."} (P9-3)
  *   POST   /api/db-sessions/{id}/cancel           cancel the running statement
  *   GET    /api/db-sessions/{id}/activity         is a statement running, and is it waiting for a lock (Phase 8)
  *   POST   /api/db-sessions/{id}/transaction      {"action": "begin"|"commit"|"rollback", "isolation", "readOnly"} (Phase 9)
@@ -45,6 +47,10 @@ public final class DbSessionServlets {
 
     /** Body of an execute request; {@code confirmed} answers a CONFIRMATION_REQUIRED for a destructive statement. */
     public record ExecuteRequest(String sql, Boolean confirmed) {
+    }
+
+    /** Body of a fetch request: the execution whose rows continue. */
+    public record FetchRequest(String executionId) {
     }
 
     /** Body of a transaction request: {@code action} begin, commit or rollback. */
@@ -198,6 +204,14 @@ public final class DbSessionServlets {
             if (p.length == 2 && p[1].equals("execute")) {
                 ExecuteRequest body = body(req, ExecuteRequest.class);
                 return runner.execute(user(req), p[0], body.sql(), Boolean.TRUE.equals(body.confirmed()), requestId(req));
+            }
+            if (p.length == 2 && p[1].equals("script")) {
+                ExecuteRequest body = body(req, ExecuteRequest.class);
+                return runner.script(user(req), p[0], body.sql(), Boolean.TRUE.equals(body.confirmed()), requestId(req));
+            }
+            if (p.length == 2 && p[1].equals("fetch")) {
+                FetchRequest body = body(req, FetchRequest.class);
+                return runner.fetch(user(req), p[0], body.executionId(), requestId(req));
             }
             if (p.length == 2 && p[1].equals("transaction")) {
                 TransactionRequest body = body(req, TransactionRequest.class);

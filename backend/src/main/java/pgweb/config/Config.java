@@ -68,6 +68,7 @@ public record Config(
     public record Limits(int maxRows, long maxResponseBytes, int maxCellBytes, long maxSqlBytes,
                          Duration cancelGrace, Duration idleSession, Duration idleInTransaction,
                          Duration idleInTransactionWarning, Duration maxTransactionAge, Duration heartbeatAbandon,
-                         int sessionsPerUser, int sessionsGlobal, int failedOpensPerWindow, Duration failedOpenWindow) {
+                         int sessionsPerUser, int sessionsGlobal, int failedOpensPerWindow, Duration failedOpenWindow,
+                         int maxScriptStatements, int maxFetchedRows) {
     }
 }

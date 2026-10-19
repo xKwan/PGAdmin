@@ -62,6 +62,48 @@ class StatementGateTest {
     }
 
     @Test
+    void scriptsAreSplitByThePostgresParserAndEveryStatementPassesTheGate() {
+        String sql = "SELECT '漢;字'; -- a comment; with semicolons\nUPDATE t SET a = 1 WHERE b; DO $$BEGIN PERFORM 1; END$$;\nSELECT 3";
+        StatementGate.ScriptVerdict v = gate.checkScript(sql, true, 10);
+        assertThat(v.approved()).isTrue();
+        assertThat(v.statements()).hasSize(4);
+        assertThat(v.statements()).extracting(s -> s.verdict().statementClass()).containsExactly("select", "dml", "procedural", "select");
+        for (StatementGate.ScriptStatement s : v.statements()) {
+            // The offset is a Java string index: the statement's own text starts there, even after multi-byte characters.
+            assertThat(sql.substring(s.offset())).startsWith(s.verdict().statement().text());
+        }
+        assertThat(v.statements().get(2).verdict().statement().text()).contains("PERFORM 1; END");
+
+        // Where statements end depends on standard_conforming_strings, exactly as on the server.
+        String backslash = "SELECT 'a\\'; SELECT 2'; SELECT 3";
+        assertThat(gate.checkScript(backslash, false, 10).statements()).hasSize(2);
+        assertThat(gate.checkScript(backslash, true, 10).rejection()).isEqualTo(StatementGate.Rejection.SYNTAX_ERROR);
+    }
+
+    @Test
+    void aScriptIsRefusedWholeWhenAnyPartIsRefused() {
+        StatementGate.ScriptVerdict tooMany = gate.checkScript("SELECT 1; SELECT 2; SELECT 3", true, 2);
+        assertThat(tooMany.rejection()).isEqualTo(StatementGate.Rejection.TOO_MANY_STATEMENTS);
+        assertThat(tooMany.message()).contains("3 statements").contains("at most 2");
+        assertThat(gate.checkScript(";; -- nothing", true, 10).rejection()).isEqualTo(StatementGate.Rejection.EMPTY_STATEMENT);
+        assertThat(gate.checkScript(null, true, 10).rejection()).isEqualTo(StatementGate.Rejection.EMPTY_STATEMENT);
+        assertThat(gate.checkScript("SELECT '" + "x".repeat(1100) + "'", true, 10).rejection()).isEqualTo(StatementGate.Rejection.TOO_LARGE);
+        assertThat(gate.checkScript("SELECT 1; SELECT 2\u0000", true, 10).rejection()).isEqualTo(StatementGate.Rejection.SYNTAX_ERROR);
+
+        StatementGate.ScriptVerdict syntax = gate.checkScript("SELECT 1; SELEC 2", true, 10);
+        assertThat(syntax.rejection()).isEqualTo(StatementGate.Rejection.SYNTAX_ERROR);
+        assertThat(syntax.position()).isEqualTo(11); // in the whole script
+        assertThat(syntax.statements()).isEmpty();
+
+        StatementGate.ScriptVerdict copy = gate.checkScript("SELECT 1;\nCOPY t FROM STDIN", true, 10);
+        assertThat(copy.rejection()).isEqualTo(StatementGate.Rejection.UNSUPPORTED);
+        assertThat(copy.statementIndex()).isEqualTo(1);
+        assertThat(copy.position()).isEqualTo(11); // PostgreSQL 18 starts a statement at its first token, after the newline
+        assertThat(copy.message()).startsWith("Statement 2: ");
+        assertThat(gate.checkScript("SELECT 1; LISTEN c", true, 10).statementIndex()).isEqualTo(1);
+    }
+
+    @Test
     void syntaxErrorPositionsAreInCharactersNotBytes() {
         StatementGate.Verdict v = gate.check("SELECT 'é漢🙂' FRM t", true);
         assertThat(v.rejection()).isEqualTo(StatementGate.Rejection.SYNTAX_ERROR);

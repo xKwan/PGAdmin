@@ -86,7 +86,7 @@ Unknown keys are errors, so a misspelt setting can't silently fall back to a def
 | `identity.roleOverrides` | — | `DOMAIN\account=role` entries separated by `;`, for accounts whose role doesn't follow the rule. The server's `pg_ident.conf` must agree. |
 | `execution.enabled` | `false` | SQL execution kill switch (EXE-01). When `true`, the parser library must load or pgweb doesn't start. Behaviour: [`sql-execution-behaviour.md`](sql-execution-behaviour.md) |
 | `parser.library` | `native/pg_query.dll` | Path to the libpg_query DLL (relative to the working directory); loaded only when execution is enabled |
-| `limits.*` | ADR-0006 | `maxRows` 1000, `maxResponseBytes` 10 MB, `maxCellBytes` 64 KB, `maxSqlBytes` 1 MB, `cancelGraceSeconds` 5, `idleSessionMinutes` 15, `idleInTransactionMinutes` 10 (warning at 8), `maxTransactionAgeMinutes` 60, `heartbeatAbandonSeconds` 120, `sessionsPerUser` 3, `sessionsGlobal` 50, `failedOpensPerWindow` 5 per `failedOpenWindowMinutes` 5 |
+| `limits.*` | ADR-0006 | `maxRows` 1000, `maxResponseBytes` 10 MB, `maxCellBytes` 64 KB, `maxSqlBytes` 1 MB, `cancelGraceSeconds` 5, `idleSessionMinutes` 15, `idleInTransactionMinutes` 10 (warning at 8), `maxTransactionAgeMinutes` 60, `heartbeatAbandonSeconds` 120, `sessionsPerUser` 3, `sessionsGlobal` 50, `failedOpensPerWindow` 5 per `failedOpenWindowMinutes` 5, `maxScriptStatements` 1000, `maxFetchedRows` 10000 (admin Phase 2) |
 | `logging.dir` | `logs` | Rolling `pgweb.log` (50 MB × 30 days, 2 GB cap). Messages and stack traces are redacted. |
 
 ## 5. Signing in locally

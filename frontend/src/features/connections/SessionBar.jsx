@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { closeSession, describeConnectionError, heartbeat, openSession } from '../../api/dbsessions.js';
 import { ConfirmDialog, ErrorPanel, Spinner, StatusBadge } from '../../components/common/index.jsx';
 import { DatabaseList } from './ConnectPanel.jsx';
@@ -48,10 +48,11 @@ export function LostSession({ profile, database, message, onReconnected, onChoos
  * failed switch leaves this session as it was. With an open transaction the user is asked first; the server refuses
  * too (TRANSACTION_OPEN) unless that was confirmed, because closing the session rolls the transaction back. While a
  * statement runs (`busy`) switching is not offered. With `transactionOpen`, Disconnect asks first as well.
+ * `ref` exposes {switchTo(database)}, which starts the same switch (the object explorer's Switch).
  */
 export default function SessionBar({
   session, profile, discovery, onClosed, onLost, onSwitched, onSwitching, onHeartbeat,
-  transactionOpen = false, busy = false, heartbeatMs = HEARTBEAT_MS,
+  transactionOpen = false, busy = false, heartbeatMs = HEARTBEAT_MS, ref = null,
 }) {
   const [closing, setClosing] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -119,6 +120,14 @@ export default function SessionBar({
     }
   };
   const choose = (database) => (transactionOpen ? setConfirmSwitch(database) : doSwitch(database, false));
+  useImperativeHandle(ref, () => ({
+    switchTo: (database) => {
+      if (busy || closing || switching || database === session.database) return;
+      setSwitchError(null);
+      setPicker(true);
+      choose(database);
+    },
+  }));
 
   return (
     <div className="session-bar-wrap">

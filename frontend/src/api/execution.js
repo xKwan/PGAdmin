@@ -13,6 +13,19 @@ export function execute(sessionId, sql, confirmed = false) {
   return api(`${base(sessionId)}/execute`, { method: 'POST', body: confirmed ? { sql, confirmed: true } : { sql } });
 }
 
+/**
+ * Runs a script (EXE-03): the server splits it with PostgreSQL's parser, checks every statement, then runs them one
+ * at a time and stops at the first that doesn't succeed. Resolves with a `kind: "script"` document.
+ */
+export function runScript(sessionId, sql, confirmed = false) {
+  return api(`${base(sessionId)}/script`, { method: 'POST', body: confirmed ? { sql, confirmed: true } : { sql } });
+}
+
+/** The next page of a result whose rows continue on the server (`more`, inside a transaction only). */
+export function fetchMore(sessionId, executionId) {
+  return api(`${base(sessionId)}/fetch`, { method: 'POST', body: { executionId } });
+}
+
 /** Begin (optionally with an isolation level and read-only), commit or rollback. Resolves with a result document. */
 export function transaction(sessionId, action, { isolation, readOnly = false } = {}) {
   const body = { action, readOnly };
@@ -60,7 +73,11 @@ export function activity(sessionId) {
 export function describeExecutionError(error) {
   switch (error?.code) {
     case 'MULTIPLE_STATEMENTS':
-      return `${error.message} Select one statement, or put the cursor in it, and run again.`;
+      return `${error.message} Select one statement, or put the cursor in it, and run again. To run them all, use Run script.`;
+    case 'TOO_MANY_STATEMENTS':
+      return `${error.message}. Split it into smaller scripts.`;
+    case 'CURSOR_CLOSED':
+      return 'The rest of these rows is no longer available (the transaction ended or another statement ran). Run the statement again.';
     case 'EMPTY_STATEMENT':
       return 'There is no statement to run.';
     case 'SYNTAX_ERROR':
@@ -86,6 +103,21 @@ export function describeExecutionError(error) {
     default:
       return error?.message || 'The statement could not be run.';
   }
+}
+
+const STOPS = {
+  error: 'it failed',
+  timeout: 'it reached the time limit',
+  cancelled: 'you cancelled it',
+  indeterminate: 'the connection was lost while it ran',
+  settings_changed: 'standard_conforming_strings changed, so the rest of the script could no longer be split safely',
+  audit_unavailable: 'the audit database was unavailable, so it was not run',
+  session_ended: 'the database session ended',
+};
+
+/** Why a script stopped, in words. */
+export function describeScriptStop(reason) {
+  return STOPS[reason] || reason;
 }
 
 /** What happened to a stop request (cancelOutcome). */

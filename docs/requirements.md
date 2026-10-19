@@ -26,9 +26,9 @@
 |---|---|---|---|---|
 | EXE-01 | SQL execution disabled (feature flag) until gate G4 | P6–P8 | Flag test; G4 sign-off | Tested (P7): disabled → 403 `EXECUTION_DISABLED`; enabled without a loadable parser → startup refused. G4 sign-off pending (after P8) |
 | EXE-02 | Single-statement execution enforced by the verified parser gate plus a pgJDBC cross-check (ADR-0009); no hand-written splitter | P1, P7 | S2/S3 reports; P7 tests | Tested (P7): libpg_query gate + pgJDBC cross-check; corpus on the real server (both `standard_conforming_strings` settings); the server's statement log shows rejected text never arrived; NUL characters refused (P7-3) |
-| EXE-03 | Multi-statement scripts only if the parser passes 100% of the corpus; otherwise disabled | P1, P7 | S2 report | Not offered in this release (P7): the parser passes the whole corpus, so scripts are allowed, but their partial-failure, transaction and audit rules are deferred. **Stakeholder to confirm** |
+| EXE-03 | Multi-statement scripts only if the parser passes 100% of the corpus; otherwise disabled | P1, P7, admin P2 | S2 report; `StatementGateTest`; `ScriptAndFetchIT`; RTL; E2E | Tested (admin P2). Decided 2026-10-19 "stop at first error": a separate Run script; the whole script is checked first (every statement through the single-statement gate) and nothing runs unless all pass; statements run one at a time, each with its own fail-closed audit intent and outcome; the first failure stops it; one confirmation for destructive statements; stops if `standard_conforming_strings` changes |
 | EXE-04 | Distinct handling of row-returning, command, DDL, zero-row, error, timeout and cancelled outcomes | P7, P8 | §3.3 integration and RTL tests | Tested (P7 API; P8 UI): rows, command, DDL, zero rows, error (SQLSTATE, position), timeout, cancelled, indeterminate |
-| EXE-05 | Server-side row, response-size and cell limits; SQL never rewritten | P7 | Limit and heap tests | Tested (P7): row, byte and cell limits; SQL sent unchanged. Memory per statement is bounded by `maxRows + 1` rows, not by bytes (documented; streaming in P9) |
+| EXE-05 | Server-side row, response-size and cell limits; SQL never rewritten | P7, admin P2 | Limit and heap tests; `ScriptAndFetchIT` | Tested (P7): row, byte and cell limits; SQL sent unchanged. Memory per statement is bounded by `maxRows + 1` rows, not by bytes (documented). Admin P2 (P9-3, decided 2026-10-19): inside a transaction the rest of a result is fetched page by page from a cursor, up to `maxFetchedRows`, each page audited (fail-closed); auto-commit behaviour unchanged |
 | EXE-06 | Server-side wall-clock timeout unaffected by user `SET` commands | P7 | Timeout-after-SET tests | Tested (P7): timeout holds after `SET statement_timeout = 0`, `SET lock_timeout = 0` and `RESET ALL` |
 | EXE-07 | Cancellation reaches PostgreSQL; resource release measured; escalation and quarantine | P7 | Resource-release measurements | Tested (P7): cancel releases row locks; an ineffective cancel escalates to `pg_terminate_backend` and quarantines the session; without a companion the outcome is `unconfirmed` (P7-2) |
 | EXE-08 | One in-flight statement per session; per-user and global session caps | P6, P7 | Concurrency-limit tests | Tested (P6 caps; P7: a second statement gets 409 `SESSION_BUSY`) |
@@ -53,6 +53,9 @@
 | FN-10 | Results labelled as snapshots ("Retrieved at"); refresh re-runs the statement | P8 | RTL | Tested (P8): "Retrieved at" and Refresh (runs the same text again); RTL |
 | FN-11 | Metadata browser for accessible databases, schemas and objects | P10 | Integration; RTL | Tested (P10): schemas → tables, views, materialised views, foreign tables, sequences, functions and procedures (signatures) → columns, indexes, constraints; filtered by privilege, "show everything" marks the rest; lazy, on the companion; insert quoted names; API, RTL and E2E |
 | FN-12 | Usable at 1366×768 and 1920×1080 | P5, P11 | Playwright layout check | Tested (P8, E2E): no page-level horizontal scrolling at 1366×768 and 1920×1080 in the workspace; the full layout check is Phase 11 |
+| FN-13 | Editor tabs; open, save and save-as local `.sql` files; unsaved changes confirmed before they are discarded; opening never runs anything | admin P2 | RTL (`files.test.jsx`, `Workspace.admin.test.jsx`) | Tested (admin P2): tabs survive switching database; File System Access API in Edge, upload/download otherwise; UTF-8 only, at most 5 MB; files never reach the server |
+| FN-14 | Query history of the user's own statements and scripts | admin P2 | RTL; E2E | Tested (admin P2). Decided 2026-10-19 "this browser tab only": full text, last 50, `sessionStorage` per user and server, Clear history; nothing new on the server |
+| FN-15 | Explorer: partitioned tables and partitions, triggers, extensions, other databases; refresh after committed object changes | admin P2 | `MetadataIT`; RTL | Tested (admin P2): same companion connection, parameterised catalog queries, ownership and DataAdmin checks, `metadata_browse` audit |
 
 ## 4. MVP: quality and operations
 
@@ -67,9 +70,9 @@
 
 ## 5. Deferred (post-MVP; each needs separate approval)
 
-Inline data editing; result export; server-side "fetch more"; multiple editor tabs; query history and saved queries; schema-aware autocomplete; EXPLAIN visualiser; DDL designers; audit viewer UI; two-person approval for high-risk statements; dark mode and keyboard customisation.
+Inline data editing; result export; saved queries (server-side); schema-aware autocomplete; EXPLAIN visualiser; DDL designers; audit viewer UI; two-person approval for high-risk statements; dark mode and keyboard customisation.
 
-The stakeholder's administration-workspace plan of 2026-10-19 (`docs/decision-log.md`) schedules most of these, plus database/schema management, data import, SQL file handling, backup and restore, and role administration, in phases after admin Phase 1. They stay deferred here until each phase is started; the conflicts with approved decisions that must be settled first are listed in `docs/admin-phase-1-status.md`.
+The stakeholder's administration-workspace plan of 2026-10-19 (`docs/decision-log.md`) schedules most of these, plus database/schema management, data import, SQL file handling, backup and restore, and role administration, in phases after admin Phase 1. They stay deferred here until each phase is started; the conflicts with approved decisions that must be settled first are listed in `docs/admin-phase-1-status.md`. Admin Phase 2 (2026-10-19) delivered "fetch more", editor tabs, local SQL files and a browser-tab query history (FN-13 to FN-15, EXE-03).
 
 ## 6. Operational scaling (only when justified by measured need)
 

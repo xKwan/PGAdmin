@@ -180,6 +180,53 @@ test('the object browser shows my tables and inserts a name into the editor', as
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 2: a script stops at its first error, a large result is paged, and the history keeps both', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const results = page.getByRole('region', { name: 'Results' });
+
+  // Run script: every statement in order; one confirmation for the DDL; the third fails and the fourth never runs.
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+  await page.keyboard.insertText("CREATE TEMP TABLE t_script AS SELECT 7 AS a;\nSELECT a FROM t_script;\nSELECT 1 / 0;\nSELECT 'never'");
+  await page.getByRole('button', { name: 'Run script' }).click();
+  await page.getByRole('dialog', { name: 'Run this script?' }).getByRole('button', { name: 'Run the script' }).click();
+  await expect(results.getByText(/Stopped at statement 3 of 4: it failed. 2 completed before it/)).toBeVisible();
+  const statements = results.getByRole('list', { name: 'Script statements' }).getByRole('listitem');
+  await expect(statements).toHaveCount(4);
+  await expect(statements.nth(1).getByRole('cell', { name: '7', exact: true })).toBeVisible();
+  await expect(statements.nth(2)).toContainText('22012');
+  await expect(statements.nth(3)).toContainText('Not run');
+  await statements.nth(2).getByRole('button', { name: 'Show statement 3 in the editor' }).click();
+  await expect(editor).toBeFocused();
+
+  // Paging: in auto-commit the result stops at one page; a read-only transaction lets the rest be loaded.
+  await run(page, editor, 'SELECT id FROM items ORDER BY id');
+  await expect(results.getByText(/Only the first 1,000 rows are shown/)).toBeVisible();
+  await results.getByRole('button', { name: 'Run again in a read-only transaction to load more' }).click();
+  await expect(results.getByText(/1,000 rows loaded; more rows are waiting on the server/)).toBeVisible();
+  await results.getByRole('button', { name: 'Load more rows' }).click();
+  await expect(results.getByText(/2,000 rows loaded/)).toBeVisible();
+  await results.getByRole('button', { name: 'Load more rows' }).click();
+  await expect(results.getByText('2,500 rows', { exact: true })).toBeVisible();
+  await expect(results.getByRole('button', { name: 'Load more rows' })).toHaveCount(0);
+  await expect(page.getByLabel('Transaction')).toContainText('Transaction open');
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect(page.getByLabel('Transaction')).toContainText('No transaction');
+
+  // History: this tab's runs, newest first; a script can be reopened in its own editor tab.
+  await page.getByRole('tab', { name: /^History/ }).click();
+  const history = page.getByRole('region', { name: 'Query history' }).getByRole('listitem');
+  await expect(history.first()).toContainText('SELECT id FROM items ORDER BY id');
+  const script = history.filter({ hasText: 'CREATE TEMP TABLE t_script' });
+  await expect(script).toContainText('Script (4)');
+  await script.getByRole('button', { name: 'Open in a new tab' }).click();
+  await expect(page.getByRole('button', { name: 'Query 2', exact: true })).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByRole('textbox', { name: 'SQL editor' })).toContainText("SELECT 'never'");
+  expect(await problems()).toEqual([]);
+});
+
 test('the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling', async ({ page }) => {
   for (const size of [{ width: 1366, height: 768 }, { width: 1920, height: 1080 }]) {
     await page.setViewportSize(size);

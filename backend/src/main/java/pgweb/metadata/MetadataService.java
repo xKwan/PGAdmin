@@ -19,8 +19,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The object browser (plan Phase 10): schemas, the objects in a schema, and a relation's columns, indexes and
- * constraints, read from PostgreSQL's catalog on the session's <b>companion</b> connection, as the user's own role.
+ * The object browser (plan Phase 10; admin Phase 2): schemas, the objects in a schema (partitioned tables and
+ * partitions marked), a relation's columns, indexes, constraints and triggers, and the database's extensions, read from PostgreSQL's catalog on the session's <b>companion</b> connection, as the user's own role.
  * <ul>
  *   <li>Every query is a constant with parameters; names are only ever bound values (never part of SQL text). An
  *       ArchUnit rule forbids plain {@code Statement} here.</li>
@@ -47,7 +47,7 @@ public final class MetadataService {
                    CASE WHEN c.relkind = 'S' THEN pg_catalog.has_sequence_privilege(c.oid, 'USAGE,SELECT')
                         ELSE pg_catalog.has_table_privilege(c.oid, 'SELECT,INSERT,UPDATE,DELETE')
                              OR pg_catalog.has_any_column_privilege(c.oid, 'SELECT,INSERT,UPDATE') END,
-                   pg_catalog.obj_description(c.oid, 'pg_class')
+                   pg_catalog.obj_description(c.oid, 'pg_class'), c.relispartition
             FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
             WHERE n.nspname = ? AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')
             ORDER BY 1""";
@@ -92,7 +92,20 @@ public final class MetadataService {
             WHERE r.conrelid = ?
             ORDER BY 1""";
 
-    private static final Map<String, String> RELKINDS = Map.of("r", "table", "p", "table", "v", "view", "m", "materialized_view",
+    /** Triggers of a relation, without the internal ones PostgreSQL creates for constraints. Parameter: relation oid. */
+    static final String TRIGGERS = """
+            SELECT t.tgname, pg_catalog.pg_get_triggerdef(t.oid, true), t.tgenabled <> 'D'
+            FROM pg_catalog.pg_trigger t
+            WHERE t.tgrelid = ? AND NOT t.tgisinternal
+            ORDER BY 1""";
+
+    /** Extensions installed in the connected database (catalog data every role can read). */
+    static final String EXTENSIONS = """
+            SELECT e.extname, e.extversion, n.nspname, pg_catalog.obj_description(e.oid, 'pg_extension')
+            FROM pg_catalog.pg_extension e JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace
+            ORDER BY 1""";
+
+    private static final Map<String, String> RELKINDS = Map.of("r", "table", "p", "partitioned_table", "v", "view", "m", "materialized_view",
             "S", "sequence", "f", "foreign_table");
     private static final Map<String, String> PROKINDS = Map.of("f", "function", "p", "procedure", "a", "aggregate", "w", "window");
     private static final Map<String, String> CONTYPES = Map.of("p", "primary_key", "f", "foreign_key", "u", "unique", "c", "check",
@@ -197,6 +210,9 @@ public final class MetadataService {
                             m.put(NAME, rs.getString(1));
                             m.put(ACCESSIBLE, accessible);
                             putIfPresent(m, "comment", rs.getString(4));
+                            if (rs.getBoolean(5)) {
+                                m.put("partition", true);
+                            }
                             out.add(m);
                         }
                     }
@@ -258,6 +274,8 @@ public final class MetadataService {
                     "primary", rs.getBoolean(3), "unique", rs.getBoolean(4))));
             m.put("constraints", list(c, CONSTRAINTS, oid, rs -> Map.of(NAME, rs.getString(1),
                     "type", CONTYPES.getOrDefault(rs.getString(2), OTHER), "definition", rs.getString(3))));
+            m.put("triggers", list(c, TRIGGERS, oid, rs -> Map.of(NAME, rs.getString(1), "definition", rs.getString(2),
+                    "enabled", rs.getBoolean(3))));
             return m;
         });
         if (rel == null) {
@@ -265,6 +283,25 @@ public final class MetadataService {
         }
         rel.put("loadedAt", clock.instant().toString());
         return rel;
+    }
+
+    /** Extensions of the connected database: name, version, schema and comment. */
+    public Map<String, Object> extensions(UserContext user, String sessionId) {
+        DbSession s = sessions.get(user, sessionId);
+        return envelope("extensions", onCompanion(user, s, "extensions", null, c -> {
+            List<Map<String, Object>> out = new ArrayList<>();
+            try (PreparedStatement ps = prepare(c, EXTENSIONS); ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put(NAME, rs.getString(1));
+                    m.put("version", rs.getString(2));
+                    m.put(SCHEMA, rs.getString(3));
+                    putIfPresent(m, "comment", rs.getString(4));
+                    out.add(m);
+                }
+            }
+            return out;
+        }));
     }
 
     private interface Row {

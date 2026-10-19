@@ -28,5 +28,6 @@ afterEach(() => {
   cleanup();
   server.resetHandlers();
   window.localStorage.clear(); // e.g. the remembered last database: each test starts with a fresh browser
+  window.sessionStorage.clear(); // the query history
 });
 afterAll(() => server.close());

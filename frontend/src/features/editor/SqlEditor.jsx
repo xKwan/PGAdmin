@@ -17,16 +17,18 @@ export function cspNonce(doc = document) {
  * CodeMirror 6 SQL editor (plan Phase 8): PostgreSQL highlighting, bracket matching, search (Ctrl+F), comment
  * toggle (Ctrl+/), keyword completion, and Ctrl+Enter to run the selection or the statement at the cursor.
  *
- * `controllerRef` receives {run(), showPosition(from, position), focus(), selection(), insert(text)} so the page can
- * drive the editor.
+ * `controllerRef` receives {run(), script(), showPosition(from, position), select(from, to), focus(), text(), selection(),
+ * insert(text)} so the page can drive the editor. `onChange` is called whenever the text changes (unsaved changes).
  */
-export default function SqlEditor({ initialDoc = '', onRun, canRun = true, controllerRef, label = 'SQL editor' }) {
+export default function SqlEditor({ initialDoc = '', onRun, onChange, canRun = true, controllerRef, label = 'SQL editor' }) {
   const host = useRef(null);
   const view = useRef(null);
   const runRef = useRef(onRun);
+  const changeRef = useRef(onChange);
   const canRunRef = useRef(canRun);
   useEffect(() => {
     runRef.current = onRun;
+    changeRef.current = onChange;
     canRunRef.current = canRun;
   });
 
@@ -71,6 +73,9 @@ export default function SqlEditor({ initialDoc = '', onRun, canRun = true, contr
             indentWithTab,
           ]),
           EditorView.contentAttributes.of({ 'aria-label': label }),
+          EditorView.updateListener.of((u) => {
+            if (u.docChanged) changeRef.current?.();
+          }),
         ],
       }),
     });
@@ -78,6 +83,17 @@ export default function SqlEditor({ initialDoc = '', onRun, canRun = true, contr
     if (controllerRef) {
       controllerRef.current = {
         run: () => runCommand(v),
+        /** What Run script sends: the selection if there is one, otherwise the whole text (never just one statement). */
+        script: () => {
+          const sel = v.state.selection.main;
+          return sel.empty ? { text: v.state.doc.toString(), from: 0 } : { text: v.state.sliceDoc(sel.from, sel.to), from: sel.from };
+        },
+        /** Selects a range (for example a script statement) and scrolls to it. */
+        select: (from, to) => {
+          const len = v.state.doc.length;
+          v.dispatch({ selection: EditorSelection.range(Math.min(from, len), Math.min(to, len)), scrollIntoView: true });
+          v.focus();
+        },
         focus: () => v.focus(),
         /** The whole text (kept when the workspace switches to another database). */
         text: () => v.state.doc.toString(),
@@ -99,6 +115,7 @@ export default function SqlEditor({ initialDoc = '', onRun, canRun = true, contr
     return () => {
       v.destroy();
       view.current = null;
+      if (controllerRef) controllerRef.current = null;
     };
     // The editor is created once; later prop changes go through refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps

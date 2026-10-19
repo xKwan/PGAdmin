@@ -51,9 +51,25 @@ Your databases are listed as soon as the workspace opens. Choosing one opens a *
 
 ## 4. Running SQL
 
-Type in the editor and press **Ctrl+Enter**. With text selected, the selection runs; otherwise the statement at the cursor.
+### The editor: tabs and files
 
-- **One statement at a time.** Text with two statements (`SELECT 1; SELECT 2`) is refused, with the number of statements found. A trailing `;` is fine. Scripts aren't supported in this release: run the statements one by one, inside `BEGIN` … `COMMIT` if they must all succeed together.
+- The editor is there as soon as the workspace opens, even before you connect: you can write, open and save SQL, but nothing runs until a database session is open.
+- **+ New** opens another tab. Each tab keeps its own text, cursor and undo history, also when you switch database, disconnect or reconnect. A tab with changes that aren't saved to a file shows **• unsaved**; closing it, or leaving the workspace with **← Servers**, asks first. Closing the browser tab asks too.
+- **Open file…** reads a `.sql` (or `.txt`) file from your computer into a new tab. **Opening never runs anything.** Files must be UTF-8 text and at most 5 MB.
+- **Save** writes the tab back to the file it came from (in Edge, after your permission). For a new tab, or with **Save as…**, you choose where. Where the browser can't write files directly, Save downloads the file instead.
+- Files go between your computer and the editor only; pgweb's server never receives or keeps them.
+
+### Run and Run script
+
+**Run** (or **Ctrl+Enter**) runs the selection, or the statement at the cursor. **Run script** runs every statement in the tab (or in the selection), one at a time.
+
+- **Run** takes **one statement**. Text with two statements (`SELECT 1; SELECT 2`) is refused, with the number of statements found. A trailing `;` is fine.
+- **Run script** (there is no shortcut, so it can't happen by accident):
+  - Before anything runs, PostgreSQL's own parser checks the whole script. If any statement has a syntax error or isn't supported, **nothing runs** and you're shown where.
+  - If any statement needs a confirmation (below), you're asked **once** for the script.
+  - The statements then run in order and the script **stops at the first statement that fails** (or is cancelled, or reaches the time limit). The results list every statement: *Completed*, *Failed* with PostgreSQL's error, or *Not run*. **Show in editor** selects a statement's text.
+  - Each statement commits on its own as usual, unless you're in a transaction (yours, or one the script begins with `BEGIN`). After a failure inside a transaction, it is up to you to roll back (or fix and continue); nothing is committed or rolled back for you.
+  - **Cancel** stops the running statement, and the rest don't start. At most 1,000 statements per script.
 - Your SQL is sent **exactly as you wrote it**. pgweb doesn't add `LIMIT` or change anything.
 - Not supported: `COPY … FROM STDIN` / `TO STDOUT`, `LISTEN`, `UNLISTEN`, and psql commands such as `\dt` or `\copy` (they aren't SQL).
 - **Time limit:** a statement is stopped after 60 seconds on the external server and 5 minutes on the internal one. `SET statement_timeout` doesn't change pgweb's limit.
@@ -66,12 +82,20 @@ Before `DROP`, `TRUNCATE`, `GRANT`/`REVOKE`, other `CREATE`/`ALTER`, `DO` blocks
 
 ## 5. Results
 
-- Up to **1,000 rows** are shown, and at most about 10 MB. When more were available, the result says it was cut and why. Add `ORDER BY` and `LIMIT`/`OFFSET`, or a `WHERE`, to see other rows.
+- Up to **1,000 rows** come back at first, and at most about 10 MB.
+- **Inside a transaction**, a larger result keeps the rest on the server: **Load more rows** fetches the next 1,000, up to 10,000 rows in all. The rows stay available until you run another statement, commit, roll back or disconnect.
+- **Outside a transaction** the result is cut at 1,000 rows. **Run again in a read-only transaction to load more** begins a read-only transaction (nothing can be changed in it) and runs the statement again, so you can load more. Finish it with **Commit** or **Rollback** in the transaction bar; an open transaction keeps locks and is closed after 10 idle minutes.
+- To see other rows without loading them all, add `ORDER BY` and `LIMIT`/`OFFSET`, or a `WHERE`.
 - A value longer than 64 KB is cut and marked "This value was cut at the cell size limit".
 - Values look as they do in `psql`: all `numeric` digits, `bytea` as hex (`\x…`), timestamps in your session's time zone. `NULL` is shown distinctly from an empty text and from the text `NULL`.
 - Sorting by a column header sorts only the rows on screen ("Sorted locally"); it isn't `ORDER BY`.
 - Statements that change rows report "Completed. N rows affected."
 - **Outcome unknown** ("indeterminate"): the connection broke while the statement ran. **It may have taken effect.** Check the data before running it again.
+- With several tabs open, the results say which tab they came from.
+
+### History
+
+The **History** tab next to Results lists what you ran in this browser tab, newest first (up to 50): when, in which database, how it ended, and the text. **Insert** puts the text at the editor's cursor; **Open in a new tab** opens it in its own tab. Nothing runs until you run it. The history holds the full text you typed, including values, **only in this browser tab**: closing the tab, or **Clear history**, removes it. It is separate from the audit trail (below).
 
 ## 6. Transactions
 
@@ -84,11 +108,11 @@ Each statement is committed on its own unless you start a transaction:
 
 ## 7. Browsing objects
 
-The object panel lists schemas, tables, views, functions and other objects in the database you're connected to, with their columns, constraints and indexes. Objects you can see in the catalog but have no privilege on are marked **no access**.
+The object panel shows the database you're connected to, its schemas, and their tables, partitioned tables (each partition is marked **partition**), views, sequences, functions and other objects, with columns, indexes, constraints and triggers (a disabled trigger is marked). **Extensions** lists the extensions installed in the database, and **Other databases** the databases you can switch to (**Switch** works like Switch database, including the question about an open transaction). Objects you can see in the catalog but have no privilege on are marked **no access**. The panel shows committed objects: it reloads by itself after a change to objects is committed, and **Refresh** reloads it any time.
 
 ## 8. What is recorded
 
-Every sign-in, connection and statement is recorded in an audit trail the administrators and named auditors can review. For each statement: when, who, which server and database, the kind of statement, its outcome and row count, and the statement **with every literal value replaced** (`WHERE id = $1`). The values you type aren't stored, and neither is the full text; a keyed fingerprint lets an investigator confirm whether a given text was run. When the audit trail can't be written, statements are refused until it is back; this protects you and the organisation from unrecorded changes.
+Every sign-in, connection and statement (each statement of a script separately, and each extra page of rows you load) is recorded in an audit trail the administrators and named auditors can review. For each statement: when, who, which server and database, the kind of statement, its outcome and row count, and the statement **with every literal value replaced** (`WHERE id = $1`). The values you type aren't stored, and neither is the full text; a keyed fingerprint lets an investigator confirm whether a given text was run. When the audit trail can't be written, statements are refused until it is back; this protects you and the organisation from unrecorded changes.
 
 ## 9. Messages you may see
 
@@ -96,7 +120,11 @@ Every sign-in, connection and statement is recorded in an audit trail the admini
 |---|---|
 | Running SQL is switched off by the administrator. | Execution isn't switched on (yet), or was turned off |
 | The statement was not run: the audit database is unavailable. | The audit database is down; try again in a few minutes |
-| … found N statements … Select one statement, or put the cursor in it, and run again. | Run one statement at a time |
+| … found N statements … Select one statement, or put the cursor in it, and run again. | **Run** takes one statement; use **Run script** to run them all |
+| Stopped at statement N of M: … | The script stopped there; the statements after it were not run |
+| The script has N statements; at most 1000 … | Split the script into smaller ones |
+| The rest of these rows is no longer available … | Another statement ran or the transaction ended; run the statement again |
+| … is not UTF-8 text / … files up to 5 MB can be opened | Save the file as UTF-8, or split it |
 | A syntax error, with its position | PostgreSQL's grammar rejected the text at that character |
 | You already have 3 open database sessions; close one first. | Disconnect one from the list shown |
 | Could not connect to the database. Check that you have access to it, or ask the administrator. | No role, no `CONNECT`, or the server refused your sign-in |

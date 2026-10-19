@@ -80,6 +80,8 @@ class ConfigLoaderTest {
         assertThat(l.maxCellBytes()).isEqualTo(64 * 1024);
         assertThat(l.sessionsPerUser()).isEqualTo(3);
         assertThat(l.sessionsGlobal()).isEqualTo(50);
+        assertThat(l.maxScriptStatements()).isEqualTo(1000);
+        assertThat(l.maxFetchedRows()).isEqualTo(10_000);
         assertThat(l.heartbeatAbandon()).isEqualTo(Duration.ofSeconds(120));
         assertThat(c.audit().password().reveal()).isEqualTo("audit-pw");
         assertThat(c.audit().password().toString()).doesNotContain("audit-pw");
@@ -129,6 +131,11 @@ class ConfigLoaderTest {
         f.add(new Fault("bad port", p -> p.setProperty("profile.external.port", "70000"), "must be between 1 and 65535"));
         f.add(new Fault("not a number", p -> p.setProperty("limits.maxRows", "lots"), "limits.maxRows must be a whole number"));
         f.add(new Fault("rows too high", p -> p.setProperty("limits.maxRows", "1000000"), "limits.maxRows must be between"));
+        f.add(new Fault("fetch cap below a page", p -> {
+            p.setProperty("limits.maxRows", "500");
+            p.setProperty("limits.maxFetchedRows", "100");
+        }, "limits.maxFetchedRows must not be less than limits.maxRows"));
+        f.add(new Fault("script too long", p -> p.setProperty("limits.maxScriptStatements", "20000"), "limits.maxScriptStatements must be between"));
         f.add(new Fault("bad jdbc url", p -> p.setProperty("audit.jdbcUrl", "jdbc:mysql://x/y"), "audit.jdbcUrl must start with jdbc:postgresql://"));
         f.add(new Fault("missing spool", p -> p.remove("audit.spoolDir"), "audit.spoolDir is required"));
         f.add(new Fault("idle over absolute", p -> {

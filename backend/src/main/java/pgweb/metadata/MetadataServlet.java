@@ -11,6 +11,7 @@ import pgweb.web.ApiServlet;
  *   GET /api/metadata/{session}/schemas[?all=true]
  *   GET /api/metadata/{session}/objects?schema=…[&amp;all=true]
  *   GET /api/metadata/{session}/relation?schema=…&amp;name=…
+ *   GET /api/metadata/{session}/extensions
  * </pre>
  * The session must belong to the caller (404 otherwise); internal sessions re-check DataAdmin on every call.
  */
@@ -39,6 +40,7 @@ public final class MetadataServlet extends ApiServlet {
             case "schemas" -> metadata.schemas(user, p[0], all);
             case "objects" -> metadata.objects(user, p[0], req.getParameter("schema"), all);
             case "relation" -> metadata.relation(user, p[0], req.getParameter("schema"), req.getParameter("name"));
+            case "extensions" -> metadata.extensions(user, p[0]);
             default -> throw ApiException.notFound();
         };
     }

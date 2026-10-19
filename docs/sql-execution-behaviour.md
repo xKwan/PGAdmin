@@ -7,8 +7,11 @@ AUD-01/02). Everything described here is enforced on the server. The browser can
 
 ```
 POST /api/db-sessions/{id}/execute     {"sql": "<one statement>"}
+POST /api/db-sessions/{id}/script      {"sql": "<one or more statements>"}       (admin Phase 2, EXE-03)
+POST /api/db-sessions/{id}/fetch       {"executionId": "<the statement's>"}       (admin Phase 2, P9-3)
 POST /api/db-sessions/{id}/cancel      {}
-GET  /api/db-sessions/{id}/activity    {"running", "elapsedMs", "waitEventType", "waitEvent", "lockWait"}
+GET  /api/db-sessions/{id}/activity    {"running", "elapsedMs", "waitEventType", "waitEvent", "lockWait",
+                                        "scriptStatement", "scriptStatements"}
 ```
 
 `activity` reads the running statement's `pg_stat_activity` row on the companion connection. The UI polls it once a
@@ -17,7 +20,8 @@ audited. Degraded sessions report only `running` and `elapsedMs`.
 
 In the browser (Phase 8), Ctrl+Enter runs the selection or, with no selection, the statement at the cursor. The
 editor's own SQL grammar finds that statement. This is only a convenience: the server still parses whatever is sent
-and refuses anything that isn't exactly one statement.
+and refuses anything that isn't exactly one statement. **Run script** (admin Phase 2) is a separate button, never a
+key that also runs single statements: it sends the selection, or the whole editor tab, to `/script` (§2a).
 
 `{id}` is a DB session the caller opened (Phase 6). A session that belongs to someone else, or to another app
 session of the same user, is reported as `404`.
@@ -49,13 +53,40 @@ Notes:
 - A trailing `;` is fine: `SELECT 1;` is one statement.
 - psql meta-commands (`\dt`, `\gset`, `\copy`, `\i`) are not SQL. PostgreSQL's grammar rejects them as syntax
   errors.
-- **Multi-statement scripts are not offered in this release.** EXE-03 allows them only if the parser passes the whole
-  corpus. It does (S2), but running a script needs its own rules for partial failure, transactions and audit (one
-  intent per statement). That is deferred. A user who needs several statements runs them one at a time, inside
-  `BEGIN … COMMIT` if they must be atomic.
+- `/execute` still takes exactly one statement. Several statements go through `/script` (§2a).
 - Statement classification (`select`, `dml`, `ddl`, `transaction`, `session`, …) is shown in the UI and the audit
   only. It is **never** used to allow or deny (S2 P6: `WITH x AS (DELETE …) SELECT …` is a `SelectStmt`).
   PostgreSQL's privileges decide what a user may do.
+
+## 2a. Scripts (EXE-03, decided 2026-10-19: "stop at first error")
+
+1. Checks 1–3 of §2 apply to the whole text (kill switch, busy, size).
+2. PostgreSQL's parser finds the statements (no hand-written splitting). A syntax error anywhere refuses the whole
+   script (`400 SYNTAX_ERROR`, position in the whole text). More than `limits.maxScriptStatements` (1,000) is
+   `400 TOO_MANY_STATEMENTS`.
+3. **Each statement's own text** must pass checks 5–8 of §2: exactly one statement for the parser and for pgJDBC,
+   nothing unsupported. Otherwise the whole script is refused (`400 UNSUPPORTED` or `400 GATE_DISAGREEMENT`, with
+   `statementIndex` and the position of that statement). **Nothing is sent unless every statement passes.**
+4. With `confirmDestructive`, a destructive statement anywhere needs **one** confirmation for the script
+   (`409 CONFIRMATION_REQUIRED` with every reason, and `statements`).
+5. The statements are then sent **one at a time**, each exactly as written, each with its own audit intent
+   (fail-closed: written before the statement and only after the previous one ended), its own timer and cancel, and
+   its own outcome. The session's normal transaction behaviour applies: in auto-commit each statement commits as it
+   finishes; inside a transaction (or between the script's own `BEGIN` and `COMMIT`) the user commits or rolls back
+   afterwards. Nothing is committed or rolled back for the user.
+6. The script **stops at the first statement that doesn't succeed** (error, timeout, cancel, lost connection). The
+   rest are reported as `not_run` and never reach the server. It also stops before a statement when:
+   - the user cancelled (Cancel stops the running statement and keeps the rest from starting);
+   - `standard_conforming_strings` changed: the boundaries were found with the old setting
+     (`stopReason: settings_changed`);
+   - the audit intent can't be written (`audit_unavailable`; that statement isn't sent);
+   - the session ended.
+
+The answer is `200` with `kind: "script"`: `scriptId`, `total`, `completed`, `stopReason` and `stoppedAt` (index) when
+it stopped, the final `transaction`, `durationMs`, `retrievedAt`, and `statements`: one entry per statement with
+`index`, `offset` and `length` (where it is in the text that was sent), `statementClass`, and either that statement's
+own result document (§4) or `kind: "not_run"` (with `error` when there was a reason). All statements share one
+response-size budget (`limits.maxResponseBytes`). Rows are not paged inside a script.
 
 ## 3. Execution
 
@@ -111,11 +142,31 @@ must open a new session.
 | `limits.maxCellBytes` | 64 KiB | A longer value is cut on a character boundary and listed in `truncatedCells`. |
 | `limits.maxSqlBytes` | 1 MiB | Longest accepted statement text. |
 
+| `limits.maxFetchedRows` | 10,000 | Rows one statement may deliver in all through further pages (§4a) |
+| `limits.maxScriptStatements` | 1,000 | Statements in one script (§2a) |
+
 Known limitation: pgJDBC reads up to `maxRows + 1` rows into memory before pgweb applies the byte limits. Memory per
 running statement is therefore bounded by `maxRows + 1` times the row size, not by `maxResponseBytes`. Keep
 `maxRows` moderate. Rows with huge values are the case to watch: 1001 rows of 100 MB values would be about 100 GB.
-Streaming with a cursor (`setFetchSize`) needs the JDBC connection in non-autocommit mode, which would change how
-every statement is wrapped. It is therefore a post-MVP item (Phase 9, finding P9-3).
+With a cursor (§4a) the same bound holds per page (pgJDBC holds at most two pages).
+
+### 4a. Further pages (P9-3, decided 2026-10-19)
+
+Inside a transaction (state `OPEN` before the statement), a row result larger than one response stays on a
+server-side cursor: the first `maxRows` rows come back with `results[0].more: true`. `POST …/fetch` with the
+statement's `executionId` returns the next page (same document shape, plus `fetchId` and `rowsBefore`), until the rows
+end or `limits.maxFetchedRows` is reached (`truncatedBy: "limit"`, cursor closed). Each page is audited
+(`exec_fetch`, fail-closed, linked to the statement; then `exec_fetch_outcome`) and runs under the same timer and
+cancel as a statement. The cursor is closed by the next statement or transaction action, by `COMMIT`/`ROLLBACK`, at
+the cap, and when the session ends; a fetch after that is `409 CURSOR_CLOSED`.
+
+pgJDBC can keep a cursor open only with its autocommit flag off. pgweb keeps that flag equal to PostgreSQL's own
+state: off only while a transaction is open (pgJDBC then sends no `BEGIN`, as one is already open), on again once it
+has ended (pgJDBC then has nothing to commit). The driver therefore never begins or commits anything on its own,
+and auto-commit statements, including those that can't run in a transaction (`VACUUM`, `CREATE DATABASE`), behave
+as before (`ScriptAndFetchIT`). **Outside a transaction there is no cursor**: the result is cut at `maxRows` as
+before, and the page offers *Run again in a read-only transaction*, which begins `READ ONLY` (so the statement can't
+change anything) and runs it again; the user ends that transaction with Commit or Rollback.
 
 ## 5. Transactions
 
@@ -188,6 +239,8 @@ A profile can also show a banner in the workspace (`profile.<name>.bannerText`, 
 | `exec_intent` | Before the statement is sent; must be committed (fail-closed) | `execution_id`, class, **normalised text** (comments removed, every constant replaced by `$n` by PostgreSQL's scanner), HMAC-SHA256 of the full text, length, transaction state before. |
 | `exec_outcome` | After the statement ended | `intent_id`, outcome (`success`, `error`, `timeout`, `cancelled`, `indeterminate`), SQLSTATE, row count, truncated, duration, cancel outcome, transaction states. Written best-effort: spooled and replayed if the audit DB is down at that moment. |
 | `cancel_requested`, `cancel_result` | User cancel and how every stop ended | `confirmed`, `escalated_terminated` or `unconfirmed`. |
+| `script_outcome` | A script ended (§2a) | HMAC and length of the whole script, outcome or stop reason, statements and completed count. Each statement has its own `exec_intent`/`exec_outcome` with `scriptId`, `statementIndex`, `statements`. |
+| `exec_fetch`, `exec_fetch_outcome` | Before and after a further page (§4a) | Linked to the statement's execution; page number, rows before, rows in the page. The intent is fail-closed. |
 | `session_quarantined` | The session was closed after escalation or connection loss | Reason. |
 
 With `standard_conforming_strings = off`, the scanner's view of literals is not reliable. Then **no text** is stored,

@@ -45,9 +45,10 @@ public final class SqlParser {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     /**
-     * One statement: its exact source text, top-level node type (for example {@code SelectStmt}) and parse node.
+     * One statement: its exact source text, top-level node type (for example {@code SelectStmt}), parse node, and where
+     * the text starts in the parsed input (a Java {@code String} index, 0-based).
      */
-    public record Statement(String text, String kind, JsonNode node) {
+    public record Statement(String text, String kind, JsonNode node, int offset) {
     }
 
     /** Statements, or the grammar's error with its character position (1-based, -1 if unknown). */
@@ -200,7 +201,8 @@ public final class SqlParser {
                 }
                 Iterator<String> names = raw.path("stmt").fieldNames();
                 String kind = names.hasNext() ? names.next() : "Unknown";
-                out.add(new Statement(new String(bytes, loc, len, StandardCharsets.UTF_8), kind, raw.path("stmt").path(kind)));
+                int offset = new String(bytes, 0, loc, StandardCharsets.UTF_8).length();
+                out.add(new Statement(new String(bytes, loc, len, StandardCharsets.UTF_8), kind, raw.path("stmt").path(kind), offset));
             }
             return new Parsed(List.copyOf(out), null, -1);
         } catch (IOException e) {

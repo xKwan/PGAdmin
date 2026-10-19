@@ -19,7 +19,7 @@ class ResultBuilderTest {
 
     static final Config.Limits LIMITS = new Config.Limits(1000, 10L * 1024 * 1024, 64 * 1024, 1024 * 1024,
             Duration.ofSeconds(5), Duration.ofMinutes(15), Duration.ofMinutes(10), Duration.ofMinutes(8),
-            Duration.ofMinutes(60), Duration.ofSeconds(120), 3, 50, 5, Duration.ofMinutes(5));
+            Duration.ofMinutes(60), Duration.ofSeconds(120), 3, 50, 5, Duration.ofMinutes(5), 1000, 10_000);
 
     static ExecutionEngine.ResultBuilder builder() {
         return new ExecutionEngine.ResultBuilder(LIMITS, UUID.randomUUID(), "other");

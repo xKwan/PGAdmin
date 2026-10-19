@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { describeMetadataError, describeRelation, listObjects, listSchemas, qualified, quoteIdent } from '../../api/metadata.js';
+import { describeMetadataError, describeRelation, listExtensions, listObjects, listSchemas, qualified, quoteIdent } from '../../api/metadata.js';
 import { Spinner, StatusBadge } from '../../components/common/index.jsx';
 
 const GROUPS = [
   ['table', 'Tables'],
+  ['partitioned_table', 'Partitioned tables'],
   ['view', 'Views'],
   ['materialized_view', 'Materialized views'],
   ['foreign_table', 'Foreign tables'],
@@ -13,7 +14,7 @@ const GROUPS = [
   ['aggregate', 'Aggregates'],
   ['window', 'Window functions'],
 ];
-const RELATIONS = new Set(['table', 'view', 'materialized_view', 'foreign_table']);
+const RELATIONS = new Set(['table', 'partitioned_table', 'view', 'materialized_view', 'foreign_table']);
 
 function time(iso) {
   const d = new Date(iso);
@@ -106,6 +107,24 @@ function RelationDetails({ sessionId, schema, name, version, onInsert }) {
           </ul>
         </>
       ) : null}
+      {data.triggers?.length ? (
+        <>
+          <p className="tree-group-title">Triggers</p>
+          <ul className="tree-list">
+            {data.triggers.map((t) => (
+              <li key={t.name} className="tree-leaf" title={t.definition}>
+                <span className="tree-name">{t.name}</span>
+                {t.enabled ? null : (
+                  <>
+                    {' '}
+                    <StatusBadge tone="neutral">disabled</StatusBadge>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -125,6 +144,7 @@ function ObjectNode({ sessionId, schema, object, version, onInsert }) {
         <span className="tree-name tree-flat">{label}</span>
       )}
       <NoAccess accessible={object.accessible} />
+      {object.partition ? <StatusBadge tone="neutral" title="A partition of a partitioned table">partition</StatusBadge> : null}
       <InsertButton text={qualified(schema, object.name)} label={`${schema}.${object.name}`} onInsert={onInsert} />
       {open ? <RelationDetails sessionId={sessionId} schema={schema} name={object.name} version={version} onInsert={onInsert} /> : null}
     </li>
@@ -170,17 +190,52 @@ function SchemaObjects({ sessionId, schema, all, version, onInsert }) {
   );
 }
 
+/** Extensions of the connected database, loaded when the group is opened. */
+function Extensions({ sessionId, version }) {
+  const { data, error, loading, retry } = useLoad(() => listExtensions(sessionId), `${version}:extensions`);
+  if (loading) return <Spinner label="Loading extensions" />;
+  if (error) return <LoadError error={error} onRetry={retry} />;
+  if (data.extensions.length === 0) return <p className="muted tree-empty">No extensions installed.</p>;
+  return (
+    <ul className="tree-list">
+      {data.extensions.map((e) => (
+        <li key={e.name} className="tree-leaf" title={e.comment}>
+          <span className="tree-name">{e.name}</span> <span className="muted">{e.version} · {e.schema}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** A collapsible group of the tree. */
+function Group({ title, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <li className="tree-node">
+      <button type="button" className="tree-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <span className="tree-caret" aria-hidden="true" />
+        <span className="tree-name">{title}</span>
+      </button>
+      {open ? children : null}
+    </li>
+  );
+}
+
 /**
- * The object browser (plan Phase 10, FN-11): schemas → objects → columns, indexes and constraints, loaded lazily from
- * the session's companion connection as your own role. By default only objects you have privileges on are shown;
- * "Show everything" lists all the catalog shows you, marking those you can't use. Insert puts a correctly quoted
- * name at the editor's cursor. The tree shows committed objects only.
+ * The object browser (plan Phase 10, FN-11; admin Phase 2): the connected database → schemas → objects (tables,
+ * partitioned tables and their partitions, views, sequences, routines) → columns, indexes, constraints and triggers,
+ * plus the database's extensions and the other databases you can open. Loaded lazily from the session's companion
+ * connection as your own role. By default only objects you have privileges on are shown; "Show everything" lists all
+ * the catalog shows you, marking those you can't use. Insert puts a correctly quoted name at the editor's cursor.
+ * The tree shows committed objects only; `refreshKey` changes (after a committed change to objects) reload it.
  */
-export default function ObjectExplorer({ sessionId, onInsert }) {
+export default function ObjectExplorer({ sessionId, onInsert, database = null, databases = [], refreshKey = 0, onSwitch = null }) {
   const [all, setAll] = useState(false);
-  const [version, setVersion] = useState(0);
+  const [ownVersion, setVersion] = useState(0);
   const refresh = useCallback(() => setVersion((v) => v + 1), []);
+  const version = `${refreshKey}.${ownVersion}`;
   const { data, error, loading, retry } = useLoad(() => listSchemas(sessionId, all), `${version}:${all}:${sessionId}`);
+  const others = databases.filter((d) => d.name !== database);
   return (
     <section className="object-explorer" aria-label="Objects">
       <div className="tree-toolbar">
@@ -195,11 +250,35 @@ export default function ObjectExplorer({ sessionId, onInsert }) {
       </label>
       {loading ? <Spinner label="Loading schemas" /> : null}
       {error ? <LoadError error={error} onRetry={retry} /> : null}
+      {database ? (
+        <p className="tree-database" title="The database this session is connected to">
+          <strong>{database}</strong> <span className="muted">(connected)</span>
+        </p>
+      ) : null}
       {data ? (
         <ul className="tree-list tree-root">
           {data.schemas.map((s) => (
             <SchemaNode key={`${version}:${all}:${s.name}`} sessionId={sessionId} schema={s} all={all} version={version} onInsert={onInsert} />
           ))}
+          <Group title="Extensions">
+            <Extensions sessionId={sessionId} version={version} />
+          </Group>
+          {others.length ? (
+            <Group title="Other databases">
+              <ul className="tree-list">
+                {others.map((d) => (
+                  <li key={d.name} className="tree-leaf">
+                    <span className="tree-name">{d.name}</span>
+                    {onSwitch ? (
+                      <button type="button" className="btn btn-link tree-insert" onClick={() => onSwitch(d.name)} aria-label={`Switch to ${d.name}`}>
+                        Switch
+                      </button>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </Group>
+          ) : null}
         </ul>
       ) : null}
       <p className="muted tree-note">Shows committed objects. Changes not yet committed in your transaction appear after commit and Refresh.</p>
