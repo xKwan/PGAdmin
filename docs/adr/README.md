@@ -16,3 +16,4 @@ An ADR moves to `Accepted` only on explicit stakeholder approval, recorded in th
 | [0007](0007-test-database-strategy.md) | Integration-test database strategy without Docker | D6 | **Accepted** 2026-10-15 |
 | [0008](0008-offline-dependency-process.md) | Offline dependency intake and CI platform | D7, D8 | **Accepted** 2026-10-15 |
 | [0009](0009-driver-choice.md) | PostgreSQL driver and single-statement enforcement | S3 outcome | **Accepted** 2026-10-15 |
+| [0010](0010-backup-and-restore.md) | Backup and restore of user databases | A6 | **Proposed, awaiting approval** (drafted 2026-10-20) |
