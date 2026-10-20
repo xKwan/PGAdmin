@@ -4,6 +4,7 @@ import { listProfiles } from '../api/dbsessions.js';
 import { ConfirmDialog, StatusBadge } from '../components/common/index.jsx';
 import { Splitter } from '../components/common/Splitter.jsx';
 import { ActivityPanel, DatabasePanel, RolesPanel } from '../features/admin/AdminPanels.jsx';
+import { ManagePanel } from '../features/manage/ManagePanel.jsx';
 import ConnectPanel from '../features/connections/ConnectPanel.jsx';
 import ConnectionStatus from '../features/connections/ConnectionStatus.jsx';
 import { getLastDatabase, setLastDatabase } from '../features/connections/lastDatabase.js';
@@ -120,11 +121,15 @@ function useUnsavedWarning(active) {
   }, [active]);
 }
 
-/** Read-only administration tabs next to Results and History (admin Phase 3), shown while a session is open. */
+/**
+ * Administration tabs next to Results and History, shown while a session is open: the views of admin Phase 3, and
+ * Manage (admin Phase 5), which only generates SQL for the editor.
+ */
 const ADMIN_TABS = [
   ['activity', 'Activity'],
   ['database', 'Database'],
   ['roles', 'Roles'],
+  ['manage', 'Manage'],
 ];
 const ADMIN_TAB_IDS = new Set(ADMIN_TABS.map(([id]) => id));
 
@@ -347,6 +352,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                 {lower === 'activity' ? <ActivityPanel key={session.id} sessionId={session.id} /> : null}
                 {lower === 'database' ? <DatabasePanel key={session.id} sessionId={session.id} /> : null}
                 {lower === 'roles' ? <RolesPanel key={session.id} sessionId={session.id} /> : null}
+                {lower === 'manage' ? <ManagePanel key={session.id} database={session.database} onOpen={(text, title) => tabs.open(text, title)} /> : null}
                 {ADMIN_TAB_IDS.has(lower) ? null : lower === 'results' ? (
                   <ResultView
                     execution={execution}

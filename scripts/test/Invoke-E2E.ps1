@@ -113,7 +113,7 @@ try {
         Run 'audit-bootstrap' "$psql -d postgres -v `"migrator_password=$migrator`" -v `"app_password=$appPw`" -f `"$(Join-Path $repoRoot 'deploy\sql\audit-bootstrap.sql')`""
         $setup = Join-Path $root 'setup.sql'
         Set-Content -Path $setup -Encoding ASCII -Value @(
-            "CREATE ROLE `"$role`" LOGIN NOSUPERUSER;",
+            "CREATE ROLE `"$role`" LOGIN NOSUPERUSER CREATEDB CREATEROLE;",
             "CREATE DATABASE e2e_db OWNER `"$role`";",
             # A second database of the same role, to switch to (admin Phase 1).
             "CREATE DATABASE e2e_other OWNER `"$role`";")

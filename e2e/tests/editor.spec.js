@@ -315,6 +315,75 @@ test("admin Phase 4: cancel another session's query and end that session, after 
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 5: manage a table, a database and a role through generated SQL', async ({ page }) => {
+  const problems = await watch(page);
+  await connect(page);
+  const results = page.getByRole('region', { name: 'Results' });
+  const tag = `${Date.now().toString(36)}${Math.floor(rng('manage')() * 1e6).toString(36)}`;
+  const manage = page.getByRole('region', { name: 'Manage' });
+  const generate = async (action, fields) => {
+    await page.getByRole('tab', { name: 'Manage', exact: true }).click();
+    await manage.getByLabel('What to do').selectOption(action);
+    for (const [label, value] of fields) {
+      const field = manage.getByLabel(label, { exact: true });
+      if (value === true) await field.check();
+      else await field.fill(value);
+    }
+    await manage.getByRole('button', { name: 'Open in editor' }).click();
+    last = action;
+    await expect(page.getByRole('button', { name: `${action}.sql`, exact: true }).last()).toHaveAttribute('aria-current', 'true');
+  };
+  let last = null;
+  const runScriptConfirmed = async () => {
+    await page.getByRole('button', { name: 'Run script', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Run this script?' });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Run the script' }).click();
+    // The result of this tab's script (the toolbar names the tab it came from), not the previous one.
+    await expect(results.getByText(`${last}.sql · Retrieved at`)).toBeVisible();
+    await expect(results.getByText(/All \d+ statements? completed\./)).toBeVisible();
+  };
+
+  // A table with a key, a NOT NULL column with a default, and a quoted name.
+  const table = `Managed ${tag}`;
+  await generate('create-table', [['Schema', 'public'], ['Name', table], ['Column 1 name', 'id'], ['Column 1 type', 'bigint'], ['Column 1 default', '']]);
+  await expect(page.getByRole('textbox', { name: 'SQL editor' })).toContainText(`CREATE TABLE public."${table}"`);
+  await runScriptConfirmed();
+  await generate('add-column', [['Schema', 'public'], ['Table', table], ['Column name', 'label'], ['Type', 'text'], ['NOT NULL', true], ['Default (SQL expression, optional)', "'none'"]]);
+  await runScriptConfirmed();
+  await generate('add-constraint', [['Schema', 'public'], ['Table', table], ['Columns', 'id']]);
+  await runScriptConfirmed();
+  await generate('create-index', [['Schema', 'public'], ['Table', table], ['Columns', 'label']]);
+  await runScriptConfirmed();
+  await run(page, page.getByRole('textbox', { name: 'SQL editor' }), `INSERT INTO public."${table}" (id) VALUES (1) RETURNING label`);
+  await expect(results.locator('td', { hasText: 'none' })).toBeVisible();
+
+  // A database of the role's own (the test role has CREATEDB); the connected one is refused in the form.
+  await page.getByRole('tab', { name: 'Manage', exact: true }).click();
+  await manage.getByLabel('What to do').selectOption('drop-database');
+  await manage.getByLabel('Database', { exact: true }).fill('e2e_db');
+  await expect(manage.getByRole('status')).toContainText('connected to');
+  const db = `managed_db_${tag}`;
+  await generate('create-database', [['Name', db]]);
+  await runScriptConfirmed();
+  await generate('drop-database', [['Database', db]]);
+  await runScriptConfirmed();
+
+  // A role (the test role has CREATEROLE), then clean up.
+  const r = `managed_role_${tag}`;
+  await generate('create-role', [['Name', r]]);
+  await runScriptConfirmed();
+  await generate('grant-table', [['Schema', 'public'], ['Name', table], ['SELECT', true], ['To role (or PUBLIC)', r]]);
+  await runScriptConfirmed();
+  await generate('revoke-table', [['Schema', 'public'], ['Name', table], ['SELECT', true], ['From role (or PUBLIC)', r]]);
+  await runScriptConfirmed();
+  await generate('drop-role', [['Role', r]]);
+  await runScriptConfirmed();
+  await generate('drop-relation', [['Schema', 'public'], ['Name', table]]);
+  await runScriptConfirmed();
+  expect(await problems()).toEqual([]);
+});
+
 test('the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling', async ({ page }) => {
   for (const size of [{ width: 1366, height: 768 }, { width: 1920, height: 1080 }]) {
     await page.setViewportSize(size);

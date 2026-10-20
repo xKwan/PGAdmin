@@ -123,6 +123,15 @@ Next to **Results** and **History**, three tabs show information about the serve
 - **Database**: the database's owner, your role and what it may do here, size, encoding, collation and other properties, who was granted which privileges on it, the sizes of the databases you may connect to, and the 100 largest tables you can use.
 - **Roles**: the roles on the server with their attributes, what each is a member of and who its members are, and which roles you belong to. **Show predefined roles** adds PostgreSQL's built-in `pg_*` roles. Roles and privileges are changed with SQL (`GRANT`, `REVOKE`, `ALTER ROLE`), under your own role.
 
+## 7b. Managing objects (Manage tab)
+
+**Manage** writes the SQL for common changes, so you don't have to remember the syntax. Choose what to do (create a schema or table, add a column or index, add a constraint, create a view or sequence, create or drop a database, create a role, grant privileges, …), fill in the form, and the SQL appears next to it as you type. **Open in editor** puts it in a new editor tab. **Nothing runs from the Manage tab**: you run the SQL with **Run** or **Run script**, like anything you type, as your own PostgreSQL role. Changes to the structure, privileges and drops ask for confirmation when you run them, and every statement is recorded in the audit log.
+
+- Names are quoted for you where needed (`"Sales 2027"`). Types, defaults, check conditions and view queries are SQL you write; check them in the preview.
+- The database you are connected to can't be renamed or dropped from here: switch to another database first. Dropping a database fails while anyone is connected to it; pgweb doesn't force them off.
+- Roles never get passwords (sign-in is through Windows) and can't be made superusers here.
+- What your role may do is PostgreSQL's decision: without the privilege, running the SQL fails with "permission denied".
+
 ## 8. What is recorded
 
 Every sign-in, connection and statement (each statement of a script separately, and each extra page of rows you load) is recorded in an audit trail the administrators and named auditors can review. For each statement: when, who, which server and database, the kind of statement, its outcome and row count, and the statement **with every literal value replaced** (`WHERE id = $1`). The values you type aren't stored, and neither is the full text; a keyed fingerprint lets an investigator confirm whether a given text was run. Opening an object, a definition or an administration tab is recorded by name only (for example "activity"), never what was shown. When the audit trail can't be written, statements are refused until it is back; this protects you and the organisation from unrecorded changes.
@@ -157,3 +166,5 @@ Every sign-in, connection and statement (each statement of a script separately, 
 | Your role may not … that session | PostgreSQL's rule: you need that role's privileges or `pg_signal_backend` |
 | That session has already ended | It ended before the request arrived; press Refresh |
 | Only the first … are shown. | An administration list reached its limit |
+| … is required. / … is longer than 63 bytes. / … doesn't look like a type name. (Manage) | Fill in or correct that field; no SQL is produced until the form is complete |
+| That is the database you are connected to: switch to another database first. | Rename and drop work only on other databases |
