@@ -19,6 +19,7 @@ import ObjectExplorer from '../features/explorer/ObjectExplorer.jsx';
 import SessionBar, { LostSession } from '../features/connections/SessionBar.jsx';
 import HistoryPanel from '../features/history/HistoryPanel.jsx';
 import { SaveDialog, SavedPanel } from '../features/saved/SavedPanel.jsx';
+import { describeKey, effectiveShortcuts } from '../features/settings/shortcuts.js';
 import { addHistory, clearHistory, historyEntry, readHistory } from '../features/history/queryHistory.js';
 import ResultView from '../features/results/ResultView.jsx';
 import useExecution from '../features/results/useExecution.js';
@@ -52,7 +53,13 @@ function changedObjects(result) {
  * time, stopping at the first failure), the execution mode, transaction controls, then the editor tabs. Without a
  * session or with execution switched off, SQL can still be written, opened and saved; nothing can be run.
  */
-function EditorPane({ session, executionEnabled, execution, tabs, controllers, onRun, onRunScript, onExplain, completionSource, onSaveToServer }) {
+function EditorPane({ session, executionEnabled, execution, tabs, controllers, onRun, onRunScript, onExplain, completionSource, onSaveToServer, shortcuts }) {
+  const keys = effectiveShortcuts(shortcuts || {});
+  const onCommand = (id) => {
+    if (id === 'runScript') onRunScript();
+    else if (id === 'explain') onExplain(false);
+    else if (id === 'explainAnalyze') onExplain(true);
+  };
   const failed = execution.tx.state === 'FAILED';
   const canRun = Boolean(session) && executionEnabled && !execution.running && !execution.fetching && !failed;
   return (
@@ -87,14 +94,17 @@ function EditorPane({ session, executionEnabled, execution, tabs, controllers, o
             Save to server…
           </button>
         ) : null}
-        <span className="muted">Ctrl+Enter runs the selection, or the statement at the cursor. Run script runs them all.</span>
+        <span className="muted">
+          {keys.run ? `${describeKey(keys.run)} runs the selection, or the statement at the cursor. ` : ''}
+          {keys.runScript ? `${describeKey(keys.runScript)}: Run script.` : 'Run script runs them all.'}
+        </span>
         {executionEnabled ? null : <StatusBadge tone="warn">Running SQL is switched off by the administrator</StatusBadge>}
         {executionEnabled && !session ? <StatusBadge tone="neutral">Connect to a database to run SQL</StatusBadge> : null}
         {failed ? <StatusBadge tone="danger">The transaction failed: roll back to continue</StatusBadge> : null}
       </div>
       {session && executionEnabled ? <TransactionBar execution={execution} /> : null}
       {session ? <LifetimeWarning lifetime={execution.tx.lifetime} transaction={execution.tx.state} /> : null}
-      <EditorArea tabs={tabs} controllers={controllers} canRun={canRun} onRun={onRun} completionSource={completionSource} />
+      <EditorArea tabs={tabs} controllers={controllers} canRun={canRun} onRun={onRun} completionSource={completionSource} shortcuts={shortcuts} onCommand={onCommand} />
     </>
   );
 }
@@ -157,7 +167,7 @@ const CLOSED_BY_SERVER = 'The database session was closed by the server. Anythin
  * Editor (admin Phase 2): tabs with local .sql files belong to the workspace, not to a session, so they survive
  * switching database and reconnecting; unsaved changes are confirmed before a tab or the workspace is left.
  */
-export default function Workspace({ profile, onBack, executionEnabled = false, user = null, savedQueries = false }) {
+export default function Workspace({ profile, onBack, executionEnabled = false, user = null, savedQueries = false, shortcuts = null }) {
   const [session, setSession] = useState(null);
   const [lost, setLost] = useState(null);
   const [opening, setOpening] = useState(null);
@@ -363,6 +373,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                   onExplain={explain}
                   completionSource={completionSource}
                   onSaveToServer={savedQueries ? () => setSavingTab(tabs.active) : null}
+                  shortcuts={shortcuts}
                 />
               </section>
             }

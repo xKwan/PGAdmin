@@ -691,6 +691,35 @@ test('admin Phase 12: dark mode applies at once, to the editor too, and is kept 
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 13: rebind Run to another key; the editor uses it at once, and a new page keeps it', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const results = page.getByRole('region', { name: 'Results' });
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await dialog.getByRole('button', { name: 'Change keys for Run (selection or statement at the cursor)' }).click();
+  await dialog.getByRole('textbox', { name: /^New keys for Run/ }).press('F9');
+  await expect(dialog.getByRole('row', { name: /^Run \(selection/ })).toContainText('F9');
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByText('F9 runs the selection, or the statement at the cursor.')).toBeVisible();
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+  await page.keyboard.insertText("SELECT 'f9 ran' AS via");
+  await page.keyboard.press('F9');
+  await expect(results.locator('td', { hasText: 'f9 ran' })).toBeVisible();
+  // Kept for the next page of this browser (the edited tab would ask before a reload); then back to the defaults.
+  const again = await page.context().newPage();
+  await again.goto('/');
+  await again.getByRole('button', { name: 'Settings' }).click();
+  const dialog2 = again.getByRole('dialog', { name: 'Settings' });
+  await expect(dialog2.getByRole('row', { name: /^Run \(selection/ })).toContainText('F9');
+  await dialog2.getByRole('button', { name: 'Restore the default keys' }).click();
+  await expect(dialog2.getByRole('row', { name: /^Run \(selection/ })).toContainText('Ctrl+Enter');
+  await again.close();
+  expect(await problems()).toEqual([]);
+});
+
 function quote(n) {
   return `'${n}'`;
 }

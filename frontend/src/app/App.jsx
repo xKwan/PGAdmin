@@ -95,7 +95,7 @@ function Shell() {
       <SettingsDialog open={settings} prefs={preferences.prefs} onChange={preferences.change} notSaved={preferences.notSaved} onClose={() => setSettings(false)} />
       <main className="content">
         {profile === 'audit' ? <AuditPage onBack={() => setProfile(null)} /> : null}
-        {profile && profile !== 'audit' ? <Workspace profile={profile} user={me.data.user} executionEnabled={me.data.capabilities.executionEnabled} savedQueries={Boolean(me.data.capabilities.savedQueries)} onBack={() => setProfile(null)} /> : null}
+        {profile && profile !== 'audit' ? <Workspace profile={profile} user={me.data.user} executionEnabled={me.data.capabilities.executionEnabled} savedQueries={Boolean(me.data.capabilities.savedQueries)} shortcuts={preferences.prefs.shortcuts} onBack={() => setProfile(null)} /> : null}
         {profile ? null : <LandingPage me={me.data} onOpen={setProfile} />}
       </main>
       <ToastList toasts={toasts} onDismiss={dismiss} />

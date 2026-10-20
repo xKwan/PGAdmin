@@ -69,6 +69,27 @@ describe('SqlEditor', () => {
     expect(onRun).toHaveBeenCalledWith('SELECT 1;', 0);
   });
 
+  it('uses the keys chosen in Settings, at once (admin Phase 13)', async () => {
+    const onRun = vi.fn();
+    const onCommand = vi.fn();
+    const { rerender } = render(<SqlEditor initialDoc="SELECT 1;" onRun={onRun} onCommand={onCommand} shortcuts={{ explain: 'F8' }} />);
+    screen.getByRole('textbox', { name: 'SQL editor' }).focus();
+    await userEvent.keyboard('{F8}');
+    expect(onCommand).toHaveBeenCalledWith('explain');
+    await userEvent.keyboard('{Control>}{Shift>}{Enter}{/Shift}{/Control}');
+    expect(onCommand).toHaveBeenCalledWith('runScript');
+    rerender(<SqlEditor initialDoc="SELECT 1;" onRun={onRun} onCommand={onCommand} shortcuts={{ run: 'F9', explain: null }} />);
+    screen.getByRole('textbox', { name: 'SQL editor' }).focus();
+    await userEvent.keyboard('{F9}');
+    expect(onRun).toHaveBeenCalledTimes(1);
+    onCommand.mockClear();
+    await userEvent.keyboard('{F8}');
+    expect(onCommand).not.toHaveBeenCalled();
+    rerender(<SqlEditor initialDoc="SELECT 1;" onRun={onRun} onCommand={onCommand} canRun={false} shortcuts={{ explain: 'F8' }} />);
+    await userEvent.keyboard('{F8}');
+    expect(onCommand).not.toHaveBeenCalled(); // not while running isn't allowed
+  });
+
   it('does not run when running is not allowed, and the controllerRef drives it', () => {
     const onRun = vi.fn();
     const controllerRef = createRef();

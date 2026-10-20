@@ -27,6 +27,8 @@ If you were just added to DataAdmin and the internal tile is missing, sign out o
 
 - **Colours**: **Same as Windows** (light or dark as Windows is set), **Light** or **Dark**. The change applies at once, including the SQL editor, and is kept for the next visit.
 
+- **Keyboard shortcuts in the editor**: the keys for Run, Run script, Explain, Explain analyze and commenting lines. **Change**, then press the new keys (Escape cancels); **None** removes a key; **Restore the default keys** puts them back. Keys the browser or basic editing need (copy, paste, undo, select all, find, save, Tab, Enter, …) can't be taken, and one key can't do two things. Defaults: Ctrl+Enter runs, Ctrl+Shift+Enter runs the script, Ctrl+/ comments lines; Explain has no key until you give it one.
+
 If the browser doesn't allow pgweb to keep settings (for example a private window), they last until the page is closed, and Settings says so.
 
 ## 3. Sessions
