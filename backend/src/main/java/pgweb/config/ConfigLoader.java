@@ -52,7 +52,9 @@ public final class ConfigLoader {
             "limits.idleInTransactionWarningMinutes", "limits.maxTransactionAgeMinutes", "limits.heartbeatAbandonSeconds",
             "limits.sessionsPerUser", "limits.sessionsGlobal", "limits.failedOpensPerWindow", "limits.failedOpenWindowMinutes",
             "limits.maxScriptStatements", "limits.maxFetchedRows",
-            "logging.dir", "identity.roleCase", "identity.roleOverrides", "parser.library");
+            "logging.dir", "identity.roleCase", "identity.roleOverrides", "parser.library",
+            "auditViewer.enabled", "auditViewer.host", "auditViewer.port", "auditViewer.database", "auditViewer.sslMode",
+            "auditViewer.sslRootCert");
     private static final Set<String> PROFILE_KEYS = Set.of(
             "displayName", "host", "port", "sslMode", "sslRootCert", "maintenanceDb", "requiresDataAdmin", "statementTimeoutSeconds",
             "confirmDestructive", "bannerText", "bannerTone");
@@ -129,6 +131,7 @@ public final class ConfigLoader {
             boolean execution = bool("execution.enabled", false);
             Path logDir = Path.of(str("logging.dir", "logs"));
             Path parserLibrary = Path.of(str("parser.library", "native/pg_query.dll"));
+            Optional<Config.DbProfile> auditViewer = auditViewer(prod);
 
             if (!problems.isEmpty()) {
                 throw new ConfigException(problems);
@@ -137,7 +140,7 @@ public final class ConfigLoader {
             if (!problems.isEmpty()) {
                 throw new ConfigException(problems);
             }
-            return new Config(mode, server, auth, audit, profiles, limits, execution, logDir, identity, parserLibrary);
+            return new Config(mode, server, auth, audit, profiles, limits, execution, logDir, identity, parserLibrary, auditViewer);
         }
 
         private Config.Server server(boolean prod) {
@@ -294,6 +297,32 @@ public final class ConfigLoader {
                 problems.add(prefix + "bannerTone must be one of " + new TreeSet<>(BANNER_TONES));
             }
             return new Config.DbProfile(name, display, host, port, ssl, root, maint, dataAdmin, st, confirm, banner, tone);
+        }
+
+        /**
+         * The audit viewer's target (admin Phase 9): the audit database, reached as the signed-in user. Off unless
+         * {@code auditViewer.enabled=true}; then a DNS host name is required, as for the profiles.
+         */
+        private Optional<Config.DbProfile> auditViewer(boolean prod) {
+            if (!bool("auditViewer.enabled", false)) {
+                return Optional.empty();
+            }
+            String prefix = "auditViewer.";
+            String host = str(prefix + "host", null);
+            if (host == null) {
+                problems.add(prefix + "host is required when auditViewer.enabled=true");
+            } else if (IPV4.matcher(host).matches() || host.contains(":") || !isDnsName(host)) {
+                problems.add(prefix + "host must be a DNS host name (Kerberos SPN POSTGRES/<host>; finding S7-3), not " + host);
+            }
+            int port = intRange(prefix + "port", 5432, 1, 65535);
+            String ssl = sslMode(prefix, prod);
+            Optional<Path> root = sslRootCert(prefix, ssl);
+            String database = str(prefix + "database", "pgweb_audit");
+            if (!DB_NAME.matcher(database).matches()) {
+                problems.add(prefix + "database is not a valid database name: " + database);
+            }
+            return Optional.of(new Config.DbProfile("audit", "Audit trail", host, port, ssl, root, database, false,
+                    Duration.ofSeconds(15), true, Optional.empty(), "info"));
         }
 
         private String sslMode(String prefix, boolean prod) {

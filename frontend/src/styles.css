@@ -255,6 +255,9 @@ h1 { font-size: 1.4rem; margin: 0 0 0.75rem; }
 .compare-step { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; min-width: 16rem; }
 .compare-step p { margin: 0; }
 .compare-result { margin-top: 0.6rem; }
+.audit-page { padding: 0.75rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.audit-filters { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-end; }
+.audit-details { margin: 0.4rem 0 0.8rem; }
 .manage-sql { margin: 0; padding: 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, Consolas, monospace; }
 @media (max-width: 900px) { .manage-panel { grid-template-columns: 1fr; } }
 

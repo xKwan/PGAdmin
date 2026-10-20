@@ -51,6 +51,16 @@ profile.external.port=5432
 profile.external.sslMode=verify-full
 profile.external.sslRootCert=C:\\ProgramData\\pgweb\\config\\root.crt
 
+# --- Audit viewer (admin Phase 9): off unless enabled ---------------------------------------------------------------
+# Named auditors (members of pgweb_audit_reader on the audit database) read the audit trail in the browser. pgweb
+# connects to the audit database as the signed-in user (Kerberos delegation to POSTGRES/<host>), never as itself.
+auditViewer.enabled=false
+#auditViewer.host=<audit-db-host>
+#auditViewer.port=5432
+#auditViewer.database=pgweb_audit
+#auditViewer.sslMode=verify-full
+#auditViewer.sslRootCert=C:\\ProgramData\\pgweb\\config\\root.crt
+
 # --- SQL execution: OFF until gate G4 is signed off (EXE-01) ------------------------------------------------------
 execution.enabled=false
 parser.library=native\\pg_query.dll

@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import pgweb.audit.AuditDatabase;
 import pgweb.audit.AuditService;
 import pgweb.audit.AuditSpool;
+import pgweb.auditviewer.AuditViewer;
+import pgweb.auditviewer.AuditViewerServlet;
 import pgweb.authz.Access;
 import pgweb.authz.AccessFilter;
 import pgweb.config.Config;
@@ -137,7 +139,8 @@ public final class Application implements AutoCloseable {
                 .servlet("openExternal", new DbSessionServlets.Open(sessions, "external"), Access.AUTHENTICATED, "/api/db-sessions/external")
                 .servlet("metadata", new MetadataServlet(metadata, new AdminCatalog(metadata, sessions),
                         new SessionSignals(config, metadata, sessions, audit), new SchemaSnapshot(metadata, sessions)), Access.AUTHENTICATED, "/api/metadata/*")
-                .servlet("dbSessions", new DbSessionServlets.Sessions(sessions, engine, config.limits().maxSqlBytes()), Access.AUTHENTICATED, "/api/db-sessions", "/api/db-sessions/*");
+                .servlet("dbSessions", new DbSessionServlets.Sessions(sessions, engine, config.limits().maxSqlBytes()), Access.AUTHENTICATED, "/api/db-sessions", "/api/db-sessions/*")
+                .servlet("auditSearch", new AuditViewerServlet(new AuditViewer(config, sessions, audit)), Access.AUTHENTICATED, "/api/audit/search");
         options.extraRoutes().accept(routes);
         routes.servlet("default", new StaticContentServlet(), Access.AUTHENTICATED, "/");
 
@@ -157,7 +160,8 @@ public final class Application implements AutoCloseable {
                 .filter("freshNegotiate", production
                                 ? new FreshNegotiateFilter(new WindowsAuthProviderImpl(), config.auth().protocols(), audit)
                                 : new PassThroughFilter(),
-                        Map.of(), "/api/db-sessions/internal", "/api/db-sessions/external", "/api/profiles/internal/*", "/api/profiles/external/*");
+                        Map.of(), "/api/db-sessions/internal", "/api/db-sessions/external", "/api/profiles/internal/*", "/api/profiles/external/*",
+                        "/api/audit/search");
 
         Application app;
         try {

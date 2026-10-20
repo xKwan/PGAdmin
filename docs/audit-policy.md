@@ -29,6 +29,8 @@ The audit trail records who did what, through this application, against which Po
 | `session_signal` | **Before** another session's query is cancelled or the session ended (admin Phase 4). Fail-closed: no record, no signal. `details.action` (`cancel` or `terminate`), `details.targetPid`, `details.targetUser`, `details.targetDatabase`. An attempt PostgreSQL's rule doesn't allow is recorded with `outcome` `refused` and nothing is sent |
 | `session_signal_outcome` | After the signal: `outcome` `success`, `not_sent` (the session had already gone) or `error` with its SQLSTATE; `details.action`, `details.targetPid`. Best effort |
 | `data_export` | **Before** the browser saves rows it holds as a file (admin Phase 7). Fail-closed: no record, no file. `execution_id` of the statement the rows came from, `details.format` (`csv` or `json`), `details.rows`, `details.columns`. **Never the data.** Importing a CSV file creates no event of its own: the INSERT statements it produces are audited like any script |
+| `audit_view` | **Before** a search in the audit viewer (admin Phase 9) runs. Fail-closed: no record, no search. `details`: the period, event type, user, outcome and database filters, page size and paging position. Recorded whether or not the role may read the trail |
+| `saved_query_saved`, `saved_query_deleted` | Saved queries (admin Phase 11), before the change is written. Fail-closed. The query's ID, name length, text length and the statement HMAC; **never the text** |
 | `audit_spool_replayed`, `audit_failure` | Audit infrastructure events |
 
 ## 3. Fields
@@ -80,7 +82,7 @@ The fail mode is one configuration switch, tested in both positions.
 - **Roles:** `pgweb_migrator` (deploy-time owner), `pgweb_app` (INSERT only), `pgweb_audit_reader` (SELECT, named auditors).
 - A trigger rejects UPDATE and DELETE. A hash chain makes edits and deletions detectable; a verification job checks it.
 - **Location (D4):** a separate PostgreSQL cluster/port, not administered by DataAdmin superusers, is recommended. If co-hosted on 5433, the trail is **tamper-evident only**, not tamper-proof.
-- No audit UI in the MVP; auditors query through `pgweb_audit_reader`.
+- No audit UI in the MVP; auditors query through `pgweb_audit_reader`. **Since admin Phase 9 (2026-10-20, decision A14)** an optional, read-only audit viewer (`auditViewer.enabled`, off by default) is a client for that same access: it connects to the audit database as the signed-in user, so only members of `pgweb_audit_reader` read anything, and the runtime role stays INSERT-only. Each search is recorded as `audit_view` first.
 
 ## 7. Retention and rotation (D13, requires approval)
 

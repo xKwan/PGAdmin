@@ -18,6 +18,10 @@ Every SQL execution must be audited with identity, target, outcome and timing, w
 6. **Retention:** monthly partitions; 12 months online, 7 years archived (placeholders); two-person purge.
 7. **Access:** named auditors via `pgweb_audit_reader`; no audit UI in the MVP.
 
+## Addendum (2026-10-20): audit viewer
+
+At the stakeholder's request ("audit viewer screen (read-only)", 2026-10-20), admin Phase 9 adds an optional read-only audit viewer, recorded as decision A14 (`docs/admin-phase-4-status.md` §10). It does **not** change point 7's access model: the viewer connects to the audit database as the signed-in user (Kerberos delegation), so PostgreSQL grants reading only to members of `pgweb_audit_reader`; the runtime role `pgweb_app` stays INSERT-only. It is off unless `auditViewer.enabled=true`, and every search is recorded first (`audit_view`, fail-closed). This ADR's status is unchanged.
+
 ## Consequences
 
 - An audit DB outage stops SQL execution (fail-closed); the audit DB needs monitoring and a recovery runbook.

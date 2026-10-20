@@ -235,6 +235,48 @@ public final class DbSessionManager implements AutoCloseable {
         }
     }
 
+    /** Work on a short-lived connection; see {@link #oneOff}. */
+    public interface OneOffWork<T> {
+        T run(Connection c) throws SQLException;
+    }
+
+    /**
+     * A short-lived connection as the user to a server-side target that is not a session profile (the audit viewer,
+     * admin Phase 9), with the same rules as opening a session: the failed-open limit, the mapped role, the session
+     * user checked and superusers refused. Closed when {@code work} returns. Connection failures are reported as
+     * {@code CONNECT_FAILED}; {@code work} maps its own errors.
+     */
+    public <T> T oneOff(UserContext user, Config.DbProfile target, String database, Object credential, String applicationName, OneOffWork<T> work) {
+        if (failedOpens.blocked(user.sid())) {
+            throw ApiException.tooManyRequests("Too many failed connection attempts. Try again later.");
+        }
+        String role = roles.roleFor(user);
+        Connection c;
+        try {
+            c = connector.open(credential, target, database, role, applicationName);
+        } catch (SQLException e) {
+            failedOpens.recordFailure(user.sid());
+            audit.record(AuditEvent.of(EV_CONNECT_RESULT).user(user).target(null, database, role, null, null)
+                    .outcome(OUTCOME_FAILURE, sqlstate(e), null, null, null).detail("target", target.name()));
+            throw new ApiException(422, "CONNECT_FAILED", CONNECT_FAILED);
+        }
+        try (c) {
+            ConnectionFacts facts = facts(c);
+            if (!role.equals(facts.sessionUser) || facts.superuser) {
+                failedOpens.recordFailure(user.sid());
+                audit.record(AuditEvent.of(EV_CONNECT_RESULT).user(user).target(null, database, role, facts.pid, null)
+                        .outcome("refused", null, null, null, null).detail(REASON, facts.superuser ? "superuser_refused" : "session_user_mismatch")
+                        .detail("target", target.name()));
+                throw ApiException.forbidden(facts.superuser ? "SUPERUSER_REFUSED" : "ROLE_MISMATCH",
+                        facts.superuser ? "Superuser roles can't be used through this application." : "The connection did not run as your mapped role.");
+            }
+            failedOpens.reset(user.sid());
+            return work.run(c);
+        } catch (SQLException e) {
+            throw new ApiException(422, "READ_FAILED", "The database could not be read (" + sqlstate(e) + ").");
+        }
+    }
+
     /** A session owned by this user; anything else is "not found" so IDs of others can't be probed (SEC-07, T06). */
     public DbSession get(UserContext user, String id) {
         DbSession s = id == null ? null : sessions.get(id);

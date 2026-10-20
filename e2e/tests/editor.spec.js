@@ -567,6 +567,28 @@ test('admin Phase 8: compare two schemas and two databases, and apply the genera
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 9: an auditor searches the audit trail, read only, and the search is recorded', async ({ page }) => {
+  const problems = await watch(page);
+  await connect(page); // a database session: audited
+  await page.getByRole('button', { name: '← Servers' }).click();
+  await page.getByRole('button', { name: /^Audit trail/ }).click();
+  const form = page.getByRole('form', { name: 'Search the audit trail' });
+  await form.getByLabel('User (account or SID)').fill(role);
+  await form.getByLabel('Event type').fill('db_connect_result');
+  await form.getByRole('button', { name: 'Search' }).click();
+  const table = page.getByRole('table', { name: 'Events, newest first' });
+  await expect(table.getByRole('cell', { name: 'db_connect_result', exact: true }).first()).toBeVisible();
+  await table.getByRole('button', { name: /^Details of event/ }).first().click();
+  await expect(page.getByRole('region', { name: /^Event \d+$/ })).toContainText('e2e_db');
+  // The search itself is in the trail.
+  await form.getByLabel('Event type').fill('audit_view');
+  await form.getByRole('button', { name: 'Search' }).click();
+  await expect(table.getByRole('cell', { name: 'audit_view', exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: '← Servers' }).click();
+  await expect(page.getByRole('heading', { name: 'Choose a database server' })).toBeVisible();
+  expect(await problems()).toEqual([]);
+});
+
 function quote(n) {
   return `'${n}'`;
 }

@@ -247,6 +247,31 @@ class ConfigLoaderTest {
     }
 
     @Test
+    void theAuditViewerIsOffUnlessEnabledAndThenNeedsAHostName() throws Exception {
+        assertThat(ConfigLoader.load(prod(), prodSecrets()).auditViewer()).isEmpty();
+        Properties p = prod();
+        p.setProperty("auditViewer.enabled", "true");
+        assertThatThrownBy(() -> ConfigLoader.load(p, prodSecrets()))
+                .isInstanceOfSatisfying(ConfigException.class, e -> assertThat(e.problems()).anyMatch(m -> m.contains("auditViewer.host is required")));
+        p.setProperty("auditViewer.host", "10.0.0.5");
+        assertThatThrownBy(() -> ConfigLoader.load(p, prodSecrets()))
+                .isInstanceOfSatisfying(ConfigException.class, e -> assertThat(e.problems()).anyMatch(m -> m.contains("auditViewer.host must be a DNS host name")));
+        p.setProperty("auditViewer.host", "audit.corp.example");
+        assertThatThrownBy(() -> ConfigLoader.load(p, prodSecrets()))
+                .isInstanceOfSatisfying(ConfigException.class, e -> assertThat(e.problems()).anyMatch(m -> m.contains("auditViewer.sslRootCert is required")));
+        p.setProperty("auditViewer.sslRootCert", p.getProperty("profile.external.sslRootCert"));
+        p.setProperty("auditViewer.port", "5434");
+        Config.DbProfile a = ConfigLoader.load(p, prodSecrets()).auditViewer().orElseThrow();
+        assertThat(a.host()).isEqualTo("audit.corp.example");
+        assertThat(a.port()).isEqualTo(5434);
+        assertThat(a.maintenanceDb()).isEqualTo("pgweb_audit");
+        assertThat(a.sslMode()).isEqualTo("verify-full");
+        p.setProperty("auditViewer.database", "bad name;");
+        assertThatThrownBy(() -> ConfigLoader.load(p, prodSecrets()))
+                .isInstanceOfSatisfying(ConfigException.class, e -> assertThat(e.problems()).anyMatch(m -> m.contains("auditViewer.database is not a valid")));
+    }
+
+    @Test
     void missingModeIsReported() throws Exception {
         Properties p = prod();
         p.remove("pgweb.mode");

@@ -28,6 +28,14 @@ export default function LandingPage({ me, onOpen }) {
         ) : null}
       </div>
       {!caps.internal && !caps.external ? <p>No database servers are configured for you. Contact the administrator.</p> : null}
+      {caps.auditViewer ? (
+        <div className="cards">
+          <button type="button" className="card" onClick={() => onOpen('audit')}>
+            <span className="card-title">Audit trail</span>
+            <span className="card-body">For auditors: search what was done through pgweb. Read only; your PostgreSQL role decides whether you may read it.</span>
+          </button>
+        </div>
+      ) : null}
       {!caps.executionEnabled ? (
         <p className="landing-note">
           <StatusBadge tone="warn">Read only</StatusBadge> Running SQL is currently switched off by the administrator.

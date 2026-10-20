@@ -116,7 +116,9 @@ try {
             "CREATE ROLE `"$role`" LOGIN NOSUPERUSER CREATEDB CREATEROLE;",
             "CREATE DATABASE e2e_db OWNER `"$role`";",
             # A second database of the same role, to switch to (admin Phase 1).
-            "CREATE DATABASE e2e_other OWNER `"$role`";")
+            "CREATE DATABASE e2e_other OWNER `"$role`";",
+            # The test account is an auditor (admin Phase 9): the audit viewer reads as this role.
+            "GRANT pgweb_audit_reader TO `"$role`";")
         Run 'roles' "$psql -d postgres -f `"$setup`""
         $seedSql = Join-Path $root 'seed.sql'
         Set-Content -Path $seedSql -Encoding ASCII -Value @(
@@ -140,6 +142,7 @@ try {
         # The internal profile (DataAdmin only) points at the same throwaway cluster, with a banner.
         'profile.internal.host=localhost', "profile.internal.port=$pgPort", 'profile.internal.bannerText=INTERNAL', 'profile.internal.bannerTone=danger',
         'execution.enabled=true', ('parser.library=' + (& $fwd $dll)),
+        'auditViewer.enabled=true', 'auditViewer.host=localhost', "auditViewer.port=$pgPort",
         ('logging.dir=' + (& $fwd (Join-Path $root 'logs'))), ('server.workDir=' + (& $fwd (Join-Path $root 'work'))))
     Run 'migrate' "`"$java`" -jar `"$jar`" migrate --config `"$config`""
 

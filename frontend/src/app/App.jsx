@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { setUnauthenticatedHandler } from '../api/client.js';
 import { logout, useMe } from '../api/session.js';
 import { ErrorPanel, Spinner, ToastList } from '../components/common/index.jsx';
+import AuditPage from '../features/audit/AuditPage.jsx';
 import LandingPage from '../features/landing/LandingPage.jsx';
 import { Forbidden, SignInFailed, Unavailable } from './StatusPages.jsx';
 import Workspace from './Workspace.jsx';
@@ -85,7 +86,9 @@ function Shell() {
         </button>
       </header>
       <main className="content">
-        {profile ? <Workspace profile={profile} user={me.data.user} executionEnabled={me.data.capabilities.executionEnabled} onBack={() => setProfile(null)} /> : <LandingPage me={me.data} onOpen={setProfile} />}
+        {profile === 'audit' ? <AuditPage onBack={() => setProfile(null)} /> : null}
+        {profile && profile !== 'audit' ? <Workspace profile={profile} user={me.data.user} executionEnabled={me.data.capabilities.executionEnabled} onBack={() => setProfile(null)} /> : null}
+        {profile ? null : <LandingPage me={me.data} onOpen={setProfile} />}
       </main>
       <ToastList toasts={toasts} onDismiss={dismiss} />
     </div>
