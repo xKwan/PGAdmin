@@ -153,6 +153,18 @@ public final class MetadataService {
     }
 
     <T> T onCompanion(UserContext user, DbSession s, String object, String schema, Read<T> read) {
+        try {
+            T out = withCompanion(s, read);
+            audit.record(AuditEvent.of("metadata_browse").user(user).target(s.profile(), s.database(), s.role(), s.companionPid(), s.id())
+                    .detail("object", object).detail(SCHEMA, schema));
+            return out;
+        } catch (SQLException e) {
+            throw new ApiException(422, "METADATA_FAILED", "The catalog could not be read (" + (e.getSQLState() == null ? "error" : e.getSQLState()) + ").");
+        }
+    }
+
+    /** Runs on the companion with its lock held; no audit (the caller records what it did). */
+    <T> T withCompanion(DbSession s, Read<T> read) throws SQLException {
         Connection companion = s.companion();
         if (companion == null) {
             throw ApiException.conflict("METADATA_UNAVAILABLE", "Object browsing isn't available for this session (Limited): connect again later.");
@@ -168,12 +180,7 @@ public final class MetadataService {
             throw ApiException.conflict("COMPANION_BUSY", "The session is busy loading other information. Try again in a moment.");
         }
         try {
-            T out = read.run(companion);
-            audit.record(AuditEvent.of("metadata_browse").user(user).target(s.profile(), s.database(), s.role(), s.companionPid(), s.id())
-                    .detail("object", object).detail(SCHEMA, schema));
-            return out;
-        } catch (SQLException e) {
-            throw new ApiException(422, "METADATA_FAILED", "The catalog could not be read (" + (e.getSQLState() == null ? "error" : e.getSQLState()) + ").");
+            return read.run(companion);
         } finally {
             s.companionLock().unlock();
         }

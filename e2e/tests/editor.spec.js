@@ -270,6 +270,51 @@ test('admin Phase 3: explain a query, open a definition, and read the activity, 
   expect(await problems()).toEqual([]);
 });
 
+test("admin Phase 4: cancel another session's query and end that session, after confirming", async ({ page, browser }) => {
+  const problems = await watch(page);
+  await connect(page);
+  // A second sign-in (another browser context) of the same Windows user runs a long statement.
+  const other = await browser.newContext();
+  const busy = await other.newPage();
+  try {
+    const busyEditor = await connect(busy);
+    const busyResults = busy.getByRole('region', { name: 'Results' });
+    await run(busy, busyEditor, 'SELECT pg_sleep(60) AS long_wait');
+    await expect(busyResults.getByText(/Running… \d+\.\d s/)).toBeVisible();
+
+    await page.getByRole('tab', { name: 'Activity', exact: true }).click();
+    const activity = page.getByRole('region', { name: 'Server activity' });
+    const row = activity.getByRole('row').filter({ hasText: 'pg_sleep(60) AS long_wait' });
+    await expect(async () => {
+      await activity.getByRole('button', { name: 'Refresh' }).click();
+      await expect(row.getByRole('button', { name: /^Cancel query of session \d+$/ })).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 20_000 });
+
+    // Cancelling asks first; Cancel in the dialog sends nothing.
+    await row.getByRole('button', { name: /^Cancel query of session/ }).click();
+    const ask = page.getByRole('dialog', { name: /^Cancel the running query of session \d+\?$/ });
+    await expect(ask).toContainText('audit log');
+    await ask.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(busyResults.getByText(/Running… \d+\.\d s/)).toBeVisible();
+    await row.getByRole('button', { name: /^Cancel query of session/ }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel query', exact: true }).click();
+    await expect(activity.getByText(/Cancel request sent to session/)).toBeVisible(); // by text: the loading spinner is a status too
+    await expect(busyResults.getByRole('alert')).toContainText(/cancel/i);
+
+    // Ending the session: the other sign-in is told its session ended and can reconnect.
+    await row.getByRole('button', { name: /^End session \d+$/ }).click();
+    await page.getByRole('dialog', { name: /^End session \d+\?$/ }).getByRole('button', { name: 'End session', exact: true }).click();
+    await expect(activity.getByText(/was told to end/)).toBeVisible();
+    await run(busy, busyEditor, 'SELECT 1');
+    await expect(busy.getByRole('button', { name: 'Reconnect to e2e_db' })).toBeVisible({ timeout: 45_000 });
+  } finally {
+    const signOut = busy.getByRole('button', { name: 'Sign out' });
+    if ((await signOut.count()) > 0) await signOut.click();
+    await other.close();
+  }
+  expect(await problems()).toEqual([]);
+});
+
 test('the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling', async ({ page }) => {
   for (const size of [{ width: 1366, height: 768 }, { width: 1920, height: 1080 }]) {
     await page.setViewportSize(size);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { describeMetadataError, getActivity, getDatabaseInfo, getRoles, getSizes } from '../../api/metadata.js';
-import { Spinner, StatusBadge } from '../../components/common/index.jsx';
+import { describeMetadataError, getActivity, getDatabaseInfo, getRoles, getSizes, signalSession } from '../../api/metadata.js';
+import { ConfirmDialog, Spinner, StatusBadge } from '../../components/common/index.jsx';
 import { formatBytes } from '../editor/sqlFiles.js';
 
 function time(iso) {
@@ -73,15 +73,35 @@ function Truncated({ show, what }) {
   ) : null;
 }
 
+const SIGNALS = {
+  cancel: { verb: 'Cancel query', title: (pid) => `Cancel the running query of session ${pid}?`, sent: (pid) => `Cancel request sent to session ${pid}.` },
+  terminate: { verb: 'End session', title: (pid) => `End session ${pid}?`, sent: (pid) => `Session ${pid} was told to end.` },
+};
+
 /**
  * Server activity (admin Phase 3): client sessions with their state, what they wait for and who blocks them, and the
  * locks of other sessions. Read once when opened and on Refresh, never polled. What other sessions show is decided
- * by PostgreSQL: details of your own sessions, everyone's only with pg_read_all_stats.
+ * by PostgreSQL (details of your own sessions, everyone's only with pg_read_all_stats); SQL text only for your own
+ * role's sessions. Admin Phase 4: another session's query can be cancelled, or the session ended, after a
+ * confirmation; the server checks your role's privileges and records it in the audit log.
  */
 export function ActivityPanel({ sessionId }) {
   const { data, error, loading, refresh } = useOnDemand(() => getActivity(sessionId), sessionId);
   const [hideIdle, setHideIdle] = useState(false);
+  const [pending, setPending] = useState(null); // {pid, action, user, database}
+  const [notice, setNotice] = useState(null); // {tone, text}
   const rows = useMemo(() => (data ? data.activity.sessions.filter((s) => !hideIdle || s.state !== 'idle') : []), [data, hideIdle]);
+  const send = async () => {
+    const p = pending;
+    setPending(null);
+    try {
+      const r = await signalSession(sessionId, p.pid, p.action, true);
+      setNotice(r.sent ? { tone: 'ok', text: SIGNALS[p.action].sent(p.pid) } : { tone: 'warn', text: `PostgreSQL did not signal session ${p.pid}: it may have ended already.` });
+      refresh();
+    } catch (e) {
+      setNotice({ tone: 'error', text: e?.message || 'The request failed.' });
+    }
+  };
   return (
     <section className="admin-panel" aria-label="Server activity">
       <Toolbar loadedAt={data?.loadedAt} onRefresh={refresh} loading={loading}>
@@ -91,6 +111,27 @@ export function ActivityPanel({ sessionId }) {
       </Toolbar>
       {loading ? <Spinner label="Loading activity" /> : null}
       {error ? <Problem error={error} onRetry={refresh} /> : null}
+      {notice ? (
+        <p className={notice.tone === 'error' ? 'result-error' : 'admin-note'} role={notice.tone === 'error' ? 'alert' : 'status'}>
+          {notice.text}
+        </p>
+      ) : null}
+      <ConfirmDialog
+        open={pending !== null}
+        title={pending ? SIGNALS[pending.action].title(pending.pid) : ''}
+        danger
+        confirmLabel={pending ? SIGNALS[pending.action].verb : 'Confirm'}
+        onConfirm={send}
+        onCancel={() => setPending(null)}
+      >
+        {pending ? (
+          <p>
+            This affects the work of <strong>{pending.user}</strong> in <strong>{pending.database}</strong>
+            {pending.action === 'terminate' ? ': the session is disconnected and an open transaction is rolled back.' : ': the running statement fails.'}{' '}
+            PostgreSQL allows it only if your role has that role&apos;s privileges or pg_signal_backend. It is recorded in the audit log.
+          </p>
+        ) : null}
+      </ConfirmDialog>
       {data ? (
         <>
           <table className="grid admin-table">
@@ -105,6 +146,9 @@ export function ActivityPanel({ sessionId }) {
                 <th scope="col">Waiting for</th>
                 <th scope="col">Running for</th>
                 <th scope="col">Query</th>
+                <th scope="col">
+                  <span className="visually-hidden">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -126,7 +170,32 @@ export function ActivityPanel({ sessionId }) {
                   <td>{s.state === 'active' ? since(s.queryStart, data.loadedAt) : ''}</td>
                   <td className="admin-query" title={s.query}>
                     {s.query}
+                    {s.queryHidden ? <span className="muted">another role&apos;s SQL is not shown</span> : null}
                     {s.queryTruncated ? <span className="muted"> …</span> : null}
+                  </td>
+                  <td className="admin-actions">
+                    {s.visible && !s.mine ? (
+                      <>
+                        {s.state === 'active' ? (
+                          <button
+                            type="button"
+                            className="btn btn-link"
+                            aria-label={`Cancel query of session ${s.pid}`}
+                            onClick={() => setPending({ pid: s.pid, action: 'cancel', user: s.user, database: s.database })}
+                          >
+                            Cancel query
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="btn btn-link"
+                          aria-label={`End session ${s.pid}`}
+                          onClick={() => setPending({ pid: s.pid, action: 'terminate', user: s.user, database: s.database })}
+                        >
+                          End session
+                        </button>
+                      </>
+                    ) : null}
                   </td>
                 </tr>
               ))}
@@ -158,8 +227,8 @@ export function ActivityPanel({ sessionId }) {
           </table>
           <Truncated show={data.activity.locksTruncated} what="1,000 locks" />
           <p className="muted admin-note">
-            Read once when opened; Refresh reads again. What you see of other users&apos; sessions depends on your PostgreSQL privileges.
-            Nothing here can cancel or end a session.
+            Read once when opened; Refresh reads again. What you see of other users&apos; sessions depends on your PostgreSQL privileges;
+            their SQL text is never shown. Cancelling a query or ending a session asks first and is recorded in the audit log.
           </p>
         </>
       ) : null}

@@ -158,3 +158,83 @@ describe('administration panels (admin Phase 3)', () => {
     expect(since(null, '2026-10-20T11:00:00Z')).toBe('');
   });
 });
+
+describe('cancelling and ending other sessions (admin Phase 4)', () => {
+  function sessions(posts, reply) {
+    const calls = [];
+    server.use(
+      http.get(`/api/metadata/${SID}/activity`, () => {
+        calls.push('activity');
+        return HttpResponse.json({
+          activity: {
+            sessions: [
+              { pid: 101, user: 'ada', database: 'sales', visible: true, state: 'idle', query: 'SELECT 1', mine: 'session' },
+              { pid: 303, user: 'bob', database: 'sales', visible: true, state: 'active', queryHidden: true, queryStart: '2026-10-20T08:00:00Z' },
+              { pid: 304, user: 'bob', database: 'sales', visible: true, state: 'idle', queryHidden: true },
+              { pid: 305, user: 'carol', database: 'sales', visible: false },
+            ],
+            locks: [],
+          },
+          loadedAt: LOADED,
+        });
+      }),
+      http.post(`/api/metadata/${SID}/signal`, async ({ request }) => {
+        const body = await request.json();
+        posts.push(body);
+        return reply(body);
+      }),
+    );
+    return calls;
+  }
+
+  it('offers the actions only for other visible sessions, asks first, and reads again afterwards', async () => {
+    const posts = [];
+    const calls = sessions(posts, (b) => HttpResponse.json({ pid: b.pid, action: b.action, sent: true }));
+    const { container } = render(<ActivityPanel sessionId={SID} />);
+    const row = (await screen.findByRole('button', { name: 'Cancel query of session 303' })).closest('tr');
+    expect(within(row).getByText("another role's SQL is not shown")).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel query of session 304' })).toBeNull(); // idle: nothing to cancel
+    expect(screen.getByRole('button', { name: 'End session 304' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /session 101$/ })).toBeNull(); // your own
+    expect(screen.queryByRole('button', { name: /session 305$/ })).toBeNull(); // not visible to you
+    expect(await axeViolations(container)).toEqual([]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel query of session 303' }));
+    const dialog = screen.getByRole('dialog', { name: 'Cancel the running query of session 303?' });
+    expect(dialog).toHaveTextContent('bob');
+    expect(dialog).toHaveTextContent('audit log');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel', exact: true }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(posts).toEqual([]);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel query of session 303' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel query' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Cancel request sent to session 303.');
+    expect(posts).toEqual([{ pid: 303, action: 'cancel', confirmed: true }]);
+    await screen.findByRole('button', { name: 'End session 304' });
+    expect(calls).toEqual(['activity', 'activity']);
+
+    await userEvent.click(screen.getByRole('button', { name: 'End session 304' }));
+    const end = screen.getByRole('dialog', { name: 'End session 304?' });
+    expect(end).toHaveTextContent('rolled back');
+    await userEvent.click(within(end).getByRole('button', { name: 'End session' }));
+    expect(posts[1]).toEqual({ pid: 304, action: 'terminate', confirmed: true });
+    expect(await screen.findByRole('status')).toHaveTextContent('Session 304 was told to end.');
+  });
+
+  it('says when PostgreSQL refused or did not send the signal', async () => {
+    const posts = [];
+    sessions(posts, (b) =>
+      b.pid === 303
+        ? HttpResponse.json({ error: { code: 'NOT_PERMITTED', message: 'Your role may not end that session.' } }, { status: 403 })
+        : HttpResponse.json({ pid: b.pid, action: b.action, sent: false }),
+    );
+    render(<ActivityPanel sessionId={SID} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'End session 303' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'End session' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Your role may not end that session.');
+    await userEvent.click(screen.getByRole('button', { name: 'End session 304' }));
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'End session' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('did not signal session 304');
+  });
+});

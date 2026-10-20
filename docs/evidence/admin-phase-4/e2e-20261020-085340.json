@@ -1,0 +1,61 @@
+﻿{
+    "tag":  "admin-phase-4",
+    "when":  "2026-10-20T08:53:40.7947642+08:00",
+    "masterSeed":  1538469215,
+    "repeat":  5,
+    "overall":  "FAIL",
+    "edge":  "155.0.4283.62",
+    "commit":  "50efc1c",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  1595423470,
+                     "ok":  false,
+                     "passed":  14,
+                     "failed":  [
+                                    "admin Phase 4: cancel another session\u0027s query and end that session, after confirming"
+                                ],
+                     "seconds":  86.7
+                 },
+                 {
+                     "run":  2,
+                     "seed":  187883072,
+                     "ok":  false,
+                     "passed":  14,
+                     "failed":  [
+                                    "admin Phase 4: cancel another session\u0027s query and end that session, after confirming"
+                                ],
+                     "seconds":  88.9
+                 },
+                 {
+                     "run":  3,
+                     "seed":  1658923422,
+                     "ok":  false,
+                     "passed":  14,
+                     "failed":  [
+                                    "admin Phase 4: cancel another session\u0027s query and end that session, after confirming"
+                                ],
+                     "seconds":  85
+                 },
+                 {
+                     "run":  4,
+                     "seed":  908924110,
+                     "ok":  false,
+                     "passed":  14,
+                     "failed":  [
+                                    "admin Phase 4: cancel another session\u0027s query and end that session, after confirming"
+                                ],
+                     "seconds":  84.6
+                 },
+                 {
+                     "run":  5,
+                     "seed":  1818227657,
+                     "ok":  false,
+                     "passed":  14,
+                     "failed":  [
+                                    "admin Phase 4: cancel another session\u0027s query and end that session, after confirming"
+                                ],
+                     "seconds":  88.4
+                 }
+             ]
+}

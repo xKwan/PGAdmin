@@ -66,5 +66,9 @@ class ArchitectureTest {
                 .and().haveRawType(String.class).and().haveNameMatching("[A-Z_]+")
                 .should().beStatic().andShould().beFinal()
                 .check(classes);
+        com.tngtech.archunit.lang.syntax.ArchRuleDefinition.fields().that().areDeclaredIn(pgweb.metadata.SessionSignals.class)
+                .and().haveRawType(String.class).and().haveNameMatching("[A-Z_]+")
+                .should().beStatic().andShould().beFinal()
+                .check(classes);
     }
 }

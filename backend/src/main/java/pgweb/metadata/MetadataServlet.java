@@ -15,6 +15,7 @@ import pgweb.web.ApiServlet;
  *   GET /api/metadata/{session}/database | activity | sizes        (admin Phase 3, read-only)
  *   GET /api/metadata/{session}/roles[?all=true]                     (all: include predefined pg_* roles)
  *   GET /api/metadata/{session}/definition?kind=…&amp;schema=…&amp;name=…[&amp;arguments=…]
+ *   POST /api/metadata/{session}/signal {pid, action: cancel|terminate, confirmed}   (admin Phase 4, a change)
  * </pre>
  * The session must belong to the caller (404 otherwise); internal sessions re-check DataAdmin on every call.
  */
@@ -23,10 +24,31 @@ public final class MetadataServlet extends ApiServlet {
     private static final long serialVersionUID = 1L;
     private final transient MetadataService metadata;
     private final transient AdminCatalog admin;
+    private final transient SessionSignals signals;
 
-    public MetadataServlet(MetadataService metadata, AdminCatalog admin) {
+    /** Body of POST …/signal. */
+    public record SignalRequest(Integer pid, String action, Boolean confirmed) {
+    }
+
+    public MetadataServlet(MetadataService metadata, AdminCatalog admin, SessionSignals signals) {
         this.metadata = metadata;
         this.admin = admin;
+        this.signals = signals;
+    }
+
+    @Override
+    protected Object post(HttpServletRequest req) {
+        UserContext user = UserContext.of(req);
+        if (user == null) {
+            throw ApiException.unauthorized();
+        }
+        String info = req.getPathInfo();
+        String[] p = info == null ? new String[0] : info.substring(1).split("/", -1);
+        if (p.length != 2 || !"signal".equals(p[1])) {
+            throw ApiException.notFound();
+        }
+        SignalRequest body = body(req, SignalRequest.class);
+        return signals.signal(user, p[0], body.pid(), body.action(), Boolean.TRUE.equals(body.confirmed()));
     }
 
     @Override

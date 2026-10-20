@@ -24,10 +24,11 @@ import java.util.Set;
  * object browser ({@link MetadataService}): constant queries, names only ever as bound parameters, a 10-second timeout,
  * one read at a time per session, and a {@code metadata_browse} audit record.
  * <ul>
- *   <li>Nothing here changes anything: no cancel or terminate of other sessions, no DDL. Definitions are text for the
- *       editor; running them goes through the execution gate like any other SQL.</li>
- *   <li>What other sessions' rows show (query text, state) is PostgreSQL's decision: a role sees the details of its
- *       own sessions, and of everyone's only with {@code pg_read_all_stats}. Nothing is shown beyond that.</li>
+ *   <li>Nothing here changes anything (cancelling or ending a session is {@link SessionSignals}). Definitions are text
+ *       for the editor; running them goes through the execution gate like any other SQL.</li>
+ *   <li>What other sessions' rows show (state, waits) is PostgreSQL's decision: a role sees the details of its own
+ *       sessions, and of everyone's only with {@code pg_read_all_stats}. Query text is narrower still: only for the
+ *       current role's own sessions (T36).</li>
  *   <li>Every list is bounded (a row cap, with {@code truncated} when it was reached) and loaded only on request, so a
  *       production server isn't polled.</li>
  * </ul>
@@ -56,13 +57,17 @@ public final class AdminCatalog {
     /**
      * Client sessions on the server. PostgreSQL hides the backend type (with the query and state) of sessions the
      * role may not see; those are kept when they belong to a database. Blockers are looked up only for sessions
-     * waiting on a lock (pg_blocking_pids is not free). Parameter: row cap + 1.
+     * waiting on a lock (pg_blocking_pids is not free). Query text is returned only for sessions of the current role
+     * (decision of 2026-10-20, T36): a role with pg_read_all_stats sees other sessions' state but not their SQL, which
+     * can contain data values. Parameter: row cap + 1.
      */
     static final String ACTIVITY = """
             SELECT a.pid, a.usename, a.datname, a.application_name, a.state, a.wait_event_type, a.wait_event,
-                   a.backend_start, a.xact_start, a.query_start, a.state_change, pg_catalog.left(a.query, 2000),
-                   pg_catalog.length(a.query) > 2000,
-                   CASE WHEN a.wait_event_type = 'Lock' THEN pg_catalog.pg_blocking_pids(a.pid) END
+                   a.backend_start, a.xact_start, a.query_start, a.state_change,
+                   CASE WHEN a.usename = current_user THEN pg_catalog.left(a.query, 2000) END,
+                   a.usename = current_user AND pg_catalog.length(a.query) > 2000,
+                   CASE WHEN a.wait_event_type = 'Lock' THEN pg_catalog.pg_blocking_pids(a.pid) END,
+                   a.query IS NOT NULL AND a.query <> '<insufficient privilege>'
             FROM pg_catalog.pg_stat_activity a
             WHERE a.backend_type = 'client backend' OR (a.backend_type IS NULL AND a.datid IS NOT NULL)
             ORDER BY a.backend_start, a.pid
@@ -201,7 +206,6 @@ public final class AdminCatalog {
     static final int MAX_ROLES = 2000;
     static final int MAX_MEMBERSHIPS = 5000;
     static final int MAX_ARGUMENTS = 4000;
-    static final String HIDDEN_QUERY = "<insufficient privilege>";
 
     private static final Set<String> DEFINABLE = Set.of("table", "partitioned_table", "view", "materialized_view", "sequence",
             "function", "procedure");
@@ -269,7 +273,7 @@ public final class AdminCatalog {
                 putIfPresent(a, "database", rs.getString(3));
                 putIfPresent(a, "application", rs.getString(4));
                 String query = rs.getString(12);
-                boolean visible = query != null && !HIDDEN_QUERY.equals(query);
+                boolean visible = rs.getBoolean(15);
                 a.put("visible", visible);
                 if (visible) {
                     putIfPresent(a, "state", rs.getString(5));
@@ -279,7 +283,11 @@ public final class AdminCatalog {
                     putIfPresent(a, "transactionStart", iso(rs, 9));
                     putIfPresent(a, "queryStart", iso(rs, 10));
                     putIfPresent(a, "stateChange", iso(rs, 11));
-                    a.put("query", query);
+                    if (query == null) {
+                        a.put("queryHidden", true);
+                    } else {
+                        a.put("query", query);
+                    }
                     if (rs.getBoolean(13)) {
                         a.put("queryTruncated", true);
                     }

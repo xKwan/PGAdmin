@@ -116,9 +116,10 @@ The object panel shows the database you're connected to, its schemas, and their 
 
 ## 7a. Administration views
 
-Next to **Results** and **History**, three tabs show information about the server, read as your own role. Each is read when you open it and when you press **Refresh**; nothing is refreshed automatically, and nothing on these tabs changes anything.
+Next to **Results** and **History**, three tabs show information about the server, read as your own role. Each is read when you open it and when you press **Refresh**; nothing is refreshed automatically. Nothing on these tabs changes anything, except **Cancel query** and **End session** on the Activity tab, which ask first.
 
-- **Activity**: the sessions on the server (your session is marked **this session**, and **browser** marks the connection pgweb uses to read the catalog for you), what they wait for, how long their statement has run, and which session blocks a waiting one (**blocked by**). Below, the locks other sessions hold or wait for. For other users' sessions PostgreSQL shows the details only to roles allowed to see them; otherwise you see "not visible to your role".
+- **Activity**: the sessions on the server (your session is marked **this session**, and **browser** marks the connection pgweb uses to read the catalog for you), what they wait for, how long their statement has run, and which session blocks a waiting one (**blocked by**). Below, the locks other sessions hold or wait for. For other users' sessions PostgreSQL shows the details only to roles allowed to see them; otherwise you see "not visible to your role". The SQL of other users' sessions is never shown ("another role's SQL is not shown"); you see the SQL of your own role's sessions.
+  - **Cancel query** (on a session running a statement) and **End session** (on any other session you can see): pgweb asks first and says whose work it affects. Ending a session disconnects it and rolls back its open transaction. PostgreSQL decides whether your role may do it: you need the privileges of that session's role (your own sessions in another browser, for example), or membership of `pg_signal_backend`. Every attempt is recorded in the audit log. Not available while running SQL is switched off. Your own pgweb session has no such buttons: use **Cancel** in the editor, or **Disconnect**.
 - **Database**: the database's owner, your role and what it may do here, size, encoding, collation and other properties, who was granted which privileges on it, the sizes of the databases you may connect to, and the 100 largest tables you can use.
 - **Roles**: the roles on the server with their attributes, what each is a member of and who its members are, and which roles you belong to. **Show predefined roles** adds PostgreSQL's built-in `pg_*` roles. Roles and privileges are changed with SQL (`GRANT`, `REVOKE`, `ALTER ROLE`), under your own role.
 
@@ -152,4 +153,7 @@ Every sign-in, connection and statement (each statement of a script separately, 
 | You have no database on this server that you can connect to. | Nobody shared a database with you on that server |
 | This statement is EXPLAIN ANALYZE, which runs the statement to measure it … | Confirm to run it; inside a transaction you can roll back afterwards |
 | not visible to your role (Activity) | Another user's session: PostgreSQL shows its details only to roles allowed to see them |
+| another role's SQL is not shown (Activity) | pgweb never shows the statements of other roles' sessions |
+| Your role may not … that session | PostgreSQL's rule: you need that role's privileges or `pg_signal_backend` |
+| That session has already ended | It ended before the request arrived; press Refresh |
 | Only the first … are shown. | An administration list reached its limit |

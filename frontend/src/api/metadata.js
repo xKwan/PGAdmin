@@ -34,6 +34,14 @@ export function getActivity(sessionId) {
   return api(`${base(sessionId)}/activity`);
 }
 
+/**
+ * Cancels another session's running query (`cancel`) or ends that session (`terminate`), admin Phase 4. The server
+ * checks the role's privileges, asks for `confirmed`, and records it in the audit log before sending the signal.
+ */
+export function signalSession(sessionId, pid, action, confirmed = false) {
+  return api(`${base(sessionId)}/signal`, { method: 'POST', body: { pid, action, confirmed } });
+}
+
 /** Sizes of the databases you may connect to and of the largest tables you can use. */
 export function getSizes(sessionId) {
   return api(`${base(sessionId)}/sizes`);

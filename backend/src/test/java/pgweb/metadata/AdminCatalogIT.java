@@ -51,6 +51,7 @@ class AdminCatalogIT {
     static TestApps apps;
     static PasswordTestConnector connector;
     static Application app;
+    static Application off;
 
     @BeforeAll
     static void start() throws Exception {
@@ -66,6 +67,7 @@ class AdminCatalogIT {
             s.execute("CREATE ROLE readers NOLOGIN");
             s.execute("CREATE ROLE lonely NOLOGIN NOINHERIT");
             s.execute("GRANT readers TO bob WITH ADMIN OPTION");
+            s.execute("GRANT pg_read_all_stats TO bob"); // sees everyone's sessions, may signal none of them
             s.execute("CREATE DATABASE adm_db OWNER adm_owner");
             s.execute("GRANT CONNECT ON DATABASE adm_db TO ada, bob");
             s.execute("COMMENT ON DATABASE adm_db IS 'Administration tests'");
@@ -113,6 +115,7 @@ class AdminCatalogIT {
             }
         }
         app = apps.app(p -> p.setProperty("execution.enabled", "true"), new Application.Options(new MockAuthFilter(), r -> { }, Clock.systemUTC(), connector));
+        off = apps.app(p -> p.setProperty("execution.enabled", "false"), new Application.Options(new MockAuthFilter(), r -> { }, Clock.systemUTC(), connector));
     }
 
     @AfterAll
@@ -448,5 +451,140 @@ class AdminCatalogIT {
             rs.next();
             assertThat(rs.getBoolean(1)).isTrue();
         }
+    }
+
+    // ------------------------------------------------------------------ admin Phase 4: signals, SQL text of others
+
+    static String signal(int pid, String action, boolean confirmed) {
+        return Json.write(Map.of("pid", pid, "action", action, "confirmed", confirmed));
+    }
+
+    /** The backend pid of a session's main connection, as its own activity view reports it. */
+    static int mainPid(String role, String id) throws Exception {
+        for (JsonNode s : ok(role, "/api/metadata/" + id + "/activity").path("activity").path("sessions")) {
+            if ("session".equals(s.path("mine").asText())) {
+                return s.path("pid").asInt();
+            }
+        }
+        throw new AssertionError("no main session in the activity of " + id);
+    }
+
+    static JsonNode row(String role, String id, int pid) throws Exception {
+        for (JsonNode s : ok(role, "/api/metadata/" + id + "/activity").path("activity").path("sessions")) {
+            if (s.path("pid").asInt() == pid) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    @Test
+    void anotherRoleSeesYourSessionButNotYourSql() throws Exception {
+        String adaId = open("ada", "1");
+        String bobId = open("bob", "2");
+        HttpResponse<String> r = CLIENTS.get("ada").post("/api/db-sessions/" + adaId + "/execute",
+                Json.write(Map.of("sql", "SELECT 'ada-secret-value' AS v")));
+        assertThat(r.statusCode()).as(r.body()).isEqualTo(200);
+        int adaPid = mainPid("ada", adaId);
+        assertThat(row("ada", adaId, adaPid).path("query").asText()).contains("ada-secret-value");
+        HttpResponse<String> seen = get("bob", "/api/metadata/" + bobId + "/activity");
+        assertThat(seen.statusCode()).isEqualTo(200);
+        assertThat(seen.body()).doesNotContain("ada-secret-value");
+        JsonNode adas = row("bob", bobId, adaPid);
+        assertThat(adas).isNotNull();
+        assertThat(adas.path("visible").asBoolean()).isTrue(); // pg_read_all_stats: the state is shown
+        assertThat(adas.path("state").asText()).isEqualTo("idle");
+        assertThat(adas.has("query")).isFalse();
+        assertThat(adas.path("queryHidden").asBoolean()).isTrue();
+        assertThat(row("bob", bobId, mainPid("bob", bobId)).has("query")).isTrue(); // your own SQL stays visible
+    }
+
+    @Test
+    void cancellingAndEndingAnotherSessionAskFirstAndAreAudited() throws Exception {
+        String one = open("ada", "1");
+        String two = open("ada", "1");
+        MockClient ada = CLIENTS.get("ada");
+        int onePid = mainPid("ada", one);
+        int twoPid = mainPid("ada", two);
+        String path = "/api/metadata/" + one + "/signal";
+        HttpResponse<String> own = ada.post(path, signal(onePid, "cancel", true));
+        assertThat(own.statusCode()).isEqualTo(400);
+        assertThat(own.body()).contains("OWN_SESSION");
+        assertThat(ada.post(path, "{\"pid\":" + twoPid + ",\"action\":\"kill\"}").body()).contains("INVALID_ACTION");
+        assertThat(ada.post(path, "{\"pid\":0,\"action\":\"cancel\"}").body()).contains("INVALID_PID");
+        assertThat(ada.post(path, "{\"action\":\"cancel\"}").body()).contains("INVALID_PID");
+        assertThat(ada.post(path, signal(2_000_000_000, "cancel", true)).statusCode()).isEqualTo(404);
+        assertThat(ada.post("/api/metadata/" + one + "/nothing", signal(twoPid, "cancel", true)).statusCode()).isEqualTo(404);
+
+        CompletableFuture<HttpResponse<String>> running = CompletableFuture.supplyAsync(() -> {
+            try {
+                return ada.post("/api/db-sessions/" + two + "/execute", Json.write(Map.of("sql", "SELECT pg_sleep(30)")));
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        });
+        await().atMost(Duration.ofSeconds(10)).until(() -> {
+            JsonNode r = row("ada", one, twoPid);
+            return r != null && "active".equals(r.path("state").asText());
+        });
+        HttpResponse<String> ask = ada.post(path, signal(twoPid, "cancel", false));
+        assertThat(ask.statusCode()).isEqualTo(409);
+        assertThat(ask.body()).contains("CONFIRMATION_REQUIRED").contains("cancel_query");
+        assertThat(running.isDone()).isFalse();
+        HttpResponse<String> cancel = ada.post(path, signal(twoPid, "cancel", true));
+        assertThat(cancel.statusCode()).as(cancel.body()).isEqualTo(200);
+        assertThat(Json.mapper().readTree(cancel.body()).path("sent").asBoolean()).isTrue();
+        assertThat(running.get(20, TimeUnit.SECONDS).body()).contains("57014"); // query_canceled
+
+        HttpResponse<String> askEnd = ada.post(path, signal(twoPid, "terminate", false));
+        assertThat(askEnd.statusCode()).isEqualTo(409);
+        assertThat(askEnd.body()).contains("terminate_session");
+        HttpResponse<String> end = ada.post(path, signal(twoPid, "terminate", true));
+        assertThat(end.statusCode()).as(end.body()).isEqualTo(200);
+        await().atMost(Duration.ofSeconds(10)).until(() -> row("ada", one, twoPid) == null);
+
+        List<Map<String, Object>> intents = apps.events("session_signal", "S-1-5-21-9-9-9-1");
+        assertThat(intents).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(intents).allMatch(e -> String.valueOf(e.get("details")).contains("\"targetPid\": " + twoPid));
+        List<Map<String, Object>> outcomes = apps.events("session_signal_outcome", "S-1-5-21-9-9-9-1");
+        assertThat(outcomes).anyMatch(e -> "success".equals(e.get("outcome")) && String.valueOf(e.get("details")).contains("terminate"));
+        assertThat(outcomes).anyMatch(e -> "success".equals(e.get("outcome")) && String.valueOf(e.get("details")).contains("cancel"));
+    }
+
+    @Test
+    void signalsNeedThePrivilegesOfTheTargetAndAClientSession() throws Exception {
+        String adaId = open("ada", "1");
+        String bobId = open("bob", "2");
+        MockClient bob = CLIENTS.get("bob");
+        int adaPid = mainPid("ada", adaId);
+        int bobPid = mainPid("bob", bobId);
+        // bob sees ada's session (pg_read_all_stats) but has neither ada's privileges nor pg_signal_backend.
+        HttpResponse<String> no = bob.post("/api/metadata/" + bobId + "/signal", signal(adaPid, "terminate", true));
+        assertThat(no.statusCode()).isEqualTo(403);
+        assertThat(no.body()).contains("NOT_PERMITTED");
+        assertThat(row("ada", adaId, adaPid)).isNotNull();
+        assertThat(apps.events("session_signal", "S-1-5-21-9-9-9-2")).anyMatch(e -> "refused".equals(e.get("outcome")));
+        // ada can't even see bob's session.
+        HttpResponse<String> hidden = CLIENTS.get("ada").post("/api/metadata/" + adaId + "/signal", signal(bobPid, "cancel", true));
+        assertThat(hidden.statusCode()).isEqualTo(403);
+        // Background processes are never signalled from here.
+        int checkpointer;
+        try (Connection c = apps.pg().superuser("postgres"); Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery("SELECT pid FROM pg_stat_activity WHERE backend_type = 'checkpointer'")) {
+            rs.next();
+            checkpointer = rs.getInt(1);
+        }
+        HttpResponse<String> bg = bob.post("/api/metadata/" + bobId + "/signal", signal(checkpointer, "cancel", true));
+        assertThat(bg.statusCode()).isEqualTo(400);
+        assertThat(bg.body()).contains("NOT_CLIENT_SESSION");
+    }
+
+    @Test
+    void signalsAreOffWhileExecutionIsSwitchedOff() throws Exception {
+        MockClient c = MockClient.user(off.port(), "TEST\\ada", "S-1-5-21-9-9-9-1");
+        c.me();
+        HttpResponse<String> r = c.post("/api/metadata/whatever/signal", signal(123, "cancel", true));
+        assertThat(r.statusCode()).isEqualTo(403);
+        assertThat(r.body()).contains("EXECUTION_DISABLED");
     }
 }

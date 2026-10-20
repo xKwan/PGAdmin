@@ -67,7 +67,8 @@
 | Randomised loop, first attempt | **FAIL** at run 1: every test passed, but JaCoCo branch coverage of `pgweb.metadata` was 80 % (minimum 85 %). Fixed with more `AdminCatalogIT` cases (unlogged and sub-partitioned tables, by-default identity, comments, NO CYCLE, invalid requests, NOINHERIT) | `docs/evidence/admin-phase-3/loop-20261020-010954.json` |
 | Randomised loop, 5 consecutive runs (172 frontend, 84 backend unit, 169 integration tests per run) | **PASS**, 5 of 5 consecutive | `docs/evidence/admin-phase-3/loop-20261020-013808.json` |
 | End-to-end in Edge, first attempt (14 journeys) | **FAIL**: runs 1, 4, 5 passed; run 2 failed *an expired app session signs in again by itself*; run 3 failed *an audit outage refuses execution*. Neither journey touches Phase 3 code. Run 3 was a race in the test, exposed by admin Phase 2 (the editor exists before the session): the outage began while the session was still connecting, so Run was still disabled. **Fixed** in `journeys.spec.js` (wait until Run is enabled). Run 2's cause is **not known**: the trace was overwritten by later runs; it is a timing journey (65 s idle, then Windows sign-in again) and the workstation was under memory pressure. It had not failed in any earlier recorded run | `docs/evidence/admin-phase-3/e2e-20261020-014700.json` |
-| End-to-end, second attempt with the fix | **Not completed**: Claude Code ended it for low memory before the first repetition finished. Not restarted without the stakeholder's say-so, per the host's instruction. A single repetition before the gate passed all 14 journeys | — |
+| End-to-end, second attempt with the fix | **Not completed**: Claude Code ended it for low memory before the first repetition finished. A single repetition before the gate passed all 14 journeys | — |
+| End-to-end, third attempt (2026-10-20, on the stakeholder's request, after memory was freed), 5 repetitions of 14 journeys, on this phase's commit (the JAR was built before any later change) | **PASS**, 5 of 5. *An expired app session signs in again by itself* passed in all five; its earlier failure did not recur, so its cause stays unknown (most likely the memory pressure of that night) | `docs/evidence/admin-phase-3/e2e-20261020-081620.json` |
 | Text files | **PASS** | console |
 
 Commands: `scripts\test\Invoke-TestLoop.ps1 -Tag admin-phase-3`; `scripts\test\Invoke-E2E.ps1 -Tag admin-phase-3 -Repeat 5`; `scripts\ci\Test-TextFiles.ps1`.
@@ -88,6 +89,8 @@ Commands: `scripts\test\Invoke-TestLoop.ps1 -Tag admin-phase-3`; `scripts\test\I
 
 ## 8. Not built: needs a decision first
 
+> **Decided 2026-10-20.** The stakeholder delegated these decisions ("use your own recommendation … pick the more conservative option"). What was decided, why, and how to reverse it: `docs/admin-phase-4-status.md` §10 (A1 to A12). The table below is kept as it was proposed.
+
 | Plan item | Conflict | Proposed decision |
 |---|---|---|
 | Phase 3 management screens (schemas, tables, columns, constraints, indexes, views, sequences) and generated DDL with a preview | "DDL designers" deferred (D9); generated SQL is execution, so EXE-01 and gate G4 apply | ADR: generated DDL is shown in the editor and run only through the same gate, confirmation, kill switch and audit as typed SQL (no separate execution path); G4 sign-off covers it |
@@ -103,6 +106,6 @@ Also still open from earlier: the P9-3 detail (paging only inside a transaction)
 
 ## 9. Ready for review?
 
-**For review, but the delivery gate is not complete.** The loop passed 5 consecutive runs; the E2E gate has not passed 5 repetitions: the first attempt had two failures outside Phase 3's code (one fixed test race, one unexplained timing failure), and the rerun was ended by the host for low memory. Committed and pushed so the work is not lost. Next step, on request: rerun `Invoke-E2E.ps1 -Tag admin-phase-3 -Repeat 5` on a machine with more free memory; if *an expired app session signs in again by itself* fails again, investigate it from its trace before anything else.
+**Yes.** The loop passed 5 consecutive runs and, on 2026-10-20, the E2E gate 5 repetitions. The decisions in §8 were taken on 2026-10-20 (`docs/admin-phase-4-status.md` §10).
 
 No further phase was started: everything left in the plan needs one of the decisions in §8.

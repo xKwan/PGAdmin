@@ -70,7 +70,8 @@
 | Backend targeted: `StatementGateTest`, `ResultBuilderTest`, `ArchitectureTest`, `ScriptAndFetchIT`, `MetadataIT`, `ExecutionIT`, `ConcurrencyIT`, `DbSessionSwitchIT`, `DbSessionIT` | **PASS** (single runs during development) | console |
 | Frontend: lint + 156 Vitest tests, coverage lines 99.4 %, branches 92.9 % | **PASS** (single run) | console |
 | Randomised loop, 5 consecutive runs (156 frontend, 84 backend unit, 160 integration tests per run) | **PASS**, 5 of 5 consecutive | `docs/evidence/admin-phase-2/loop-20261020-004032.json` |
-| End-to-end in Edge, 5 repetitions (13 journeys each) | **4 repetitions PASS, the 5th interrupted**: Claude Code ended the run because the workstation was low on memory (not a test failure; no journey had failed). Not restarted without the stakeholder's say-so, per the host's instruction. Earlier single repetitions on 2026-10-19 also passed | `docs/evidence/admin-phase-2/gate-console-20261020.log` |
+| End-to-end in Edge, 5 repetitions (13 journeys each) | **4 repetitions PASS, the 5th interrupted**: Claude Code ended the run because the workstation was low on memory (not a test failure; no journey had failed). Earlier single repetitions on 2026-10-19 also passed | `docs/evidence/admin-phase-2/gate-console-20261020.log` |
+| End-to-end, the missing 5th repetition (2026-10-20, on the stakeholder's request), run from a worktree of this phase's commit `aec554f` so it tested exactly this code | **PASS**, 13 of 13 journeys. **The gate is complete: 5 of 5 repetitions passed** | `docs/evidence/admin-phase-2/e2e-20261020-082005.json` |
 | Text files | **PASS** (439 files, no control characters) | console |
 
 The first attempt of the gate (2026-10-19) was also stopped for low memory before its first run finished; the second ran with `JAVA_TOOL_OPTIONS=-Xmx2g` to keep each JVM small.
@@ -102,4 +103,4 @@ Commands: `scripts\test\Invoke-TestLoop.ps1 -Tag admin-phase-2`; `scripts\test\I
 
 ## 9. Ready for review?
 
-**Yes, for stakeholder review**, with one gap stated plainly: the loop passed 5 consecutive runs, the E2E suite 4 complete repetitions of 5 (the fifth was ended by the host for low memory, not by a failure). Committed and pushed so the work is not lost; the decisions in §8 remain open.
+**Yes.** The loop passed 5 consecutive runs and the E2E suite 5 repetitions (the fifth rerun separately on 2026-10-20 after a low-memory interruption). The decisions in §8 were taken on 2026-10-20: P9-3 stays as built (the stakeholder's decision), the Phase 3 items under `docs/admin-phase-4-status.md` §10.
