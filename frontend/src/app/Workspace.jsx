@@ -5,6 +5,7 @@ import { ConfirmDialog, StatusBadge } from '../components/common/index.jsx';
 import { Splitter } from '../components/common/Splitter.jsx';
 import { ActivityPanel, DatabasePanel, RolesPanel } from '../features/admin/AdminPanels.jsx';
 import { ManagePanel } from '../features/manage/ManagePanel.jsx';
+import { ComparePanel } from '../features/compare/ComparePanel.jsx';
 import { DataPanel } from '../features/data/DataPanel.jsx';
 import ConnectPanel from '../features/connections/ConnectPanel.jsx';
 import ConnectionStatus from '../features/connections/ConnectionStatus.jsx';
@@ -124,13 +125,14 @@ function useUnsavedWarning(active) {
 
 /**
  * Administration tabs next to Results and History, shown while a session is open: the views of admin Phase 3, and
- * Manage (admin Phase 5), which only generates SQL for the editor.
+ * Manage (admin Phase 5) and Compare (admin Phase 8), which only generate SQL for the editor.
  */
 const ADMIN_TABS = [
   ['activity', 'Activity'],
   ['database', 'Database'],
   ['roles', 'Roles'],
   ['manage', 'Manage'],
+  ['compare', 'Compare'],
 ];
 const ADMIN_TAB_IDS = new Set(ADMIN_TABS.map(([id]) => id));
 
@@ -156,6 +158,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
   const [history, setHistory] = useState(() => readHistory(profile, user?.sid));
   const [lowerTab, setLowerTab] = useState('results');
   const [dataTarget, setDataTarget] = useState(null); // {schema, name}: the table shown in the Data tab (admin Phase 6)
+  const [compareSource, setCompareSource] = useState(null); // the source schema's snapshot (admin Phase 8); survives switching database
   const [resultTab, setResultTab] = useState(null);
   const [explorerVersion, setExplorerVersion] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -374,6 +377,16 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                 {lower === 'database' ? <DatabasePanel key={session.id} sessionId={session.id} /> : null}
                 {lower === 'roles' ? <RolesPanel key={session.id} sessionId={session.id} /> : null}
                 {lower === 'manage' ? <ManagePanel key={session.id} database={session.database} onOpen={(text, title) => tabs.open(text, title)} /> : null}
+                {lower === 'compare' ? (
+                  <ComparePanel
+                    key={session.id}
+                    sessionId={session.id}
+                    database={session.database}
+                    source={compareSource}
+                    onSource={setCompareSource}
+                    onOpen={(text, title) => tabs.open(text, title)}
+                  />
+                ) : null}
                 {ADMIN_TAB_IDS.has(lower) || lower === 'data' ? null : lower === 'results' ? (
                   <ResultView
                     execution={execution}

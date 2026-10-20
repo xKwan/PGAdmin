@@ -15,6 +15,7 @@ import pgweb.web.ApiServlet;
  *   GET /api/metadata/{session}/database | activity | sizes        (admin Phase 3, read-only)
  *   GET /api/metadata/{session}/roles[?all=true]                     (all: include predefined pg_* roles)
  *   GET /api/metadata/{session}/definition?kind=…&amp;schema=…&amp;name=…[&amp;arguments=…]
+ *   GET /api/metadata/{session}/snapshot?schema=…                     (admin Phase 8, schema comparison, read-only)
  *   POST /api/metadata/{session}/signal {pid, action: cancel|terminate, confirmed}   (admin Phase 4, a change)
  * </pre>
  * The session must belong to the caller (404 otherwise); internal sessions re-check DataAdmin on every call.
@@ -25,15 +26,17 @@ public final class MetadataServlet extends ApiServlet {
     private final transient MetadataService metadata;
     private final transient AdminCatalog admin;
     private final transient SessionSignals signals;
+    private final transient SchemaSnapshot snapshots;
 
     /** Body of POST …/signal. */
     public record SignalRequest(Integer pid, String action, Boolean confirmed) {
     }
 
-    public MetadataServlet(MetadataService metadata, AdminCatalog admin, SessionSignals signals) {
+    public MetadataServlet(MetadataService metadata, AdminCatalog admin, SessionSignals signals, SchemaSnapshot snapshots) {
         this.metadata = metadata;
         this.admin = admin;
         this.signals = signals;
+        this.snapshots = snapshots;
     }
 
     @Override
@@ -72,6 +75,7 @@ public final class MetadataServlet extends ApiServlet {
             case "activity" -> admin.activity(user, p[0]);
             case "sizes" -> admin.sizes(user, p[0]);
             case "roles" -> admin.roles(user, p[0], all);
+            case "snapshot" -> snapshots.snapshot(user, p[0], req.getParameter("schema"));
             case "definition" -> admin.definition(user, p[0], req.getParameter("kind"), req.getParameter("schema"),
                     req.getParameter("name"), req.getParameter("arguments"));
             default -> throw ApiException.notFound();

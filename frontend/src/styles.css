@@ -251,6 +251,10 @@ h1 { font-size: 1.4rem; margin: 0 0 0.75rem; }
 .manage-privileges { flex-direction: row; flex-wrap: wrap; }
 .manage-column { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
 .manage-column input:not([type]) { width: 9rem; font: inherit; padding: 0.2rem 0.3rem; }
+.compare-steps { display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: flex-start; }
+.compare-step { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem; min-width: 16rem; }
+.compare-step p { margin: 0; }
+.compare-result { margin-top: 0.6rem; }
 .manage-sql { margin: 0; padding: 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, Consolas, monospace; }
 @media (max-width: 900px) { .manage-panel { grid-template-columns: 1fr; } }
 

@@ -479,6 +479,94 @@ test('admin Phase 7: export a result as CSV, and import a CSV file as reviewed I
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 8: compare two schemas and two databases, and apply the generated SQL after reading it', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const results = page.getByRole('region', { name: 'Results' });
+  const tag = `${Date.now().toString(36)}${Math.floor(rng('compare')() * 1e6).toString(36)}`;
+  const src = `cmp_src_${tag}`;
+  const tgt = `cmp_tgt_${tag}`;
+  /** Runs the editor's text as a script; DDL always asks first (confirmDestructive). */
+  const runScript = async (done) => {
+    await page.getByRole('button', { name: 'Run script', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Run this script?' }).getByRole('button', { name: 'Run the script' }).click();
+    await expect(done).toBeVisible();
+  };
+  /** Runs one DDL statement, confirming it. */
+  const runDdl = async (sql) => {
+    await run(page, page.getByRole('textbox', { name: 'SQL editor' }), sql);
+    await page.getByRole('dialog', { name: 'Run this statement?' }).getByRole('button', { name: 'Run it' }).click();
+    await expect(results.getByText(/^Completed\./)).toBeVisible();
+  };
+  const setup = [
+    `CREATE SCHEMA ${src}`,
+    `CREATE TABLE ${src}.items (id serial PRIMARY KEY, label text NOT NULL DEFAULT 'x', price numeric(10,2) CHECK (price >= 0))`,
+    `CREATE INDEX items_label ON ${src}.items (label)`,
+    `CREATE FUNCTION ${src}.stamp() RETURNS trigger LANGUAGE plpgsql AS $$BEGIN NEW.label := upper(NEW.label); RETURN NEW; END$$`,
+    `CREATE TRIGGER items_stamp BEFORE INSERT ON ${src}.items FOR EACH ROW EXECUTE FUNCTION ${src}.stamp()`,
+    `CREATE VIEW ${src}.priced AS SELECT id, price FROM ${src}.items WHERE price IS NOT NULL`,
+    `CREATE SCHEMA ${tgt}`,
+    `CREATE TABLE ${tgt}.items (id integer PRIMARY KEY, label text)`,
+    `CREATE TABLE ${tgt}.legacy (x int)`,
+  ];
+  await editor.click();
+  await page.keyboard.insertText(setup.join(';\n') + ';\n');
+  await runScript(results.getByText(`All ${setup.length} statements completed.`));
+
+  // Compare: the source schema first, then the target.
+  await page.getByRole('tab', { name: 'Compare', exact: true }).click();
+  const panel = page.getByRole('region', { name: 'Schema comparison' });
+  const compareWith = async (schema) => {
+    await panel.getByLabel(/^Schema in /).last().selectOption(schema);
+    await panel.getByRole('button', { name: 'Compare with source' }).click();
+  };
+  await panel.getByLabel(/^Schema in /).first().selectOption(src);
+  await panel.getByRole('button', { name: 'Read source' }).click();
+  await expect(panel.getByText(`e2e_db · ${src}`)).toBeVisible();
+  await compareWith(tgt);
+  const diffs = panel.getByRole('table', { name: 'Differences' });
+  await expect(diffs.getByRole('row', { name: /items\.price .*Only in source/ })).toBeVisible();
+  await expect(diffs.getByRole('row', { name: /^legacy .*Only in target/ })).toBeVisible();
+
+  // The SQL opens in a new tab; nothing has run. Run it after reading it, then compare again.
+  const title = `compare ${src} to ${tgt}.sql`;
+  await panel.getByRole('button', { name: 'Open SQL in editor' }).click();
+  await expect(page.getByRole('button', { name: title, exact: true }).last()).toHaveAttribute('aria-current', 'true');
+  const sqlEditor = page.getByRole('textbox', { name: 'SQL editor' });
+  await expect(sqlEditor).toContainText(`SET LOCAL search_path TO ${tgt};`);
+  await expect(sqlEditor).toContainText('-- DROP TABLE legacy;');
+  await runScript(results.getByText(`${title} · Retrieved at`));
+  await expect(results.getByText(/^All \d+ statements completed\.$/)).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Compare', exact: true }).click();
+  await compareWith(tgt);
+  await expect(diffs.getByRole('row')).toHaveCount(2); // the header and "legacy"
+  await expect(diffs.getByRole('row', { name: /^legacy .*Only in target/ })).toBeVisible();
+  // The copy behaves like the source: the trigger and the function came along.
+  await run(page, page.getByRole('textbox', { name: 'SQL editor' }), `INSERT INTO ${tgt}.items (price) VALUES (2) RETURNING label`);
+  await expect(results.locator('td', { hasText: /^X$/ })).toBeVisible();
+
+  // Another database: the source is kept while switching.
+  await page.getByRole('button', { name: 'Switch database' }).click();
+  await page.getByRole('region', { name: 'Switch database' }).getByRole('button', { name: /^e2e_other\b/ }).click();
+  await expect(page.getByLabel('Database session')).toContainText('e2e_other');
+  await runDdl(`CREATE SCHEMA ${tgt}`);
+  await page.getByRole('tab', { name: 'Compare', exact: true }).click();
+  await expect(panel.getByText(`e2e_db · ${src}`)).toBeVisible();
+  await compareWith(tgt);
+  await expect(panel.getByText(`e2e_other · ${tgt}`)).toBeVisible();
+  await expect(diffs.getByRole('row', { name: /^items .*Only in source/ })).toBeVisible();
+  await expect(diffs.getByRole('row', { name: /^stamp\(\) .*Only in source/ })).toBeVisible();
+  await runDdl(`DROP SCHEMA ${tgt}`);
+
+  // Clean up in e2e_db.
+  await page.getByRole('button', { name: 'Switch database' }).click();
+  await page.getByRole('region', { name: 'Switch database' }).getByRole('button', { name: /^e2e_db\b/ }).click();
+  await expect(page.getByLabel('Database session')).toContainText('e2e_db');
+  await runDdl(`DROP SCHEMA ${src}, ${tgt} CASCADE`);
+  expect(await problems()).toEqual([]);
+});
+
 function quote(n) {
   return `'${n}'`;
 }

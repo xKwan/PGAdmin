@@ -598,4 +598,97 @@ class AdminCatalogIT {
         assertThat(ok("ada", "/api/metadata/" + id + "/relation?schema=adm&name=orders").path("primaryKey").toString()).isEqualTo("[\"id\"]");
         assertThat(ok("ada", "/api/metadata/" + id + "/relation?schema=adm&name=v_orders").path("primaryKey").size()).isZero();
     }
+
+    // ------------------------------------------------------------------ admin Phase 8: schema comparison snapshot
+
+    static JsonNode named(JsonNode list, String name) {
+        for (JsonNode n : list) {
+            if (name.equals(n.path("name").asText())) {
+                return n;
+            }
+        }
+        return null;
+    }
+
+    static JsonNode named(JsonNode list, String table, String name) {
+        for (JsonNode n : list) {
+            if (table.equals(n.path("table").asText()) && name.equals(n.path("name").asText())) {
+                return n;
+            }
+        }
+        return null;
+    }
+
+    @Test
+    void aSnapshotDescribesTheSchemaWithoutItsNameAndChangesNothing() throws Exception {
+        String id = open("ada", "1");
+        JsonNode body = ok("ada", "/api/metadata/" + id + "/snapshot?schema=adm");
+        assertThat(body.path("database").asText()).isEqualTo("adm_db");
+        assertThat(body.path("schema").asText()).isEqualTo("adm");
+        JsonNode snap = body.path("snapshot");
+        JsonNode rel = snap.path("relations");
+        assertThat(texts(rel, "name")).contains("orders", "events", "events_2026", "scratch", "orders_id_seq", "v_orders", "mv", "seq");
+        assertThat(named(rel, "orders").path("kind").asText()).isEqualTo("table");
+        assertThat(named(rel, "events").path("kind").asText()).isEqualTo("partitioned_table");
+        assertThat(named(rel, "events_2026").path("partition").asBoolean()).isTrue();
+        assertThat(named(rel, "scratch").path("unlogged").asBoolean()).isTrue();
+        assertThat(named(rel, "orders_id_seq").path("kind").asText()).isEqualTo("sequence"); // serial: a sequence of its own
+        assertThat(named(rel, "scratch_id_seq")).as("identity sequences come with their column").isNull();
+        // Names in the compared schema are written without it; the definitions mean the same in another schema.
+        assertThat(named(rel, "v_orders").path("definition").asText()).contains("FROM orders").doesNotContain("adm.").doesNotEndWith(";");
+        assertThat(named(rel, "mv").path("kind").asText()).isEqualTo("materialized_view");
+        JsonNode cols = snap.path("columns");
+        assertThat(named(cols, "orders", "id").path("default").asText()).isEqualTo("nextval('orders_id_seq'::regclass)");
+        assertThat(named(cols, "orders", "customer").path("notNull").asBoolean()).isTrue();
+        assertThat(named(cols, "orders", "total").path("type").asText()).isEqualTo("numeric(10,2)");
+        assertThat(named(cols, "scratch", "id").path("identity").asText()).isEqualTo("d");
+        assertThat(named(snap.path("constraints"), "orders", "orders_customer_id_fkey").path("definition").asText())
+                .isEqualTo("FOREIGN KEY (customer_id) REFERENCES customers(id)");
+        assertThat(named(snap.path("constraints"), "orders", "orders_pkey").path("type").asText()).isEqualTo("primary_key");
+        assertThat(snap.path("constraints").toString()).doesNotContain("not_null");
+        assertThat(named(snap.path("indexes"), "orders", "orders_customer_idx").path("definition").asText())
+                .isEqualTo("CREATE INDEX orders_customer_idx ON orders USING btree (customer)");
+        assertThat(snap.path("indexes").toString()).doesNotContain("orders_pkey"); // a constraint's index comes with it
+        assertThat(named(snap.path("triggers"), "orders", "orders_touch").path("definition").asText())
+                .contains(" ON orders ").contains("EXECUTE FUNCTION touch()");
+        JsonNode seq = named(snap.path("sequences"), "seq");
+        assertThat(seq.path("type").asText()).isEqualTo("integer");
+        assertThat(seq.path("increment").asText()).isEqualTo("5");
+        assertThat(seq.path("cycle").asBoolean()).isTrue();
+        List<String> routines = new ArrayList<>();
+        snap.path("routines").forEach(r -> routines.add(r.path("name").asText() + "(" + r.path("arguments").asText() + ")"));
+        assertThat(routines).contains("f(a integer, b text)", "f(a text)", "p()", "touch()").doesNotContain("agg(integer)");
+        assertThat(named(snap.path("routines"), "p").path("definition").asText()).startsWith("CREATE OR REPLACE PROCEDURE p()");
+        assertThat(snap.path("routines").get(0).path("definition").asText()).startsWith("CREATE OR REPLACE FUNCTION f(a integer");
+        // The search path was local to the snapshot's transaction: later reads see the session's own again.
+        assertThat(definition("ada", id, "view", "adm", "v_orders")).contains("FROM adm.orders");
+        // A quoted schema name is a value, never SQL.
+        JsonNode weird = ok("ada", "/api/metadata/" + id + "/snapshot?schema=" + q(WEIRD)).path("snapshot");
+        assertThat(named(weird.path("relations"), PAYLOAD)).isNotNull();
+        assertThat(named(weird.path("columns"), PAYLOAD, "col \"q\"").path("type").asText()).isEqualTo("integer");
+        assertThat(get("ada", "/api/metadata/" + id + "/snapshot?schema=nope").statusCode()).isEqualTo(404);
+        assertThat(get("ada", "/api/metadata/" + id + "/snapshot").statusCode()).isEqualTo(400);
+        assertThat(get("ada", "/api/metadata/" + id + "/snapshot?schema=" + "x".repeat(64)).statusCode()).isEqualTo(400);
+        client("bob", "2");
+        assertThat(get("bob", "/api/metadata/" + id + "/snapshot?schema=adm").statusCode()).isEqualTo(404);
+        assertThat(apps.events("metadata_browse", "S-1-5-21-9-9-9-1")).anyMatch(e -> String.valueOf(e.get("details")).contains("\"snapshot\""));
+        try (Connection c = apps.pg().superuser("adm_db"); Statement st = c.createStatement(); ResultSet rs = st.executeQuery("SELECT count(*) FROM adm.orders")) {
+            rs.next();
+            assertThat(rs.getInt(1)).isEqualTo(500);
+        }
+    }
+
+    @Test
+    void functionHeadersLoseOnlyTheirSchema() throws Exception {
+        assertThat(SchemaSnapshot.unqualifiedHeader("CREATE OR REPLACE FUNCTION \"we\"\"ird / sch\".\"F\"(a int)\n RETURNS int", false,
+                "\"we\"\"ird / sch\".\"F\"", "\"F\"")).isEqualTo("CREATE OR REPLACE FUNCTION \"F\"(a int)\n RETURNS int");
+        assertThat(SchemaSnapshot.unqualifiedHeader("CREATE OR REPLACE PROCEDURE s.p()\n", true, "s.p", "p")).isEqualTo("CREATE OR REPLACE PROCEDURE p()");
+        assertThat(SchemaSnapshot.unqualifiedHeader("something else", true, "s.p", "p")).isEqualTo("something else");
+        assertThat(SchemaSnapshot.unqualifiedTable("CREATE INDEX i ON ONLY \"S\".t USING btree (a)", "i", "\"S\".t", "t"))
+                .isEqualTo("CREATE INDEX i ON ONLY t USING btree (a)");
+        // An index whose name looks like the table clause: only the clause after the name changes.
+        assertThat(SchemaSnapshot.unqualifiedTable("CREATE UNIQUE INDEX \" ON s.t USING \" ON s.t USING gin (a)", "\" ON s.t USING \"", "s.t", "t"))
+                .isEqualTo("CREATE UNIQUE INDEX \" ON s.t USING \" ON t USING gin (a)");
+        assertThat(SchemaSnapshot.unqualifiedTable("something else", "i", "s.t", "t")).isEqualTo("something else");
+    }
 }

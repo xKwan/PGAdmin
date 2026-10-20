@@ -149,6 +149,19 @@ In a table with a primary key, and only as far as your role may change it:
 - **Import CSV…** (in the Data tab of a table you may insert into) reads a UTF-8 CSV file of up to 1 MB and 5,000 rows, with a header row naming the columns. It writes INSERT statements, in one transaction, into a new editor tab. **Nothing is imported until you press Run script**; if the script stops at an error, press **Roll back**. An empty field becomes NULL, `""` an empty text, and PostgreSQL converts each value to the column's type.
 - Backup and restore are not available in pgweb.
 
+## 7e. Comparing schemas (Compare tab)
+
+**Compare** shows how two schemas differ and writes the SQL that would make one like the other. It reads both schemas as your own role and changes nothing.
+
+1. Under **Source**, choose a schema and press **Read source**.
+2. Under **Target**, choose a schema and press **Compare with source**. To compare with a schema in another database, switch database first (**Switch database**): the source you read is kept until you press **Clear** or leave the workspace.
+3. The table lists each difference: **Only in source** (would be created), **Different** (would be changed), **Only in target**, and **Review by hand** (pgweb doesn't write SQL for it).
+4. **Open SQL in editor** puts the SQL in a new editor tab. Read it, then run it with **Run script**: it is one transaction on the target schema (`SET LOCAL search_path`), so if a statement fails, roll back and nothing has changed.
+
+Objects and columns that exist only in the target are **not dropped**: their `DROP` statements are written as comments. Tick **Drop what exists only in the target** to include them; their data is lost when the script is committed, and pgweb asks before running it.
+
+Compared: tables (columns, types, defaults, NOT NULL, unlogged), primary key, unique, check, foreign key and exclusion constraints, indexes, triggers, views, materialised views, sequences, functions and procedures. Not compared: types and domains, comments, owners and privileges, row-level security, sequence ownership and current values. Partitioned tables, partitions and foreign tables, and changes to identity or generated columns, are listed for you to handle by hand. A schema with more than 2,000 tables, views and sequences or 2,000 routines is too large to compare here.
+
 ## 8. What is recorded
 
 Every sign-in, connection and statement (each statement of a script separately, and each extra page of rows you load) is recorded in an audit trail the administrators and named auditors can review. For each statement: when, who, which server and database, the kind of statement, its outcome and row count, and the statement **with every literal value replaced** (`WHERE id = $1`). The values you type aren't stored, and neither is the full text; a keyed fingerprint lets an investigator confirm whether a given text was run. Opening an object, a definition or an administration tab is recorded by name only (for example "activity"), never what was shown. When the audit trail can't be written, statements are refused until it is back; this protects you and the organisation from unrecorded changes.
@@ -189,4 +202,5 @@ Every sign-in, connection and statement (each statement of a script separately, 
 | Nothing was saved: PostgreSQL refused it: … (Data) | A value doesn't fit the column, or a constraint or privilege refused it; nothing was changed |
 | This table has no primary key, so its rows can be read here but not changed. | Use SQL to change rows of such a table |
 | Not exported: the audit database is unavailable … | The export couldn't be recorded, so nothing was saved; try again later |
+| … too large to compare here. (Compare) | The schema has more objects than the comparison reads; compare a smaller schema |
 | Not imported: … (Import CSV) | The file isn't UTF-8 CSV, is too large, names a column the table doesn't have, or has a line with the wrong number of fields |

@@ -63,6 +63,7 @@
 | FN-21 | Table data browser; row editing for tables with a primary key, reviewed, one transaction per save | admin P6 | `rowEdit.test.js`; `data.test.jsx`; `AdminCatalogIT`; E2E | Tested (admin P6) |
 | FN-22 | Export of the rows on screen as CSV or JSON, recorded first | admin P7 | `ExportIT`; `csv.test.js`; RTL; E2E | Tested (admin P7) |
 | FN-23 | CSV import as reviewable INSERT statements | admin P7 | `csv.test.js`; `data.test.jsx`; E2E | Tested (admin P7) |
+| FN-24 | Schema comparison of two schemas, in one database or two, with the SQL to make the target like the source opened in the editor (never run) | admin P8 | `AdminCatalogIT`; `schemaDiff.test.js`; `compare.test.jsx`; E2E | Tested (admin P8) |
 | FN-18 | EXPLAIN viewer; EXPLAIN ANALYZE only after a warning | admin P3 | `StatementGateTest`; `AdminCatalogIT`; RTL; E2E | Tested (admin P3): plan tree from `EXPLAIN (FORMAT JSON)` through the normal execution path; `explain_analyze` confirmation on the server. Was on the deferred list as "EXPLAIN visualiser"; built because the stakeholder's plan asks for it (`docs/decision-log.md`, 2026-10-20) |
 
 ## 4. MVP: quality and operations

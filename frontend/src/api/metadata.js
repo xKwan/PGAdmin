@@ -52,6 +52,14 @@ export function getRoles(sessionId, all = false) {
   return api(`${base(sessionId)}/roles${all ? '?all=true' : ''}`);
 }
 
+/**
+ * A schema's structure for schema comparison (admin Phase 8): tables with columns, constraints, indexes and triggers,
+ * views, sequences and routines, with names in that schema written without it. Read-only.
+ */
+export function getSnapshot(sessionId, schema) {
+  return api(`${base(sessionId)}/snapshot?schema=${encodeURIComponent(schema)}`);
+}
+
 /** An object's definition as SQL text (never run). Routines are chosen by their identity arguments. */
 export function getDefinition(sessionId, { kind, schema, name, arguments: args }) {
   const q = new URLSearchParams({ kind, schema, name });
