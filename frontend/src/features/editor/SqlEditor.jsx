@@ -1,6 +1,6 @@
 import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab, toggleComment } from '@codemirror/commands';
-import { PostgreSQL, sql } from '@codemirror/lang-sql';
+import { keywordCompletionSource, PostgreSQL, sql } from '@codemirror/lang-sql';
 import { bracketMatching, defaultHighlightStyle, indentOnInput, syntaxHighlighting } from '@codemirror/language';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
 import { EditorSelection, EditorState } from '@codemirror/state';
@@ -16,20 +16,23 @@ export function cspNonce(doc = document) {
 /**
  * CodeMirror 6 SQL editor (plan Phase 8): PostgreSQL highlighting, bracket matching, search (Ctrl+F), comment
  * toggle (Ctrl+/), keyword completion, and Ctrl+Enter to run the selection or the statement at the cursor.
+ * `completionSource` (admin Phase 10) adds names from the catalog to the keywords; it may change between renders.
  *
  * `controllerRef` receives {run(), script(), statement(), showPosition(from, position), select(from, to), focus(), text(), selection(),
  * insert(text)} so the page can drive the editor. `onChange` is called whenever the text changes (unsaved changes).
  */
-export default function SqlEditor({ initialDoc = '', onRun, onChange, canRun = true, controllerRef, label = 'SQL editor' }) {
+export default function SqlEditor({ initialDoc = '', onRun, onChange, canRun = true, controllerRef, label = 'SQL editor', completionSource = null }) {
   const host = useRef(null);
   const view = useRef(null);
   const runRef = useRef(onRun);
   const changeRef = useRef(onChange);
   const canRunRef = useRef(canRun);
+  const completionRef = useRef(completionSource);
   useEffect(() => {
     runRef.current = onRun;
     changeRef.current = onChange;
     canRunRef.current = canRun;
+    completionRef.current = completionSource;
   });
 
   useEffect(() => {
@@ -56,7 +59,9 @@ export default function SqlEditor({ initialDoc = '', onRun, onChange, canRun = t
           indentOnInput(),
           bracketMatching(),
           closeBrackets(),
-          autocompletion(),
+          autocompletion({
+            override: [keywordCompletionSource(PostgreSQL, true), (context) => completionRef.current?.(context) ?? null],
+          }),
           highlightActiveLine(),
           highlightSelectionMatches(),
           syntaxHighlighting(defaultHighlightStyle, { fallback: true }),

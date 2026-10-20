@@ -691,4 +691,31 @@ class AdminCatalogIT {
                 .isEqualTo("CREATE UNIQUE INDEX \" ON s.t USING \" ON t USING gin (a)");
         assertThat(SchemaSnapshot.unqualifiedTable("something else", "i", "s.t", "t")).isEqualTo("something else");
     }
+
+    // ------------------------------------------------------------------ admin Phase 10: names for completion
+
+    @Test
+    void completionOffersOnlyWhatTheRoleCanUse() throws Exception {
+        String id = open("ada", "1");
+        JsonNode body = ok("ada", "/api/metadata/" + id + "/completion?schema=adm");
+        assertThat(texts(body.path("relations"), "name")).contains("orders", "customers", "v_orders", "mv", "pairs").doesNotContain("secret");
+        JsonNode total = null;
+        for (JsonNode c : body.path("columns")) {
+            if ("orders".equals(c.path("relation").asText()) && "total".equals(c.path("name").asText())) {
+                total = c;
+            }
+        }
+        assertThat(total).isNotNull();
+        assertThat(total.path("type").asText()).isEqualTo("numeric(10,2)");
+        assertThat(body.path("columns").toString()).doesNotContain("\"relation\":\"secret\"");
+        assertThat(texts(body.path("routines"), "name")).contains("f", "p");
+        assertThat(body.path("searchPath").isArray()).isTrue();
+        assertThat(body.path("truncated").asBoolean()).isFalse();
+        assertThat(texts(ok("ada", "/api/metadata/" + id + "/completion?schema=" + q(WEIRD)).path("relations"), "name")).containsExactly(PAYLOAD);
+        assertThat(ok("ada", "/api/metadata/" + id + "/completion?schema=nope").path("relations").size()).isZero();
+        assertThat(get("ada", "/api/metadata/" + id + "/completion").statusCode()).isEqualTo(400);
+        client("bob", "2");
+        assertThat(get("bob", "/api/metadata/" + id + "/completion?schema=adm").statusCode()).isEqualTo(404);
+        assertThat(apps.events("metadata_browse", "S-1-5-21-9-9-9-1")).anyMatch(e -> String.valueOf(e.get("details")).contains("\"completion\""));
+    }
 }

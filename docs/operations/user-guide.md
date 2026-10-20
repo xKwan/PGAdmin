@@ -76,6 +76,10 @@ Your databases are listed as soon as the workspace opens. Choosing one opens a *
 - **Cancel** stops a running statement. If PostgreSQL doesn't stop it within 5 seconds, pgweb ends that database connection and closes the session.
 - **"Waiting for a lock held by another session"** means another session holds a row or table you need; your statement continues when they commit or roll back, or stops at the time limit.
 
+### Completion
+
+While you type, the editor offers SQL keywords and, once you are connected, names from the database: schemas, the tables and views on your search path, the columns of the tables your statement names (also after an alias such as `o.`), and after `schema.` that schema's tables, views, functions and procedures. **Ctrl+Space** opens the list where you are; Enter or a click takes a name (quoted where needed). Only objects your role can use are offered. The names are read as your own role when the editor first needs them, one schema at a time, and again after you change objects.
+
 ### Confirmations
 
 Before `DROP`, `TRUNCATE`, `GRANT`/`REVOKE`, other `CREATE`/`ALTER`, `DO` blocks, an `UPDATE` or `DELETE` without `WHERE`, and `EXPLAIN ANALYZE`, pgweb asks you to confirm. This guards against mistakes; it doesn't limit what you may do. Your PostgreSQL privileges decide that.

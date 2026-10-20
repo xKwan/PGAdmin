@@ -53,6 +53,14 @@ export function getRoles(sessionId, all = false) {
 }
 
 /**
+ * Names for the editor's completion (admin Phase 10): the relations, columns and routines of one schema that your
+ * role can use, and the session's search path.
+ */
+export function getCompletion(sessionId, schema) {
+  return api(`${base(sessionId)}/completion?schema=${encodeURIComponent(schema)}`);
+}
+
+/**
  * A schema's structure for schema comparison (admin Phase 8): tables with columns, constraints, indexes and triggers,
  * views, sequences and routines, with names in that schema written without it. Read-only.
  */

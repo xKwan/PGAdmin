@@ -13,7 +13,7 @@ const SqlEditor = lazy(() => import('./SqlEditor.jsx'));
  * and cursor stay. `controllers.current[tabId]` is that tab's editor controller. Opening a file never runs it; files
  * are read and written in the browser only.
  */
-export default function EditorArea({ tabs, controllers, canRun, onRun, win = window }) {
+export default function EditorArea({ tabs, controllers, canRun, onRun, completionSource = null, win = window }) {
   const [closing, setClosing] = useState(null);
   const [notice, setNotice] = useState(null);
   const fileInput = useRef(null);
@@ -132,6 +132,7 @@ export default function EditorArea({ tabs, controllers, canRun, onRun, win = win
             <SqlEditor
               initialDoc={t.initialDoc}
               canRun={canRun}
+              completionSource={completionSource}
               onRun={(text, from) => onRun(t.id, text, from)}
               onChange={() => tabs.markDirty(t.id)}
               controllerRef={{

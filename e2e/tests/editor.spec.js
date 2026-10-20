@@ -589,6 +589,39 @@ test('admin Phase 9: an auditor searches the audit trail, read only, and the sea
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 10: the editor completes schema, table and column names from the catalog', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const results = page.getByRole('region', { name: 'Results' });
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+  // A table in a schema.
+  await page.keyboard.type('SELECT count(*) AS n FROM public.it');
+  const option = (name) => page.getByRole('listbox').getByRole('option', { name });
+  await option(/^items/).click();
+  // A column of the table the statement names.
+  await page.keyboard.type(' WHERE na');
+  await option(/^name/).click();
+  await page.keyboard.type(" = 'item 2500");
+  await expect(editor).toContainText("SELECT count(*) AS n FROM public.items WHERE name = 'item 2500'");
+  await page.keyboard.press('Control+Enter');
+  await expect(results.getByRole('row', { name: '1 1', exact: true })).toBeVisible();
+  // An alias.
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+  await page.keyboard.type('SELECT i.');
+  await page.keyboard.press('End');
+  await page.keyboard.type(' FROM items i');
+  await page.keyboard.press('Home');
+  for (let k = 0; k < 'SELECT i.'.length; k++) await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Control+Space');
+  await expect(option(/^id/)).toBeVisible();
+  await expect(option(/^name/)).toBeVisible();
+  await page.keyboard.press('Escape');
+  expect(await problems()).toEqual([]);
+});
+
 function quote(n) {
   return `'${n}'`;
 }

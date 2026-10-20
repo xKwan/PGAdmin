@@ -15,6 +15,7 @@ import pgweb.web.ApiServlet;
  *   GET /api/metadata/{session}/database | activity | sizes        (admin Phase 3, read-only)
  *   GET /api/metadata/{session}/roles[?all=true]                     (all: include predefined pg_* roles)
  *   GET /api/metadata/{session}/definition?kind=…&amp;schema=…&amp;name=…[&amp;arguments=…]
+ *   GET /api/metadata/{session}/completion?schema=…                   (admin Phase 10, names for the editor)
  *   GET /api/metadata/{session}/snapshot?schema=…                     (admin Phase 8, schema comparison, read-only)
  *   POST /api/metadata/{session}/signal {pid, action: cancel|terminate, confirmed}   (admin Phase 4, a change)
  * </pre>
@@ -71,6 +72,7 @@ public final class MetadataServlet extends ApiServlet {
             case "objects" -> metadata.objects(user, p[0], req.getParameter("schema"), all);
             case "relation" -> metadata.relation(user, p[0], req.getParameter("schema"), req.getParameter("name"));
             case "extensions" -> metadata.extensions(user, p[0]);
+            case "completion" -> metadata.completion(user, p[0], req.getParameter("schema"));
             case "database" -> admin.database(user, p[0]);
             case "activity" -> admin.activity(user, p[0]);
             case "sizes" -> admin.sizes(user, p[0]);

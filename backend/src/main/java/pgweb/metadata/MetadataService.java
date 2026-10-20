@@ -128,6 +128,43 @@ public final class MetadataService {
             WHERE x.indrelid = ? AND x.indisprimary
             ORDER BY k.n""";
 
+    /** Completion (admin Phase 10): relations the role can use in a schema. Parameters: schema, limit. */
+    static final String COMPLETION_RELATIONS = """
+            SELECT c.relname, c.relkind
+            FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = ? AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')
+              AND CASE WHEN c.relkind = 'S' THEN pg_catalog.has_sequence_privilege(c.oid, 'USAGE,SELECT')
+                       ELSE pg_catalog.has_table_privilege(c.oid, 'SELECT,INSERT,UPDATE,DELETE')
+                            OR pg_catalog.has_any_column_privilege(c.oid, 'SELECT,INSERT,UPDATE') END
+            ORDER BY 1
+            LIMIT ?""";
+
+    /** Completion: the columns the role can use, of those relations. Parameters: schema, limit. */
+    static final String COMPLETION_COLUMNS = """
+            SELECT c.relname, a.attname, pg_catalog.format_type(a.atttypid, a.atttypmod)
+            FROM pg_catalog.pg_attribute a
+            JOIN pg_catalog.pg_class c ON c.oid = a.attrelid
+            JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = ? AND c.relkind IN ('r', 'p', 'v', 'm', 'f') AND a.attnum > 0 AND NOT a.attisdropped
+              AND pg_catalog.has_column_privilege(c.oid, a.attnum, 'SELECT,INSERT,UPDATE,REFERENCES')
+            ORDER BY c.relname, a.attnum
+            LIMIT ?""";
+
+    /** Completion: functions and procedures the role may execute. Parameters: schema, limit. */
+    static final String COMPLETION_ROUTINES = """
+            SELECT DISTINCT p.proname, p.prokind
+            FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+            WHERE n.nspname = ? AND p.prokind IN ('f', 'p', 'a', 'w') AND pg_catalog.has_function_privilege(p.oid, 'EXECUTE')
+            ORDER BY 1
+            LIMIT ?""";
+
+    /** The companion's search path (the session's default; SET in the editor's session isn't seen). */
+    static final String SEARCH_PATH = "SELECT pg_catalog.unnest(pg_catalog.current_schemas(false))";
+
+    static final int MAX_COMPLETION_RELATIONS = 2000;
+    static final int MAX_COMPLETION_COLUMNS = 20000;
+    static final int MAX_COMPLETION_ROUTINES = 2000;
+
     /** Extensions installed in the connected database (catalog data every role can read). */
     static final String EXTENSIONS = """
             SELECT e.extname, e.extversion, n.nspname, pg_catalog.obj_description(e.oid, 'pg_extension')
@@ -344,6 +381,56 @@ public final class MetadataService {
             }
             return out;
         }));
+    }
+
+    /**
+     * Names for the editor's completion (admin Phase 10): the relations, columns and routines of one schema that the
+     * role can use, and the session's search path. Bounded; {@code truncated} when a limit was reached.
+     */
+    public Map<String, Object> completion(UserContext user, String sessionId, String schema) {
+        requireName(schema, SCHEMA);
+        DbSession s = sessions.get(user, sessionId);
+        Map<String, Object> m = onCompanion(user, s, "completion", schema, c -> {
+            Map<String, Object> out = new LinkedHashMap<>();
+            boolean[] truncated = {false};
+            out.put("relations", bounded(c, COMPLETION_RELATIONS, schema, MAX_COMPLETION_RELATIONS, truncated,
+                    rs -> Map.of(NAME, rs.getString(1), "kind", RELKINDS.getOrDefault(rs.getString(2), OTHER))));
+            out.put("columns", bounded(c, COMPLETION_COLUMNS, schema, MAX_COMPLETION_COLUMNS, truncated,
+                    rs -> Map.of("relation", rs.getString(1), NAME, rs.getString(2), "type", rs.getString(3))));
+            out.put("routines", bounded(c, COMPLETION_ROUTINES, schema, MAX_COMPLETION_ROUTINES, truncated,
+                    rs -> Map.of(NAME, rs.getString(1), "kind", PROKINDS.getOrDefault(rs.getString(2), "function"))));
+            List<String> path = new ArrayList<>();
+            try (PreparedStatement ps = prepare(c, SEARCH_PATH); ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    path.add(rs.getString(1));
+                }
+            }
+            out.put("searchPath", path);
+            out.put("truncated", truncated[0]);
+            return out;
+        });
+        m.put(SCHEMA, schema);
+        m.put("loadedAt", clock.instant().toString());
+        return m;
+    }
+
+    private static List<Map<String, Object>> bounded(Connection c, String sql, String schema, int max, boolean[] truncated, Row row)
+            throws SQLException {
+        List<Map<String, Object>> out = new ArrayList<>();
+        try (PreparedStatement ps = prepare(c, sql)) {
+            ps.setString(1, schema);
+            ps.setInt(2, max + 1);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    if (out.size() == max) {
+                        truncated[0] = true;
+                        break;
+                    }
+                    out.add(row.map(rs));
+                }
+            }
+        }
+        return out;
     }
 
     private interface Row {

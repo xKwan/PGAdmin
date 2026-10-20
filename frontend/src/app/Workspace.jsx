@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { describeReasons } from '../api/execution.js';
 import { listProfiles } from '../api/dbsessions.js';
+import { listSchemas } from '../api/metadata.js';
+import { catalogCompletionSource, createCatalog } from '../features/editor/completion.js';
 import { ConfirmDialog, StatusBadge } from '../components/common/index.jsx';
 import { Splitter } from '../components/common/Splitter.jsx';
 import { ActivityPanel, DatabasePanel, RolesPanel } from '../features/admin/AdminPanels.jsx';
@@ -49,7 +51,7 @@ function changedObjects(result) {
  * time, stopping at the first failure), the execution mode, transaction controls, then the editor tabs. Without a
  * session or with execution switched off, SQL can still be written, opened and saved; nothing can be run.
  */
-function EditorPane({ session, executionEnabled, execution, tabs, controllers, onRun, onRunScript, onExplain }) {
+function EditorPane({ session, executionEnabled, execution, tabs, controllers, onRun, onRunScript, onExplain, completionSource }) {
   const failed = execution.tx.state === 'FAILED';
   const canRun = Boolean(session) && executionEnabled && !execution.running && !execution.fetching && !failed;
   return (
@@ -86,7 +88,7 @@ function EditorPane({ session, executionEnabled, execution, tabs, controllers, o
       </div>
       {session && executionEnabled ? <TransactionBar execution={execution} /> : null}
       {session ? <LifetimeWarning lifetime={execution.tx.lifetime} transaction={execution.tx.state} /> : null}
-      <EditorArea tabs={tabs} controllers={controllers} canRun={canRun} onRun={onRun} />
+      <EditorArea tabs={tabs} controllers={controllers} canRun={canRun} onRun={onRun} completionSource={completionSource} />
     </>
   );
 }
@@ -183,6 +185,15 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
       setExplorerVersion((v) => v + 1);
     }
   }, []);
+  // Names for completion (admin Phase 10): read per schema when the editor asks, again after objects change.
+  const sessionId = session && !lost ? session.id : null;
+  const catalog = useMemo(
+    () => (sessionId ? createCatalog(sessionId, { schemas: () => listSchemas(sessionId) }) : null),
+    // explorerVersion changes when committed DDL changed objects
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sessionId, explorerVersion],
+  );
+  const completionSource = useMemo(() => catalogCompletionSource(() => catalog), [catalog]);
   const execution = useExecution(session?.id, { onSessionEnded: () => setLost(CLOSED_BY_SERVER), onFinished: recordHistory, onResult: observeResult });
   const banner = useProfileBanner(profile);
   const name = NAMES[profile] || profile;
@@ -338,6 +349,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                   onRun={runFrom}
                   onRunScript={runScript}
                   onExplain={explain}
+                  completionSource={completionSource}
                 />
               </section>
             }

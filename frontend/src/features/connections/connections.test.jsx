@@ -485,7 +485,8 @@ describe('Workspace with connections', () => {
     await waitFor(() => expect(screen.getByLabelText('Database session')).toHaveTextContent('reports'));
     expect(screen.getByRole('region', { name: 'Connection status' })).toHaveTextContent('reports');
     expect(await screen.findByRole('textbox', { name: 'SQL editor' })).toHaveTextContent('SELECT 1');
-    await waitFor(() => expect(schemaCalls).toEqual(['FirstAAAAAAAAAAAAAAAAA', 'SwitchedAAAAAAAAAAAAAA'])); // the explorer reloaded
+    // the explorer reloaded (completion may also read the first session's schemas while typing: admin Phase 10)
+    await waitFor(() => expect([...new Set(schemaCalls)]).toEqual(['FirstAAAAAAAAAAAAAAAAA', 'SwitchedAAAAAAAAAAAAAA']));
     unmount();
     render(<Workspace profile="internal" user={USER} onBack={() => {}} />);
     expect(await screen.findByRole('button', { name: 'Connect to reports' })).toBeInTheDocument();
