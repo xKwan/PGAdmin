@@ -1,0 +1,61 @@
+﻿{
+    "tag":  "admin-phase-14",
+    "when":  "2026-10-21T03:54:12.9311331+08:00",
+    "masterSeed":  948812920,
+    "repeat":  5,
+    "overall":  "PASS",
+    "edge":  "155.0.4283.62",
+    "commit":  "fdda117",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  1211077490,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  105.1
+                 },
+                 {
+                     "run":  2,
+                     "seed":  333532932,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  102.7
+                 },
+                 {
+                     "run":  3,
+                     "seed":  124532307,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  103.5
+                 },
+                 {
+                     "run":  4,
+                     "seed":  1675670521,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  102.4
+                 },
+                 {
+                     "run":  5,
+                     "seed":  625452948,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  102.6
+                 }
+             ]
+}

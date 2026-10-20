@@ -42,7 +42,7 @@ public final class ConfigLoader {
     private static final Set<String> KEYS = Set.of(
             "pgweb.mode",
             "server.bind", "server.port", "server.publicHost", "server.workDir", "server.tls.keystore", "server.tls.keystorePassword",
-            "auth.protocols", "auth.kerberosOnly", "auth.dataAdminSid", "auth.allowedDomains",
+            "auth.protocols", "auth.kerberosOnly", "auth.dataAdminSid", "auth.approverSid", "auth.allowedDomains",
             "auth.session.idleMinutes", "auth.session.absoluteHours",
             "audit.jdbcUrl", "audit.user", "audit.password", "audit.hmacKey", "audit.spoolDir",
             "audit.migrator.user", "audit.migrator.password", "audit.failMode",
@@ -57,7 +57,9 @@ public final class ConfigLoader {
             "auditViewer.sslRootCert", "savedQueries.enabled");
     private static final Set<String> PROFILE_KEYS = Set.of(
             "displayName", "host", "port", "sslMode", "sslRootCert", "maintenanceDb", "requiresDataAdmin", "statementTimeoutSeconds",
-            "confirmDestructive", "bannerText", "bannerTone");
+            "confirmDestructive", "bannerText", "bannerTone", "approvalReasons");
+    /** Reasons a profile may require a second person for (admin Phase 14): those of the confirmation step. */
+    static final Set<String> APPROVAL_REASONS = Set.of("drop", "truncate", "ddl", "privileges", "procedural", "no_where");
     private static final Set<String> BANNER_TONES = Set.of("info", "warn", "danger");
 
     private ConfigLoader() {
@@ -188,7 +190,11 @@ public final class ConfigLoader {
             if (idle.compareTo(absolute) > 0) {
                 problems.add("auth.session.idleMinutes must not exceed auth.session.absoluteHours");
             }
-            return new Config.Auth(Set.copyOf(protocols), kerberosOnly, sid, Set.copyOf(domains), idle, absolute);
+            String approver = str("auth.approverSid", null);
+            if (approver != null && !SID.matcher(approver).matches()) {
+                problems.add("auth.approverSid is not a SID: " + approver);
+            }
+            return new Config.Auth(Set.copyOf(protocols), kerberosOnly, sid, approver, Set.copyOf(domains), idle, absolute);
         }
 
         private Set<String> protocols(boolean prod) {
@@ -297,7 +303,22 @@ public final class ConfigLoader {
             if (!BANNER_TONES.contains(tone)) {
                 problems.add(prefix + "bannerTone must be one of " + new TreeSet<>(BANNER_TONES));
             }
-            return new Config.DbProfile(name, display, host, port, ssl, root, maint, dataAdmin, st, confirm, banner, tone);
+            List<String> approval = new ArrayList<>();
+            for (String r : list(prefix + "approvalReasons", "")) {
+                String reason = r.toLowerCase(Locale.ROOT);
+                if (!APPROVAL_REASONS.contains(reason)) {
+                    problems.add(prefix + "approvalReasons: " + r + " is not one of " + new TreeSet<>(APPROVAL_REASONS));
+                } else if (!approval.contains(reason)) {
+                    approval.add(reason);
+                }
+            }
+            if (!approval.isEmpty() && str("auth.approverSid", null) == null) {
+                problems.add(prefix + "approvalReasons needs auth.approverSid (the group whose members approve)");
+            }
+            if (!approval.isEmpty() && !confirm) {
+                problems.add(prefix + "approvalReasons needs confirmDestructive=true");
+            }
+            return new Config.DbProfile(name, display, host, port, ssl, root, maint, dataAdmin, st, confirm, banner, tone, List.copyOf(approval));
         }
 
         /**
@@ -323,7 +344,7 @@ public final class ConfigLoader {
                 problems.add(prefix + "database is not a valid database name: " + database);
             }
             return Optional.of(new Config.DbProfile("audit", "Audit trail", host, port, ssl, root, database, false,
-                    Duration.ofSeconds(15), true, Optional.empty(), "info"));
+                    Duration.ofSeconds(15), true, Optional.empty(), "info", List.of()));
         }
 
         private String sslMode(String prefix, boolean prod) {

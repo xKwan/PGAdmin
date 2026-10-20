@@ -80,6 +80,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
     private static final String REASON = "reason";
     private static final String CANCEL_REQUESTED = "cancel_requested";
     private static final String REQUEST_ID = "requestId";
+    private static final String APPROVAL_ID = "approvalId";
     private static final String SCRIPT_ID = "scriptId";
     private static final String STATEMENT_CLASS = "statementClass";
     private static final String OPEN = "OPEN";
@@ -92,6 +93,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
     private final DbSessionManager sessions;
     private final StatementGate gate;
     private final AuditService audit;
+    private final Approvals approvals;
     private final Clock clock;
     private final Canceller canceller;
     private final ScheduledExecutorService timers;
@@ -104,12 +106,18 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         this.gate = gate;
         this.audit = audit;
         this.clock = clock;
+        this.approvals = new Approvals(config, audit, clock);
         this.canceller = canceller == null ? Statement::cancel : canceller;
         this.timers = Executors.newScheduledThreadPool(2, r -> {
             Thread t = new Thread(r, "pgweb-execution-timer");
             t.setDaemon(true);
             return t;
         });
+    }
+
+    /** Two-person approvals (admin Phase 14), for the approvals endpoints. */
+    public Approvals approvals() {
+        return approvals;
     }
 
     /** Per-execution state shared with the timer and the cancel endpoint. */
@@ -301,7 +309,9 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         if (!reasons.isEmpty()) {
             throw confirmationRequired(user, s, v.statementClass(), hmac, length, reasons, requestId, Map.of());
         }
-        return runApproved(user, s, sql, v, scs, hmac, requestId, Map.of(), config.limits().maxResponseBytes(), null).result().document();
+        String approval = approvalFor(user, s, List.of(v.statement()), hmac, false, v.statementClass(), length, requestId);
+        Map<String, Object> extra = approval == null ? Map.of() : Map.of(APPROVAL_ID, approval);
+        return runApproved(user, s, sql, v, scs, hmac, requestId, extra, config.limits().maxResponseBytes(), null).result().document();
     }
 
     /** Destructive-statement reasons that still need the user's confirmation (empty when confirmed or not required). */
@@ -314,6 +324,71 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
             reasons.addAll(StatementGate.destructiveReasons(st));
         }
         return List.copyOf(reasons);
+    }
+
+    /**
+     * Two-person approval (admin Phase 14): when the profile requires it for one of the text's reasons, the run needs
+     * an approval of exactly this text, given to this user and session; it is used up here. Returns its ID, or null
+     * when none is required; without one, APPROVAL_REQUIRED (audited as a rejection, nothing runs).
+     */
+    private String approvalFor(UserContext user, DbSession s, List<SqlParser.Statement> statements, String hmac, boolean script,
+                               String statementClass, int length, String requestId) {
+        List<String> needed = approvals.required(s.profile(), allReasons(statements));
+        if (needed.isEmpty()) {
+            return null;
+        }
+        String id = approvals.consume(user, s, hmac, script);
+        if (id != null) {
+            return id;
+        }
+        audit.record(AuditEvent.of(EV_REJECTED).user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
+                .statement(statementClass, null, hmac, length, "approval_required").detail("reasons", needed).detail(REQUEST_ID, requestId));
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("reasons", needed);
+        details.put("script", script);
+        throw new ApiException(409, "APPROVAL_REQUIRED", "A second person must approve this before it runs.", details);
+    }
+
+    private static List<String> allReasons(List<SqlParser.Statement> statements) {
+        Set<String> reasons = new LinkedHashSet<>();
+        for (SqlParser.Statement st : statements) {
+            reasons.addAll(StatementGate.destructiveReasons(st));
+        }
+        return List.copyOf(reasons);
+    }
+
+    /** Admin Phase 14: checks the text with the gate and records a request for a second person's approval. */
+    @Override
+    public Map<String, Object> requestApproval(UserContext user, String sessionId, String sql, boolean script, String requestId) {
+        DbSession s = lockedSession(user, sessionId); // the kill switch, ownership, and not while a statement runs
+        try {
+            return requestLocked(user, s, sql, script, requestId);
+        } finally {
+            s.lock().unlock();
+        }
+    }
+
+    private Map<String, Object> requestLocked(UserContext user, DbSession s, String sql, boolean script, String requestId) {
+        boolean scs = standardConformingStrings(s.main());
+        List<SqlParser.Statement> statements;
+        if (script) {
+            StatementGate.ScriptVerdict sv = gate.checkScript(sql, scs, config.limits().maxScriptStatements());
+            if (!sv.approved()) {
+                throw ApiException.badRequest("NOT_RUNNABLE", sv.message());
+            }
+            statements = sv.statements().stream().map(i -> i.verdict().statement()).toList();
+        } else {
+            StatementGate.Verdict v = gate.check(sql, scs);
+            if (!v.approved()) {
+                throw ApiException.badRequest("NOT_RUNNABLE", v.message());
+            }
+            statements = List.of(v.statement());
+        }
+        List<String> needed = approvals.required(s.profile(), allReasons(statements));
+        if (needed.isEmpty()) {
+            throw ApiException.badRequest("APPROVAL_NOT_NEEDED", "This text doesn't need a second person's approval: run it.");
+        }
+        return approvals.request(user, s, audit.sqlHmac(sql), sql, script, needed, requestId);
     }
 
     private ApiException confirmationRequired(UserContext user, DbSession s, String statementClass, String hmac, int length,
@@ -440,6 +515,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         if (!reasons.isEmpty()) {
             throw confirmationRequired(user, s, "script", hmac, length, reasons, requestId, Map.of("statements", n));
         }
+        String approval = approvalFor(user, s, items.stream().map(i -> i.verdict().statement()).toList(), hmac, true, "script", length, requestId);
         Instant start = clock.instant();
         long budget = config.limits().maxResponseBytes();
         List<Map<String, Object>> out = new ArrayList<>(n);
@@ -469,7 +545,10 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
                 continue;
             }
             script.current = i;
-            Map<String, Object> extra = Map.of(SCRIPT_ID, script.scriptId.toString(), "statementIndex", i, "statements", n);
+            Map<String, Object> extra = new LinkedHashMap<>(Map.of(SCRIPT_ID, script.scriptId.toString(), "statementIndex", i, "statements", n));
+            if (approval != null) {
+                extra.put(APPROVAL_ID, approval);
+            }
             try {
                 Run r = runApproved(user, s, text, item.verdict(), scs, audit.sqlHmac(text), requestId, extra, budget, script);
                 budget = Math.max(0, budget - r.result().bytesUsed());

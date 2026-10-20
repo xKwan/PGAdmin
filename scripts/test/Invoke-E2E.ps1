@@ -135,6 +135,9 @@ try {
     Set-Content -Path $config -Encoding ASCII -Value @(
         'pgweb.mode=test', "server.port=$appPort", 'server.publicHost=localhost',
         'auth.protocols=Negotiate NTLM', 'auth.kerberosOnly=false', 'auth.dataAdminSid=S-1-5-32-545',
+        # Two-person approval (admin Phase 14): TRUNCATE on the internal profile needs a second person; the approver
+        # group is BUILTIN\Users, so the test account is an approver (but never of its own requests).
+        'auth.approverSid=S-1-5-32-545', 'profile.internal.approvalReasons=truncate',
         "audit.jdbcUrl=jdbc:postgresql://localhost:$pgPort/pgweb_audit", 'audit.user=pgweb_app', "audit.password=plain:$appPw",
         "audit.hmacKey=plain:$hmac", ('audit.spoolDir=' + (& $fwd (Join-Path $root 'spool'))),
         'audit.migrator.user=pgweb_migrator', "audit.migrator.password=plain:$migrator",

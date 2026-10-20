@@ -29,6 +29,7 @@ import java.util.Map;
  *   POST   /api/db-sessions/{id}/fetch            next page of the last result: {"executionId": "..."} (P9-3)
  *   POST   /api/db-sessions/{id}/cancel           cancel the running statement
  *   GET    /api/db-sessions/{id}/activity         is a statement running, and is it waiting for a lock (Phase 8)
+ *   POST   /api/db-sessions/{id}/approval         ask a second person to approve: {"sql", "script"} (admin Phase 14)
  *   POST   /api/db-sessions/{id}/transaction      {"action": "begin"|"commit"|"rollback", "isolation", "readOnly"} (Phase 9)
  * </pre>
  */
@@ -55,6 +56,10 @@ public final class DbSessionServlets {
 
     /** Body of a transaction request: {@code action} begin, commit or rollback. */
     public record ExportRequest(String executionId, String format, Integer rows, Integer columns) {
+    }
+
+    /** Body of an approval request: the exact text, and whether it runs as a script. */
+    public record ApprovalRequest(String sql, Boolean script) {
     }
 
     public record TransactionRequest(String action, String isolation, Boolean readOnly) {
@@ -222,6 +227,11 @@ public final class DbSessionServlets {
             }
             if (p.length == 2 && p[1].equals("cancel")) {
                 return runner.cancel(user(req), p[0]);
+            }
+            if (p.length == 2 && p[1].equals("approval")) {
+                ApprovalRequest body = body(req, ApprovalRequest.class);
+                status(req, 201);
+                return runner.requestApproval(user(req), p[0], body.sql(), Boolean.TRUE.equals(body.script()), requestId(req));
             }
             if (p.length == 2 && p[1].equals("export")) {
                 ExportRequest body = body(req, ExportRequest.class);

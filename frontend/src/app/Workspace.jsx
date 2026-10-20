@@ -18,6 +18,7 @@ import useEditorTabs from '../features/editor/useEditorTabs.js';
 import ObjectExplorer from '../features/explorer/ObjectExplorer.jsx';
 import SessionBar, { LostSession } from '../features/connections/SessionBar.jsx';
 import HistoryPanel from '../features/history/HistoryPanel.jsx';
+import { ApprovalNeeded } from '../features/approvals/ApprovalPanels.jsx';
 import { SaveDialog, SavedPanel } from '../features/saved/SavedPanel.jsx';
 import { describeKey, effectiveShortcuts } from '../features/settings/shortcuts.js';
 import { addHistory, clearHistory, historyEntry, readHistory } from '../features/history/queryHistory.js';
@@ -429,6 +430,15 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                   />
                 ) : null}
                 {lower === 'saved' ? <SavedPanel version={savedVersion} onOpen={(text, title, id) => tabs.open(text, title, null, id)} /> : null}
+                {lower === 'results' && execution.approval && session && !lost ? (
+                  <ApprovalNeeded
+                    key={`${execution.approval.text}|${execution.approval.script}`}
+                    sessionId={session.id}
+                    need={execution.approval}
+                    onRunAgain={execution.runApproved}
+                    onDismiss={execution.dismissApproval}
+                  />
+                ) : null}
                 {ADMIN_TAB_IDS.has(lower) || lower === 'data' || lower === 'saved' ? null : lower === 'results' ? (
                   <ResultView
                     execution={execution}

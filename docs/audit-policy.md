@@ -31,6 +31,7 @@ The audit trail records who did what, through this application, against which Po
 | `data_export` | **Before** the browser saves rows it holds as a file (admin Phase 7). Fail-closed: no record, no file. `execution_id` of the statement the rows came from, `details.format` (`csv` or `json`), `details.rows`, `details.columns`. **Never the data.** Importing a CSV file creates no event of its own: the INSERT statements it produces are audited like any script |
 | `audit_view` | **Before** a search in the audit viewer (admin Phase 9) runs. Fail-closed: no record, no search. `details`: the period, event type, user, outcome and database filters, page size and paging position. Recorded whether or not the role may read the trail |
 | `saved_query_saved`, `saved_query_deleted` | Saved queries (admin Phase 11), before the change is written. Fail-closed. The query's ID, name length, text length and the statement HMAC; **never the text** |
+| `approval_requested`, `approval_granted`, `approval_rejected`, `approval_withdrawn` | Two-person approval (admin Phase 14), before the change is made; fail-closed. The approval ID, the statement HMAC and length, the reasons, the requester (for decisions) and the comment's length; **never the text**. A statement that ran with an approval carries `approvalId` in its `exec_intent`; one refused for lack of approval is `exec_rejected` with `parse_status = approval_required` |
 | `audit_spool_replayed`, `audit_failure` | Audit infrastructure events |
 
 ## 3. Fields

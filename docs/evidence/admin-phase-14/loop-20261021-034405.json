@@ -1,0 +1,226 @@
+﻿{
+    "tag":  "admin-phase-14",
+    "suite":  "all",
+    "overall":  "PASS",
+    "masterSeed":  1507613810,
+    "requiredConsecutivePasses":  5,
+    "started":  "2026-10-21T03:23:30.8466433+08:00",
+    "finished":  "2026-10-21T03:44:05.1827235+08:00",
+    "os":  "Microsoft Windows NT 10.0.26200.0",
+    "java":  "S:\\Code\\PGAdmin\\tools\\jdk-21.0.12.1+1",
+    "node":  "v24.20.0",
+    "commit":  "fdda117",
+    "dirty":  true,
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  196213443,
+                     "pass":  true,
+                     "seconds":  249.6,
+                     "consecutive":  1,
+                     "leftovers":  0,
+                     "failed":  [
+
+                                ],
+                     "suites":  [
+                                    {
+                                        "suite":  "frontend",
+                                        "lintExit":  0,
+                                        "testExit":  0,
+                                        "tests":  248,
+                                        "failures":  0,
+                                        "coverage":  {
+                                                         "lines":  96.39,
+                                                         "branches":  89.89,
+                                                         "functions":  93.57,
+                                                         "statements":  95.57
+                                                     }
+                                    },
+                                    {
+                                        "suite":  "backend",
+                                        "exit":  0,
+                                        "unit":  86,
+                                        "integration":  189,
+                                        "failures":  0,
+                                        "errors":  0,
+                                        "coverage":  {
+                                                         "branch":  86.7,
+                                                         "instruction":  95.2,
+                                                         "method":  98,
+                                                         "complexity":  84.5,
+                                                         "line":  93.8,
+                                                         "class":  100
+                                                     }
+                                    }
+                                ]
+                 },
+                 {
+                     "run":  2,
+                     "seed":  1733466954,
+                     "pass":  true,
+                     "seconds":  248.3,
+                     "consecutive":  2,
+                     "leftovers":  0,
+                     "failed":  [
+
+                                ],
+                     "suites":  [
+                                    {
+                                        "suite":  "frontend",
+                                        "lintExit":  0,
+                                        "testExit":  0,
+                                        "tests":  248,
+                                        "failures":  0,
+                                        "coverage":  {
+                                                         "lines":  96.39,
+                                                         "branches":  89.89,
+                                                         "functions":  93.57,
+                                                         "statements":  95.57
+                                                     }
+                                    },
+                                    {
+                                        "suite":  "backend",
+                                        "exit":  0,
+                                        "unit":  86,
+                                        "integration":  189,
+                                        "failures":  0,
+                                        "errors":  0,
+                                        "coverage":  {
+                                                         "branch":  86.9,
+                                                         "instruction":  95.3,
+                                                         "method":  98,
+                                                         "complexity":  84.7,
+                                                         "line":  94,
+                                                         "class":  100
+                                                     }
+                                    }
+                                ]
+                 },
+                 {
+                     "run":  3,
+                     "seed":  507180806,
+                     "pass":  true,
+                     "seconds":  239,
+                     "consecutive":  3,
+                     "leftovers":  0,
+                     "failed":  [
+
+                                ],
+                     "suites":  [
+                                    {
+                                        "suite":  "frontend",
+                                        "lintExit":  0,
+                                        "testExit":  0,
+                                        "tests":  248,
+                                        "failures":  0,
+                                        "coverage":  {
+                                                         "lines":  96.39,
+                                                         "branches":  89.89,
+                                                         "functions":  93.57,
+                                                         "statements":  95.57
+                                                     }
+                                    },
+                                    {
+                                        "suite":  "backend",
+                                        "exit":  0,
+                                        "unit":  86,
+                                        "integration":  189,
+                                        "failures":  0,
+                                        "errors":  0,
+                                        "coverage":  {
+                                                         "branch":  87,
+                                                         "instruction":  95.4,
+                                                         "method":  98,
+                                                         "complexity":  84.9,
+                                                         "line":  94,
+                                                         "class":  100
+                                                     }
+                                    }
+                                ]
+                 },
+                 {
+                     "run":  4,
+                     "seed":  763752491,
+                     "pass":  true,
+                     "seconds":  248.3,
+                     "consecutive":  4,
+                     "leftovers":  0,
+                     "failed":  [
+
+                                ],
+                     "suites":  [
+                                    {
+                                        "suite":  "frontend",
+                                        "lintExit":  0,
+                                        "testExit":  0,
+                                        "tests":  248,
+                                        "failures":  0,
+                                        "coverage":  {
+                                                         "lines":  96.39,
+                                                         "branches":  89.89,
+                                                         "functions":  93.57,
+                                                         "statements":  95.57
+                                                     }
+                                    },
+                                    {
+                                        "suite":  "backend",
+                                        "exit":  0,
+                                        "unit":  86,
+                                        "integration":  189,
+                                        "failures":  0,
+                                        "errors":  0,
+                                        "coverage":  {
+                                                         "branch":  87,
+                                                         "instruction":  95.4,
+                                                         "method":  98,
+                                                         "complexity":  84.9,
+                                                         "line":  94,
+                                                         "class":  100
+                                                     }
+                                    }
+                                ]
+                 },
+                 {
+                     "run":  5,
+                     "seed":  1061910667,
+                     "pass":  true,
+                     "seconds":  249.1,
+                     "consecutive":  5,
+                     "leftovers":  0,
+                     "failed":  [
+
+                                ],
+                     "suites":  [
+                                    {
+                                        "suite":  "frontend",
+                                        "lintExit":  0,
+                                        "testExit":  0,
+                                        "tests":  248,
+                                        "failures":  0,
+                                        "coverage":  {
+                                                         "lines":  96.39,
+                                                         "branches":  89.89,
+                                                         "functions":  93.57,
+                                                         "statements":  95.57
+                                                     }
+                                    },
+                                    {
+                                        "suite":  "backend",
+                                        "exit":  0,
+                                        "unit":  86,
+                                        "integration":  189,
+                                        "failures":  0,
+                                        "errors":  0,
+                                        "coverage":  {
+                                                         "branch":  87,
+                                                         "instruction":  95.4,
+                                                         "method":  98,
+                                                         "complexity":  84.9,
+                                                         "line":  94,
+                                                         "class":  100
+                                                     }
+                                    }
+                                ]
+                 }
+             ]
+}

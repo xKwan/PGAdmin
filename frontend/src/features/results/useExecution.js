@@ -3,7 +3,7 @@ import { activity, cancel, execute, fetchMore, runScript, transaction } from '..
 
 const IDLE = {
   running: false, result: null, error: null, elapsedMs: 0, lockWait: false, waitEvent: null, cancelling: false,
-  lastText: null, lastFrom: 0, lastScript: false, confirm: null, progress: null, fetching: false, fetchError: null,
+  lastText: null, lastFrom: 0, lastScript: false, confirm: null, approval: null, progress: null, fetching: false, fetchError: null,
 };
 
 /** Appends a further page (P9-3) to the first result: rows, cut-cell positions, and whether there is still more. */
@@ -76,9 +76,11 @@ export default function useExecution(sessionId, { onSessionEnded, onFinished, on
         return result;
       } catch (error) {
         const confirm = error.code === 'CONFIRMATION_REQUIRED' ? { text, from, script, reasons: error.details?.reasons || [] } : null;
-        setState((s) => ({ ...s, running: false, cancelling: false, progress: null, error: confirm ? null : error, confirm }));
+        // Two-person approval (admin Phase 14): nothing ran; the page offers to ask a second person.
+        const approval = error.code === 'APPROVAL_REQUIRED' ? { text, from, script, reasons: error.details?.reasons || [] } : null;
+        setState((s) => ({ ...s, running: false, cancelling: false, progress: null, error: confirm || approval ? null : error, confirm, approval }));
         if (error.status === 404 || error.status === 410) endedRef.current?.(error);
-        if (record && !confirm) finishedRef.current?.({ text, script, result: null, error });
+        if (record && !confirm && !approval) finishedRef.current?.({ text, script, result: null, error });
         return null;
       } finally {
         busy.current = false;
@@ -168,6 +170,15 @@ export default function useExecution(sessionId, { onSessionEnded, onFinished, on
 
   const dismissConfirm = useCallback(() => setState((s) => ({ ...s, confirm: null })), []);
 
+  /** After a second person approved (admin Phase 14): the same text again, confirmed as before. */
+  const runApproved = useCallback(() => {
+    const a = state.approval;
+    if (!a) return;
+    if (a.script) runAll(a.text, a.from, { confirmed: true });
+    else run(a.text, a.from, { confirmed: true });
+  }, [run, runAll, state.approval]);
+  const dismissApproval = useCallback(() => setState((s) => ({ ...s, approval: null })), []);
+
   const commit = useCallback(() => perform(() => transaction(sessionId, 'commit')), [perform, sessionId]);
   const rollback = useCallback(() => perform(() => transaction(sessionId, 'rollback')), [perform, sessionId]);
 
@@ -228,6 +239,8 @@ export default function useExecution(sessionId, { onSessionEnded, onFinished, on
     cancel: stop,
     refresh,
     confirmRun,
+    runApproved,
+    dismissApproval,
     dismissConfirm,
     begin,
     commit,

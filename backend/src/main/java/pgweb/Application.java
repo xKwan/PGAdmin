@@ -143,6 +143,7 @@ public final class Application implements AutoCloseable {
                         new SessionSignals(config, metadata, sessions, audit), new SchemaSnapshot(metadata, sessions)), Access.AUTHENTICATED, "/api/metadata/*")
                 .servlet("dbSessions", new DbSessionServlets.Sessions(sessions, engine, config.limits().maxSqlBytes()), Access.AUTHENTICATED, "/api/db-sessions", "/api/db-sessions/*")
                 .servlet("auditSearch", new AuditViewerServlet(new AuditViewer(config, sessions, audit)), Access.AUTHENTICATED, "/api/audit/search")
+                .servlet("approvals", new pgweb.execution.ApprovalsServlet(engine.approvals()), Access.AUTHENTICATED, "/api/approvals", "/api/approvals/*")
                 .servlet("savedQueries", new SavedQueriesServlet(new SavedQueries(config.server().workDir().resolve("saved-queries"),
                         config.savedQueriesEnabled(), audit, Json.mapper(), options.clock())), Access.AUTHENTICATED, "/api/saved-queries", "/api/saved-queries/*");
         options.extraRoutes().accept(routes);

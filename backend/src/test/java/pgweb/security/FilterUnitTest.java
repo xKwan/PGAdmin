@@ -58,7 +58,7 @@ class FilterUnitTest {
 
     @Test
     void theSessionFilterFailsClosedWithoutAWindowsPrincipal() throws Exception {
-        Config.Auth auth = new Config.Auth(Set.of("Negotiate"), true, "S-1-5-32-545", Set.of(), Duration.ofMinutes(30), Duration.ofHours(8));
+        Config.Auth auth = new Config.Auth(Set.of("Negotiate"), true, "S-1-5-32-545", null, Set.of(), Duration.ofMinutes(30), Duration.ofHours(8));
         SessionFilter f = new SessionFilter(auth, null, Clock.systemUTC());
         ServletStubs.Recorded res = new ServletStubs.Recorded();
         ServletStubs.Chain chain = new ServletStubs.Chain();

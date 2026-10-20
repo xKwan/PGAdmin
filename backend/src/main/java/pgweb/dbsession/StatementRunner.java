@@ -33,5 +33,11 @@ public interface StatementRunner {
      * Before the browser saves rows it already holds as a file (admin Phase 7): records {@code data_export}, fail-closed.
      * Reads nothing from the database and records no data.
      */
+    /**
+     * Asks for a second person's approval of text that needs one (admin Phase 14). Nothing runs; the text is checked
+     * by the gate and kept in memory for the approver to read.
+     */
+    Map<String, Object> requestApproval(UserContext user, String sessionId, String sql, boolean script, String requestId);
+
     Map<String, Object> recordExport(UserContext user, String sessionId, String executionId, String format, Integer rows, Integer columns, String requestId);
 }

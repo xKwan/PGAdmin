@@ -272,6 +272,31 @@ class ConfigLoaderTest {
     }
 
     @Test
+    void approvalReasonsNeedAnApproverGroupAndValidReasons() throws Exception {
+        Config plain = ConfigLoader.load(prod(), prodSecrets());
+        assertThat(plain.auth().approverSid()).isNull();
+        assertThat(plain.profiles().get("external").approvalReasons()).isEmpty();
+        Properties p = prod();
+        p.setProperty("profile.external.approvalReasons", "DROP, truncate, drop, explode");
+        assertThatThrownBy(() -> ConfigLoader.load(p, prodSecrets()))
+                .isInstanceOfSatisfying(ConfigException.class, e -> assertThat(e.problems())
+                        .anyMatch(m -> m.contains("explode is not one of"))
+                        .anyMatch(m -> m.contains("needs auth.approverSid")));
+        p.setProperty("profile.external.approvalReasons", "DROP, truncate, drop");
+        p.setProperty("auth.approverSid", "not-a-sid");
+        assertThatThrownBy(() -> ConfigLoader.load(p, prodSecrets()))
+                .isInstanceOfSatisfying(ConfigException.class, e -> assertThat(e.problems()).anyMatch(m -> m.contains("auth.approverSid is not a SID")));
+        p.setProperty("auth.approverSid", "S-1-5-21-1-2-3-4000");
+        p.setProperty("profile.external.confirmDestructive", "false");
+        assertThatThrownBy(() -> ConfigLoader.load(p, prodSecrets()))
+                .isInstanceOfSatisfying(ConfigException.class, e -> assertThat(e.problems()).anyMatch(m -> m.contains("needs confirmDestructive=true")));
+        p.remove("profile.external.confirmDestructive");
+        Config c = ConfigLoader.load(p, prodSecrets());
+        assertThat(c.profiles().get("external").approvalReasons()).containsExactly("drop", "truncate");
+        assertThat(c.auth().approverSid()).isEqualTo("S-1-5-21-1-2-3-4000");
+    }
+
+    @Test
     void missingModeIsReported() throws Exception {
         Properties p = prod();
         p.remove("pgweb.mode");

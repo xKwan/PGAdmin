@@ -98,6 +98,12 @@ While you type, the editor offers SQL keywords and, once you are connected, name
 
 Before `DROP`, `TRUNCATE`, `GRANT`/`REVOKE`, other `CREATE`/`ALTER`, `DO` blocks, an `UPDATE` or `DELETE` without `WHERE`, and `EXPLAIN ANALYZE`, pgweb asks you to confirm. This guards against mistakes; it doesn't limit what you may do. Your PostgreSQL privileges decide that.
 
+### Two-person approval
+
+On some servers the administrator requires a **second person** for certain statements (for example DROP or TRUNCATE). After you confirm such a statement, pgweb says "A second person must approve this before it runs" and nothing has run. **Request approval** sends the exact text to the approvers; **Check again** shows whether it was approved, rejected or has expired; **Withdraw the request** cancels it. Once approved, **Run it now** (or running the same text again in the same session) runs it, once, within 15 minutes; any change to the text needs a new approval.
+
+Approvers (members of the group the administrator names) see **Approvals** on the start page: each waiting request with who asked, the database, why it needs approval and the full text. **Approve** or **Reject**, with an optional comment, after reading it. You can't decide on your own requests. Requests expire after 30 minutes and are forgotten when pgweb restarts. Everything is recorded in the audit trail (without the text).
+
 ### Explain
 
 **Explain** shows how PostgreSQL would run the statement at the cursor (or the selection), without running it: the plan as a tree, with each step's estimated cost and rows and its conditions (filters, join and index conditions). **Explain analyze** runs the statement and shows the actual times and rows next to the estimates, and marks steps whose estimate was off by ten times or more. Because ANALYZE really runs the statement (an `UPDATE` really updates), pgweb always asks first, also when you type `EXPLAIN ANALYZE` yourself; run it inside a transaction and roll back if you only want the measurement. **Show as table** shows PostgreSQL's raw output. If you type your own `EXPLAIN`, it is sent as written.

@@ -41,6 +41,8 @@ public final class MeServlet extends ApiServlet {
         caps.put("executionEnabled", config.executionEnabled());
         caps.put("auditViewer", config.auditViewer().isPresent());
         caps.put("savedQueries", config.savedQueriesEnabled());
+        String approvers = config.auth().approverSid();
+        caps.put("approver", approvers != null && u.groupSids().contains(approvers.toUpperCase(java.util.Locale.ROOT)));
         Map<String, Object> sess = new LinkedHashMap<>();
         sess.put("loginAt", u.loginAt().toString());
         sess.put("expiresAt", u.loginAt().plus(config.auth().sessionAbsolute()).toString());

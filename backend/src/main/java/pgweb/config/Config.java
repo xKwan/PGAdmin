@@ -2,6 +2,7 @@ package pgweb.config;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -43,7 +44,7 @@ public record Config(
      * @param dataAdminSid   SID of the DataAdmin AD group
      * @param allowedDomains NetBIOS domain names whose users may sign in (upper case); empty = any
      */
-    public record Auth(Set<String> protocols, boolean kerberosOnly, String dataAdminSid, Set<String> allowedDomains,
+    public record Auth(Set<String> protocols, boolean kerberosOnly, String dataAdminSid, String approverSid, Set<String> allowedDomains,
                        Duration sessionIdle, Duration sessionAbsolute) {
     }
 
@@ -63,7 +64,8 @@ public record Config(
      */
     public record DbProfile(String name, String displayName, String host, int port, String sslMode,
                             Optional<Path> sslRootCert, String maintenanceDb, boolean requiresDataAdmin,
-                            Duration statementTimeout, boolean confirmDestructive, Optional<String> bannerText, String bannerTone) {
+                            Duration statementTimeout, boolean confirmDestructive, Optional<String> bannerText, String bannerTone,
+                            List<String> approvalReasons) {
     }
 
     /** Execution and session limits (ADR-0006). All are enforced on the server. */

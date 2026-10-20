@@ -191,7 +191,7 @@ class DbSessionEdgeIT {
     @Test
     void theProductionConnectorNeedsADelegatedIdentityAndUsesTheProfileSettings() throws Exception {
         Path ca = Files.writeString(tmp.resolve("ca.pem"), "x");
-        Config.DbProfile p = new Config.DbProfile("external", "X", "pg.corp.example", 5432, "verify-full", Optional.of(ca), "postgres", false, Duration.ofSeconds(60), true, Optional.empty(), "warn");
+        Config.DbProfile p = new Config.DbProfile("external", "X", "pg.corp.example", 5432, "verify-full", Optional.of(ca), "postgres", false, Duration.ofSeconds(60), true, Optional.empty(), "warn", java.util.List.of());
         assertThatThrownBy(() -> new SspiDelegatingConnector().open(null, p, "db", "ann", "pgweb"))
                 .isInstanceOfSatisfying(SQLException.class, e -> assertThat(e.getSQLState()).isEqualTo("28000"));
         var props = SspiDelegatingConnector.baseProperties(p, "ann", "pgweb");

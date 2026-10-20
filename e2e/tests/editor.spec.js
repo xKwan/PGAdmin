@@ -720,6 +720,48 @@ test('admin Phase 13: rebind Run to another key; the editor uses it at once, and
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 14: a TRUNCATE needs a second person; the requester waits and cannot approve it', async ({ page }) => {
+  const problems = await watch(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: /Internal PostgreSQL/ }).click();
+  await page.getByRole('list', { name: 'Databases', exact: true }).getByRole('button', { name: /^e2e_db\b/ }).click();
+  await expect(page.getByLabel('Database session')).toContainText(`as ${role}`);
+  const editor = page.getByRole('textbox', { name: 'SQL editor' });
+  const results = page.getByRole('region', { name: 'Results' });
+  const table = `approval_probe_${Date.now().toString(36)}${Math.floor(rng('approval')() * 1e6).toString(36)}`;
+  await run(page, editor, `CREATE TABLE public.${table} (x int)`);
+  await page.getByRole('dialog', { name: 'Run this statement?' }).getByRole('button', { name: 'Run it' }).click();
+  await expect(results.getByText(/^Completed\./)).toBeVisible();
+
+  // TRUNCATE asks first (confirmation), then needs a second person: nothing runs.
+  await run(page, editor, `TRUNCATE public.${table}`);
+  await page.getByRole('dialog', { name: 'Run this statement?' }).getByRole('button', { name: 'Run it' }).click();
+  const panel = results.getByRole('region', { name: 'Approval needed' });
+  await expect(panel).toContainText('A second person must approve this before it runs.');
+  await panel.getByRole('button', { name: 'Request approval' }).click();
+  await expect(panel.getByText('Waiting for a second person')).toBeVisible();
+
+  // The requester is in the approver group, but can't decide on their own request.
+  await page.getByRole('button', { name: '← Servers' }).click();
+  await page.getByRole('dialog', { name: 'Leave with unsaved changes?' }).getByRole('button', { name: 'Leave and discard changes' }).click();
+  await page.getByRole('button', { name: /^Approvals/ }).click();
+  const mine = page.getByRole('list', { name: 'Your requests' });
+  await expect(mine.getByRole('listitem').filter({ hasText: `TRUNCATE public.${table}` })).toContainText('Waiting for a second person');
+  await expect(page.getByRole('list', { name: 'Requests to decide' }).getByText(`TRUNCATE public.${table}`)).toHaveCount(0);
+  await mine.getByRole('listitem').filter({ hasText: `TRUNCATE public.${table}` }).getByRole('button', { name: 'Withdraw' }).click();
+  await expect(mine.getByRole('listitem').filter({ hasText: `TRUNCATE public.${table}` })).toContainText('Withdrawn');
+
+  // Clean up (DROP isn't on the approval list).
+  await page.getByRole('button', { name: '← Servers' }).click();
+  await page.getByRole('button', { name: /Internal PostgreSQL/ }).click();
+  await page.getByRole('list', { name: 'Databases', exact: true }).getByRole('button', { name: /^e2e_db\b/ }).click();
+  await expect(page.getByLabel('Database session')).toContainText(`as ${role}`);
+  await run(page, page.getByRole('textbox', { name: 'SQL editor' }), `DROP TABLE public.${table}`);
+  await page.getByRole('dialog', { name: 'Run this statement?' }).getByRole('button', { name: 'Run it' }).click();
+  await expect(results.getByText(/^Completed\./)).toBeVisible();
+  expect(await problems()).toEqual([]);
+});
+
 function quote(n) {
   return `'${n}'`;
 }

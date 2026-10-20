@@ -4,6 +4,7 @@ import { setUnauthenticatedHandler } from '../api/client.js';
 import { logout, useMe } from '../api/session.js';
 import { ErrorPanel, Spinner, ToastList } from '../components/common/index.jsx';
 import AuditPage from '../features/audit/AuditPage.jsx';
+import { ApprovalsPage } from '../features/approvals/ApprovalPanels.jsx';
 import LandingPage from '../features/landing/LandingPage.jsx';
 import SettingsDialog from '../features/settings/SettingsDialog.jsx';
 import usePreferences from '../features/settings/usePreferences.js';
@@ -95,7 +96,8 @@ function Shell() {
       <SettingsDialog open={settings} prefs={preferences.prefs} onChange={preferences.change} notSaved={preferences.notSaved} onClose={() => setSettings(false)} />
       <main className="content">
         {profile === 'audit' ? <AuditPage onBack={() => setProfile(null)} /> : null}
-        {profile && profile !== 'audit' ? <Workspace profile={profile} user={me.data.user} executionEnabled={me.data.capabilities.executionEnabled} savedQueries={Boolean(me.data.capabilities.savedQueries)} shortcuts={preferences.prefs.shortcuts} onBack={() => setProfile(null)} /> : null}
+        {profile === 'approvals' ? <ApprovalsPage onBack={() => setProfile(null)} /> : null}
+        {profile && profile !== 'audit' && profile !== 'approvals' ? <Workspace profile={profile} user={me.data.user} executionEnabled={me.data.capabilities.executionEnabled} savedQueries={Boolean(me.data.capabilities.savedQueries)} shortcuts={preferences.prefs.shortcuts} onBack={() => setProfile(null)} /> : null}
         {profile ? null : <LandingPage me={me.data} onOpen={setProfile} />}
       </main>
       <ToastList toasts={toasts} onDismiss={dismiss} />

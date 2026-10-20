@@ -28,6 +28,14 @@ export default function LandingPage({ me, onOpen }) {
         ) : null}
       </div>
       {!caps.internal && !caps.external ? <p>No database servers are configured for you. Contact the administrator.</p> : null}
+      {caps.approver ? (
+        <div className="cards">
+          <button type="button" className="card" onClick={() => onOpen('approvals')}>
+            <span className="card-title">Approvals</span>
+            <span className="card-body">Statements that need a second person before they run: read them, then approve or reject.</span>
+          </button>
+        </div>
+      ) : null}
       {caps.auditViewer ? (
         <div className="cards">
           <button type="button" className="card" onClick={() => onOpen('audit')}>
