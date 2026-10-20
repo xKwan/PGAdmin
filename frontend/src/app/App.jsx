@@ -5,6 +5,8 @@ import { logout, useMe } from '../api/session.js';
 import { ErrorPanel, Spinner, ToastList } from '../components/common/index.jsx';
 import AuditPage from '../features/audit/AuditPage.jsx';
 import LandingPage from '../features/landing/LandingPage.jsx';
+import SettingsDialog from '../features/settings/SettingsDialog.jsx';
+import usePreferences from '../features/settings/usePreferences.js';
 import { Forbidden, SignInFailed, Unavailable } from './StatusPages.jsx';
 import Workspace from './Workspace.jsx';
 
@@ -31,6 +33,8 @@ function Shell() {
   const [signInError, setSignInError] = useState(null);
   const [profile, setProfile] = useState(null);
   const [toasts, setToasts] = useState([]);
+  const [settings, setSettings] = useState(false);
+  const preferences = usePreferences();
 
   useEffect(() => {
     setUnauthenticatedHandler(makeUnauthenticatedHandler(window.location, setSignInError));
@@ -81,10 +85,14 @@ function Shell() {
         <span className="topbar-user" title={me.data.user.sid}>
           {me.data.user.account}
         </span>
+        <button type="button" className="btn btn-link" onClick={() => setSettings(true)}>
+          Settings
+        </button>
         <button type="button" className="btn btn-link" onClick={onLogout}>
           Sign out
         </button>
       </header>
+      <SettingsDialog open={settings} prefs={preferences.prefs} onChange={preferences.change} notSaved={preferences.notSaved} onClose={() => setSettings(false)} />
       <main className="content">
         {profile === 'audit' ? <AuditPage onBack={() => setProfile(null)} /> : null}
         {profile && profile !== 'audit' ? <Workspace profile={profile} user={me.data.user} executionEnabled={me.data.capabilities.executionEnabled} savedQueries={Boolean(me.data.capabilities.savedQueries)} onBack={() => setProfile(null)} /> : null}

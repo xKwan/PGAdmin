@@ -1,11 +1,12 @@
 import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap, indentWithTab, toggleComment } from '@codemirror/commands';
 import { keywordCompletionSource, PostgreSQL, sql } from '@codemirror/lang-sql';
-import { bracketMatching, defaultHighlightStyle, indentOnInput, syntaxHighlighting } from '@codemirror/language';
+import { bracketMatching, indentOnInput, syntaxHighlighting } from '@codemirror/language';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
 import { EditorSelection, EditorState } from '@codemirror/state';
 import { drawSelection, EditorView, highlightActiveLine, keymap, lineNumbers, placeholder } from '@codemirror/view';
 import { useEffect, useRef } from 'react';
+import { editorTheme, highlightStyle } from './editorTheme.js';
 import { textToRun } from './statementAt.js';
 
 /** The page's CSP nonce (set by the server in a meta tag): CodeMirror's injected styles must carry it. */
@@ -64,7 +65,8 @@ export default function SqlEditor({ initialDoc = '', onRun, onChange, canRun = t
           }),
           highlightActiveLine(),
           highlightSelectionMatches(),
-          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          syntaxHighlighting(highlightStyle),
+          editorTheme,
           sql({ dialect: PostgreSQL, upperCaseKeywords: true }),
           placeholder('Type SQL, then press Ctrl+Enter to run the statement at the cursor'),
           keymap.of([

@@ -662,6 +662,35 @@ test('admin Phase 11: save a query on the server, open it in a new tab, replace 
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 12: dark mode applies at once, to the editor too, and is kept after reloading', async ({ page }) => {
+  const problems = await watch(page);
+  await connect(page);
+  const colours = () =>
+    page.evaluate(() => ({
+      theme: document.documentElement.getAttribute('data-theme'),
+      body: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
+      editor: getComputedStyle(document.querySelector('.cm-editor')).backgroundColor,
+    }));
+  const light = await colours();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await dialog.getByRole('radio', { name: 'Dark' }).check();
+  const dark = await colours();
+  expect(dark.theme).toBe('dark');
+  expect(dark.body).toBe('#14181f');
+  expect(dark.editor).not.toBe(light.editor);
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  await page.reload();
+  await expect(page.getByText('pgweb', { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.getAttribute('data-theme'))).toBe('dark');
+  // Back to the system setting (Edge here runs light): the light colours return.
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await dialog.getByRole('radio', { name: 'Same as Windows' }).check();
+  expect(await page.evaluate(() => document.documentElement.hasAttribute('data-theme'))).toBe(false);
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  expect(await problems()).toEqual([]);
+});
+
 function quote(n) {
   return `'${n}'`;
 }

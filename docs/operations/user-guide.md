@@ -21,6 +21,14 @@ The landing page shows the servers you can use:
 
 If you were just added to DataAdmin and the internal tile is missing, sign out of Windows and back in (your sign-in has to pick up the new group), then reload.
 
+## 2a. Settings
+
+**Settings** (top right) changes how pgweb looks for you, in this browser only; nothing is sent to the server.
+
+- **Colours**: **Same as Windows** (light or dark as Windows is set), **Light** or **Dark**. The change applies at once, including the SQL editor, and is kept for the next visit.
+
+If the browser doesn't allow pgweb to keep settings (for example a private window), they last until the page is closed, and Settings says so.
+
 ## 3. Sessions
 
 ### The status line

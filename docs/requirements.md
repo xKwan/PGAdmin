@@ -63,6 +63,7 @@
 | FN-21 | Table data browser; row editing for tables with a primary key, reviewed, one transaction per save | admin P6 | `rowEdit.test.js`; `data.test.jsx`; `AdminCatalogIT`; E2E | Tested (admin P6) |
 | FN-22 | Export of the rows on screen as CSV or JSON, recorded first | admin P7 | `ExportIT`; `csv.test.js`; RTL; E2E | Tested (admin P7) |
 | FN-23 | CSV import as reviewable INSERT statements | admin P7 | `csv.test.js`; `data.test.jsx`; E2E | Tested (admin P7) |
+| FN-28 | Dark mode: light, dark or the system setting, for the whole page and the editor, kept in the browser | admin P12 | `settings.test.jsx`; E2E | Tested (admin P12) |
 | FN-27 | Saved queries on the server, per Windows account, never shared; off unless switched on | admin P11 | `SavedQueriesIT`; `saved.test.jsx`; E2E | Tested (admin P11) |
 | FN-26 | Schema-aware completion in the editor: schemas, relations, columns (with aliases) and routines the role can use | admin P10 | `AdminCatalogIT`; `completion.test.js`; E2E | Tested (admin P10) |
 | FN-25 | Read-only audit viewer for auditors (`pgweb_audit_reader`), reading as the signed-in user, each search recorded | admin P9 | `AuditViewerIT`; `audit.test.jsx`; E2E | Tested (admin P9) |
@@ -82,7 +83,7 @@
 
 ## 5. Deferred (post-MVP; each needs separate approval)
 
-Two-person approval for high-risk statements; dark mode and keyboard customisation; backup and restore (decision A6: needs an ADR). Inline data editing, result export and DDL generation were delivered in admin Phases 5–7 (FN-19 to FN-23) under the stakeholder's delegation of 2026-10-20.
+Two-person approval for high-risk statements; keyboard customisation; backup and restore (decision A6: needs an ADR). Inline data editing, result export and DDL generation were delivered in admin Phases 5–7 (FN-19 to FN-23) under the stakeholder's delegation of 2026-10-20.
 
 The stakeholder's administration-workspace plan of 2026-10-19 (`docs/decision-log.md`) schedules most of these, plus database/schema management, data import, SQL file handling, backup and restore, and role administration, in phases after admin Phase 1. They stay deferred here until each phase is started; the conflicts with approved decisions that must be settled first are listed in `docs/admin-phase-1-status.md`. Admin Phase 2 (2026-10-19) delivered "fetch more", editor tabs, local SQL files and a browser-tab query history (FN-13 to FN-15, EXE-03). Admin Phase 3 (2026-10-20) delivered the read-only parts of the remaining plan, including the EXPLAIN visualiser (FN-16 to FN-18); everything that changes something is listed with a proposed decision in `docs/admin-phase-3-status.md` §8.
 
