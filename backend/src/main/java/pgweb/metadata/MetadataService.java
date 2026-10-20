@@ -119,6 +119,15 @@ public final class MetadataService {
             WHERE pg_catalog.has_table_privilege(CAST(? AS pg_catalog.oid), p.priv)
             ORDER BY p.n""";
 
+    /** The primary key's columns in key order (admin Phase 6: rows are addressed by it). Parameter: relation oid. */
+    static final String PRIMARY_KEY = """
+            SELECT a.attname
+            FROM pg_catalog.pg_index x
+                 CROSS JOIN LATERAL pg_catalog.unnest(x.indkey::pg_catalog.int2[]) WITH ORDINALITY AS k(attnum, n)
+                 JOIN pg_catalog.pg_attribute a ON a.attrelid = x.indrelid AND a.attnum = k.attnum
+            WHERE x.indrelid = ? AND x.indisprimary
+            ORDER BY k.n""";
+
     /** Extensions installed in the connected database (catalog data every role can read). */
     static final String EXTENSIONS = """
             SELECT e.extname, e.extversion, n.nspname, pg_catalog.obj_description(e.oid, 'pg_extension')
@@ -307,6 +316,8 @@ public final class MetadataService {
             m.put("grants", list(c, RELATION_GRANTS, oid, AdminCatalog::grant));
             m.put("myPrivileges", list(c, MY_PRIVILEGES, oid, rs -> Map.of("privilege", rs.getString(1))).stream()
                     .map(x -> x.get("privilege")).toList());
+            m.put("primaryKey", list(c, PRIMARY_KEY, oid, rs -> Map.of(NAME, rs.getString(1))).stream()
+                    .map(x -> x.get(NAME)).toList());
             return m;
         });
         if (rel == null) {

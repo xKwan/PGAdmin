@@ -384,6 +384,62 @@ test('admin Phase 5: manage a table, a database and a role through generated SQL
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 6: browse a table, then change, add and delete rows in reviewed transactions', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const results = page.getByRole('region', { name: 'Results' });
+  const id = -Math.floor(1 + rng('data')() * 1e9) - (Date.now() % 1000);
+  const label = `edited ${Math.abs(id).toString(36)}`;
+  // Start from the seeded rows, even if an earlier run stopped half-way (the cluster is shared by all repetitions).
+  await run(page, editor, 'DELETE FROM items WHERE id < 0');
+  await expect(results.getByText(/^Completed\./)).toBeVisible();
+  await run(page, editor, "UPDATE items SET name = 'item 1' WHERE id = 1");
+  await expect(results.getByText('Completed. 1 row affected.')).toBeVisible();
+  const objects = page.getByRole('region', { name: 'Objects' });
+  await objects.getByRole('button', { name: 'public', exact: true }).click();
+  await objects.getByRole('button', { name: 'View data of public.items' }).click();
+  const data = page.getByRole('region', { name: 'Table data' });
+  await expect(data.getByText('item 1', { exact: true })).toBeVisible();
+  const save = async (summary) => {
+    await data.getByRole('button', { name: 'Review and save' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Save these changes?' });
+    await expect(dialog.getByLabel('Statements to run')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(data.getByText(summary)).toBeVisible(); // by text: the loading spinner is a status too
+  };
+
+  // Change row 1 (id 1).
+  await data.getByRole('button', { name: 'Edit row 1', exact: true }).click();
+  const form = data.getByRole('group', { name: 'Row with id = 1' });
+  await form.getByLabel(/^name/).fill(label);
+  await form.getByRole('button', { name: 'Keep this change' }).click();
+  await save('Saved: 1 changed, 0 added, 0 deleted.');
+  await expect(data.getByText(label, { exact: true })).toBeVisible();
+
+  // Add a row with a negative key (it sorts first).
+  await data.getByRole('button', { name: 'Add row' }).click();
+  const add = data.getByRole('group', { name: 'New row' });
+  await add.getByRole('checkbox', { name: 'Default' }).first().uncheck();
+  await add.getByLabel(/^id/).fill(String(id));
+  await add.getByRole('checkbox', { name: 'Default' }).last().uncheck();
+  await add.getByLabel(/^name/).fill("O'Brien \\ new");
+  await add.getByRole('button', { name: 'Keep this change' }).click();
+  await save('Saved: 0 changed, 1 added, 0 deleted.');
+  await expect(data.getByText("O'Brien \\ new", { exact: true })).toBeVisible();
+
+  // In one save: delete the new row and put row id 1 back as it was.
+  await data.getByRole('button', { name: 'Delete row 1', exact: true }).click();
+  await data.getByRole('button', { name: 'Edit row 2', exact: true }).click();
+  await data.getByRole('group', { name: 'Row with id = 1' }).getByLabel(/^name/).fill('item 1');
+  await data.getByRole('group', { name: 'Row with id = 1' }).getByRole('button', { name: 'Keep this change' }).click();
+  await save('Saved: 1 changed, 0 added, 1 deleted.');
+
+  // The database agrees.
+  await run(page, editor, `SELECT count(*) AS n FROM items WHERE id = ${id} OR name = '${label}'`);
+  await expect(results.locator('td', { hasText: /^0$/ })).toBeVisible();
+  expect(await problems()).toEqual([]);
+});
+
 test('the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling', async ({ page }) => {
   for (const size of [{ width: 1366, height: 768 }, { width: 1920, height: 1080 }]) {
     await page.setViewportSize(size);

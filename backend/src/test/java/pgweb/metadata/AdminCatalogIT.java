@@ -86,6 +86,7 @@ class AdminCatalogIT {
                     "CREATE INDEX orders_customer_idx ON adm.orders (customer)",
                     "COMMENT ON TABLE adm.orders IS 'Customer''s orders'",
                     "CREATE TABLE adm.secret (x int)",
+                    "CREATE TABLE adm.pairs (b int, a int, v text, PRIMARY KEY (a, b))",
                     "CREATE VIEW adm.v_orders AS SELECT id, total FROM adm.orders WHERE total > 10",
                     "CREATE MATERIALIZED VIEW adm.mv AS SELECT count(*) AS n FROM adm.orders",
                     "CREATE SEQUENCE adm.seq AS integer INCREMENT BY 5 MINVALUE 10 MAXVALUE 1000 START WITH 20 CACHE 2 CYCLE",
@@ -106,6 +107,7 @@ class AdminCatalogIT {
                     "GRANT USAGE ON SCHEMA adm, \"we\"\"ird / sch\" TO ada, bob",
                     "GRANT SELECT ON adm.orders, adm.customers, adm.v_orders, adm.mv, adm.events TO ada",
                     "GRANT DELETE ON adm.customers TO ada",
+                    "GRANT SELECT ON adm.pairs TO ada",
                     "GRANT INSERT ON adm.orders TO ada WITH GRANT OPTION",
                     "GRANT SELECT ON adm.orders TO bob",
                     "GRANT SELECT ON ALL TABLES IN SCHEMA \"we\"\"ird / sch\" TO ada",
@@ -586,5 +588,14 @@ class AdminCatalogIT {
         HttpResponse<String> r = c.post("/api/metadata/whatever/signal", signal(123, "cancel", true));
         assertThat(r.statusCode()).isEqualTo(403);
         assertThat(r.body()).contains("EXECUTION_DISABLED");
+    }
+
+    @Test
+    void aRelationNamesItsPrimaryKeyInKeyOrder() throws Exception {
+        String id = open("ada", "1");
+        JsonNode pairs = ok("ada", "/api/metadata/" + id + "/relation?schema=adm&name=pairs");
+        assertThat(pairs.path("primaryKey").toString()).isEqualTo("[\"a\",\"b\"]"); // key order, not column order
+        assertThat(ok("ada", "/api/metadata/" + id + "/relation?schema=adm&name=orders").path("primaryKey").toString()).isEqualTo("[\"id\"]");
+        assertThat(ok("ada", "/api/metadata/" + id + "/relation?schema=adm&name=v_orders").path("primaryKey").size()).isZero();
     }
 }

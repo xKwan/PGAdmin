@@ -184,7 +184,9 @@ function DefinitionButton({ sessionId, schema, object, onOpen }) {
   );
 }
 
-function ObjectNode({ sessionId, schema, object, version, onInsert, onOpen }) {
+const BROWSABLE = new Set(['table', 'partitioned_table', 'view', 'materialized_view', 'foreign_table']);
+
+function ObjectNode({ sessionId, schema, object, version, onInsert, onOpen, onViewData }) {
   const [open, setOpen] = useState(false);
   const expandable = RELATIONS.has(object.kind) && object.accessible !== false;
   const label = object.arguments === undefined ? object.name : `${object.name}(${object.arguments})`;
@@ -202,12 +204,23 @@ function ObjectNode({ sessionId, schema, object, version, onInsert, onOpen }) {
       {object.partition ? <StatusBadge tone="neutral" title="A partition of a partitioned table">partition</StatusBadge> : null}
       <InsertButton text={qualified(schema, object.name)} label={`${schema}.${object.name}`} onInsert={onInsert} />
       {onOpen && DEFINABLE.has(object.kind) && object.accessible !== false ? <DefinitionButton sessionId={sessionId} schema={schema} object={object} onOpen={onOpen} /> : null}
+      {onViewData && BROWSABLE.has(object.kind) && object.accessible !== false ? (
+        <button
+          type="button"
+          className="btn btn-link tree-insert"
+          onClick={() => onViewData(schema, object.name)}
+          aria-label={`View data of ${schema}.${object.name}`}
+          title="Show its rows in the Data tab"
+        >
+          Data
+        </button>
+      ) : null}
       {open ? <RelationDetails sessionId={sessionId} schema={schema} name={object.name} version={version} onInsert={onInsert} /> : null}
     </li>
   );
 }
 
-function SchemaNode({ sessionId, schema, all, version, onInsert, onOpen, filter }) {
+function SchemaNode({ sessionId, schema, all, version, onInsert, onOpen, onViewData, filter }) {
   const [open, setOpen] = useState(false);
   return (
     <li className="tree-node">
@@ -216,12 +229,12 @@ function SchemaNode({ sessionId, schema, all, version, onInsert, onOpen, filter 
         <span className="tree-name">{schema.name}</span>
       </button>
       <NoAccess accessible={schema.accessible} />
-      {open ? <SchemaObjects sessionId={sessionId} schema={schema.name} all={all} version={version} onInsert={onInsert} onOpen={onOpen} filter={filter} /> : null}
+      {open ? <SchemaObjects sessionId={sessionId} schema={schema.name} all={all} version={version} onInsert={onInsert} onOpen={onOpen} onViewData={onViewData} filter={filter} /> : null}
     </li>
   );
 }
 
-function SchemaObjects({ sessionId, schema, all, version, onInsert, onOpen, filter = '' }) {
+function SchemaObjects({ sessionId, schema, all, version, onInsert, onOpen, onViewData, filter = '' }) {
   const { data, error, loading, retry } = useLoad(() => listObjects(sessionId, schema, all), `${version}:${all}:${schema}`);
   if (loading) return <Spinner label={`Loading ${schema}`} />;
   if (error) return <LoadError error={error} onRetry={retry} />;
@@ -239,7 +252,7 @@ function SchemaObjects({ sessionId, schema, all, version, onInsert, onOpen, filt
             <p className="tree-group-title">{title}</p>
             <ul className="tree-list">
               {items.map((o) => (
-                <ObjectNode key={`${o.kind}:${o.name}(${o.arguments ?? ''})`} sessionId={sessionId} schema={schema} object={o} version={version} onInsert={onInsert} onOpen={onOpen} />
+                <ObjectNode key={`${o.kind}:${o.name}(${o.arguments ?? ''})`} sessionId={sessionId} schema={schema} object={o} version={version} onInsert={onInsert} onOpen={onOpen} onViewData={onViewData} />
               ))}
             </ul>
           </div>
@@ -290,7 +303,7 @@ function Group({ title, children }) {
  * Admin Phase 3: a name filter for the objects of opened schemas, a relation's owner, grants and your privileges,
  * and Definition, which hands the object's SQL to `onOpen(text, title)` (a new editor tab; nothing is run).
  */
-export default function ObjectExplorer({ sessionId, onInsert, onOpen = null, database = null, databases = [], refreshKey = 0, onSwitch = null }) {
+export default function ObjectExplorer({ sessionId, onInsert, onOpen = null, onViewData = null, database = null, databases = [], refreshKey = 0, onSwitch = null }) {
   const [all, setAll] = useState(false);
   const [filter, setFilter] = useState('');
   const [ownVersion, setVersion] = useState(0);
@@ -328,7 +341,7 @@ export default function ObjectExplorer({ sessionId, onInsert, onOpen = null, dat
       {data ? (
         <ul className="tree-list tree-root">
           {data.schemas.map((s) => (
-            <SchemaNode key={`${version}:${all}:${s.name}`} sessionId={sessionId} schema={s} all={all} version={version} onInsert={onInsert} onOpen={onOpen} filter={filter} />
+            <SchemaNode key={`${version}:${all}:${s.name}`} sessionId={sessionId} schema={s} all={all} version={version} onInsert={onInsert} onOpen={onOpen} onViewData={onViewData} filter={filter} />
           ))}
           <Group title="Extensions">
             <Extensions sessionId={sessionId} version={version} />

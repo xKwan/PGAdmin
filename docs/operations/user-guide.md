@@ -132,6 +132,17 @@ Next to **Results** and **History**, three tabs show information about the serve
 - Roles never get passwords (sign-in is through Windows) and can't be made superusers here.
 - What your role may do is PostgreSQL's decision: without the privilege, running the SQL fails with "permission denied".
 
+## 7c. Table data (Data tab)
+
+**Data** next to a table or view in the explorer shows its rows in the **Data** tab, 100 at a time, ordered by the primary key; **Next 100** and **Previous 100** page through them, and **Open query in editor** gives you the SELECT to adapt. Reading runs like any statement you run, as your own role.
+
+In a table with a primary key, and only as far as your role may change it:
+
+- **Edit** opens the row in a form; **Delete** marks it (**Keep row** undoes that); **Add row** opens an empty form, where each column can take its **Default** or **NULL**. Generated columns can't be changed. Nothing is saved yet: the changes are listed as "unsaved changes".
+- **Review and save** shows every statement that will run. **Save** runs them in one transaction. It is committed only if each change hit exactly its row; if someone else changed or deleted a row since you loaded it, or PostgreSQL refuses a value, **nothing is saved** and pgweb says which row. **Discard changes** drops them.
+- Saving needs no open transaction of your own: commit or roll back first.
+- Tables without a primary key can be read here, not changed: use SQL with a WHERE clause instead.
+
 ## 8. What is recorded
 
 Every sign-in, connection and statement (each statement of a script separately, and each extra page of rows you load) is recorded in an audit trail the administrators and named auditors can review. For each statement: when, who, which server and database, the kind of statement, its outcome and row count, and the statement **with every literal value replaced** (`WHERE id = $1`). The values you type aren't stored, and neither is the full text; a keyed fingerprint lets an investigator confirm whether a given text was run. Opening an object, a definition or an administration tab is recorded by name only (for example "activity"), never what was shown. When the audit trail can't be written, statements are refused until it is back; this protects you and the organisation from unrecorded changes.
@@ -168,3 +179,6 @@ Every sign-in, connection and statement (each statement of a script separately, 
 | Only the first … are shown. | An administration list reached its limit |
 | … is required. / … is longer than 63 bytes. / … doesn't look like a type name. (Manage) | Fill in or correct that field; no SQL is produced until the form is complete |
 | That is the database you are connected to: switch to another database first. | Rename and drop work only on other databases |
+| Nothing was saved: the row with … was changed or deleted by someone else … (Data) | Reload, check the row, and make your change again |
+| Nothing was saved: PostgreSQL refused it: … (Data) | A value doesn't fit the column, or a constraint or privilege refused it; nothing was changed |
+| This table has no primary key, so its rows can be read here but not changed. | Use SQL to change rows of such a table |

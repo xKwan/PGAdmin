@@ -5,6 +5,7 @@ import { ConfirmDialog, StatusBadge } from '../components/common/index.jsx';
 import { Splitter } from '../components/common/Splitter.jsx';
 import { ActivityPanel, DatabasePanel, RolesPanel } from '../features/admin/AdminPanels.jsx';
 import { ManagePanel } from '../features/manage/ManagePanel.jsx';
+import { DataPanel } from '../features/data/DataPanel.jsx';
 import ConnectPanel from '../features/connections/ConnectPanel.jsx';
 import ConnectionStatus from '../features/connections/ConnectionStatus.jsx';
 import { getLastDatabase, setLastDatabase } from '../features/connections/lastDatabase.js';
@@ -154,6 +155,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
   const [lastDatabase, setLast] = useState(() => getLastDatabase(profile, user?.sid));
   const [history, setHistory] = useState(() => readHistory(profile, user?.sid));
   const [lowerTab, setLowerTab] = useState('results');
+  const [dataTarget, setDataTarget] = useState(null); // {schema, name}: the table shown in the Data tab (admin Phase 6)
   const [resultTab, setResultTab] = useState(null);
   const [explorerVersion, setExplorerVersion] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -263,7 +265,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
   }
   const source = tabs.tabs.find((t) => t.id === resultTab)?.title ?? null;
   // The administration tabs need a live session; without one the results are shown.
-  const lower = ADMIN_TAB_IDS.has(lowerTab) && (!session || lost) ? 'results' : lowerTab;
+  const lower = (ADMIN_TAB_IDS.has(lowerTab) || lowerTab === 'data') && (!session || lost || (lowerTab === 'data' && !dataTarget)) ? 'results' : lowerTab;
 
   return (
     <section className="workspace" aria-label={`${name} workspace`}>
@@ -303,6 +305,10 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                 databases={discovery.databases}
                 refreshKey={explorerVersion}
                 onInsert={insert}
+                onViewData={(schema, table) => {
+                  setDataTarget({ schema, name: table });
+                  setLowerTab('data');
+                }}
                 onOpen={(text, title) => tabs.open(text, title)}
                 onSwitch={lost ? null : (db) => switchTo.current?.switchTo(db)}
               />
@@ -348,12 +354,27 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                         </button>
                       ))
                     : null}
+                  {session && !lost && dataTarget ? (
+                    <button type="button" role="tab" aria-selected={lower === 'data'} className="tab-button" onClick={() => setLowerTab('data')} title={`${dataTarget.schema}.${dataTarget.name}`}>
+                      Data
+                    </button>
+                  ) : null}
                 </div>
+                {lower === 'data' ? (
+                  <DataPanel
+                    key={`${session.id}|${dataTarget.schema}|${dataTarget.name}`}
+                    sessionId={session.id}
+                    schema={dataTarget.schema}
+                    table={dataTarget.name}
+                    transaction={execution.tx?.state}
+                    onOpenSql={(text, title) => tabs.open(text, title)}
+                  />
+                ) : null}
                 {lower === 'activity' ? <ActivityPanel key={session.id} sessionId={session.id} /> : null}
                 {lower === 'database' ? <DatabasePanel key={session.id} sessionId={session.id} /> : null}
                 {lower === 'roles' ? <RolesPanel key={session.id} sessionId={session.id} /> : null}
                 {lower === 'manage' ? <ManagePanel key={session.id} database={session.database} onOpen={(text, title) => tabs.open(text, title)} /> : null}
-                {ADMIN_TAB_IDS.has(lower) ? null : lower === 'results' ? (
+                {ADMIN_TAB_IDS.has(lower) || lower === 'data' ? null : lower === 'results' ? (
                   <ResultView
                     execution={execution}
                     onCancel={execution.cancel}
