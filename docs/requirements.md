@@ -58,6 +58,11 @@
 | FN-15 | Explorer: partitioned tables and partitions, triggers, extensions, other databases; refresh after committed object changes | admin P2 | `MetadataIT`; RTL | Tested (admin P2): same companion connection, parameterised catalog queries, ownership and DataAdmin checks, `metadata_browse` audit |
 | FN-16 | Read-only administration views: database properties and grants; sessions, blocking and locks; database and table sizes; roles and memberships | admin P3 | `AdminCatalogIT`; RTL; E2E | Tested (admin P3): as the user's role on the companion, PostgreSQL's visibility rules, on request only, row caps, `metadata_browse` audit; nothing can be changed |
 | FN-17 | Object definitions as SQL in a new editor tab (tables, views, materialised views, sequences, functions, procedures); a relation's owner, grants and the user's privileges; explorer name filter | admin P3 | `AdminCatalogIT` (table round trip); RTL; E2E | Tested (admin P3): never run; identifiers quoted by PostgreSQL |
+| FN-19 | Cancel another session's query or end it, with confirmation, PostgreSQL's permission rule and audit; other roles' SQL text never shown | admin P4 | `AdminCatalogIT`; RTL; E2E | Tested (admin P4) |
+| FN-20 | Management of schemas, tables, columns, constraints, indexes, views, sequences, databases, roles and privileges through generated SQL opened in the editor | admin P5 | `sqlGen.test.js`; RTL; E2E | Tested (admin P5) |
+| FN-21 | Table data browser; row editing for tables with a primary key, reviewed, one transaction per save | admin P6 | `rowEdit.test.js`; `data.test.jsx`; `AdminCatalogIT`; E2E | Tested (admin P6) |
+| FN-22 | Export of the rows on screen as CSV or JSON, recorded first | admin P7 | `ExportIT`; `csv.test.js`; RTL; E2E | Tested (admin P7) |
+| FN-23 | CSV import as reviewable INSERT statements | admin P7 | `csv.test.js`; `data.test.jsx`; E2E | Tested (admin P7) |
 | FN-18 | EXPLAIN viewer; EXPLAIN ANALYZE only after a warning | admin P3 | `StatementGateTest`; `AdminCatalogIT`; RTL; E2E | Tested (admin P3): plan tree from `EXPLAIN (FORMAT JSON)` through the normal execution path; `explain_analyze` confirmation on the server. Was on the deferred list as "EXPLAIN visualiser"; built because the stakeholder's plan asks for it (`docs/decision-log.md`, 2026-10-20) |
 
 ## 4. MVP: quality and operations
@@ -73,7 +78,7 @@
 
 ## 5. Deferred (post-MVP; each needs separate approval)
 
-Inline data editing; result export; saved queries (server-side); schema-aware autocomplete; DDL designers; audit viewer UI; two-person approval for high-risk statements; dark mode and keyboard customisation.
+Saved queries (server-side); schema-aware autocomplete; audit viewer UI; two-person approval for high-risk statements; dark mode and keyboard customisation; backup and restore (decision A6: needs an ADR). Inline data editing, result export and DDL generation were delivered in admin Phases 5–7 (FN-19 to FN-23) under the stakeholder's delegation of 2026-10-20.
 
 The stakeholder's administration-workspace plan of 2026-10-19 (`docs/decision-log.md`) schedules most of these, plus database/schema management, data import, SQL file handling, backup and restore, and role administration, in phases after admin Phase 1. They stay deferred here until each phase is started; the conflicts with approved decisions that must be settled first are listed in `docs/admin-phase-1-status.md`. Admin Phase 2 (2026-10-19) delivered "fetch more", editor tabs, local SQL files and a browser-tab query history (FN-13 to FN-15, EXE-03). Admin Phase 3 (2026-10-20) delivered the read-only parts of the remaining plan, including the EXPLAIN visualiser (FN-16 to FN-18); everything that changes something is listed with a proposed decision in `docs/admin-phase-3-status.md` §8.
 

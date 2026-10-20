@@ -26,6 +26,14 @@ export function fetchMore(sessionId, executionId) {
   return api(`${base(sessionId)}/fetch`, { method: 'POST', body: { executionId } });
 }
 
+/**
+ * Records that rows the browser holds are being saved as a file (admin Phase 7). The server writes the audit record
+ * (format and counts, never the data) before answering; without it the file is not saved.
+ */
+export function recordExport(sessionId, { executionId, format, rows, columns }) {
+  return api(`${base(sessionId)}/export`, { method: 'POST', body: { executionId, format, rows, columns } });
+}
+
 /** Begin (optionally with an isolation level and read-only), commit or rollback. Resolves with a result document. */
 export function transaction(sessionId, action, { isolation, readOnly = false } = {}) {
   const body = { action, readOnly };

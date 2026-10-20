@@ -201,6 +201,39 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
     }
 
     /**
+     * Export of rows the browser already holds (admin Phase 7, decision A4). The rows came from statements that were
+     * audited when they ran; this records that they are being saved as a file: format, row and column counts and the
+     * statement's execution ID, never the data. Fail-closed: without the record the browser doesn't save the file. The
+     * count is bounded by what one statement may deliver ({@code maxFetchedRows}), so T29 is unchanged. It is a record,
+     * not a control: the user can see (and copy) the rows anyway.
+     */
+    @Override
+    public Map<String, Object> recordExport(UserContext user, String sessionId, String executionId, String format, Integer rows,
+                                            Integer columns, String requestId) {
+        if (!"csv".equals(format) && !"json".equals(format)) {
+            throw ApiException.badRequest("INVALID_FORMAT", "format must be csv or json");
+        }
+        if (rows == null || rows < 0 || rows > config.limits().maxFetchedRows()) {
+            throw ApiException.badRequest("INVALID_ROWS", "rows must be between 0 and " + config.limits().maxFetchedRows());
+        }
+        if (columns == null || columns < 1 || columns > 1664) {
+            throw ApiException.badRequest("INVALID_COLUMNS", "columns must be between 1 and 1664");
+        }
+        UUID execution = null;
+        if (executionId != null) {
+            try {
+                execution = UUID.fromString(executionId);
+            } catch (IllegalArgumentException e) {
+                throw ApiException.badRequest("INVALID_EXECUTION", "executionId is not an ID");
+            }
+        }
+        DbSession s = sessions.get(user, sessionId);
+        audit.require(AuditEvent.of("data_export").user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
+                .execution(execution, null).detail("format", format).detail("rows", rows).detail("columns", columns).detail(REQUEST_ID, requestId));
+        return Map.of("recorded", true);
+    }
+
+    /**
      * Begin (with an isolation level and read-only option), commit or rollback: the plan's manual-transaction
      * controls (section 4). The statement text is built here from allow-listed values only, and then runs like any
      * other statement: gate, audit, limits.

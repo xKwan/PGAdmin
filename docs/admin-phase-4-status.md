@@ -71,7 +71,7 @@
 
 ## 8. Next
 
-Admin Phase 5 (management through generated SQL), Phase 6 (table data browser and row editing), Phase 7 (result export and CSV import), under the decisions in §10.
+Delivered afterwards under the decisions in §10: admin Phase 5 (management through generated SQL, `admin-phase-5-status.md`), Phase 6 (table data browser and row editing, `admin-phase-6-status.md`), Phase 7 (result export and CSV import, `admin-phase-7-status.md`). Not built: backup and restore (A6), schema comparison (A9).
 
 ## 9. Ready for review?
 

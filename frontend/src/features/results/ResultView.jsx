@@ -1,4 +1,5 @@
 import { describeCancelOutcome, describeExecutionError, describeScriptStop, explainSqlstate } from '../../api/execution.js';
+import { ExportButtons } from '../export/ExportButtons.jsx';
 import { EmptyState, StatusBadge } from '../../components/common/index.jsx';
 import PlanView, { parsePlan } from './PlanView.jsx';
 import ResultGrid from './ResultGrid.jsx';
@@ -186,7 +187,7 @@ function ScriptResult({ result, onShowPosition, onSelect }) {
  * tab the text came from. `onShowPosition(position, offset)` and `onSelect(offset, length)` are relative to the text
  * that was run.
  */
-export default function ResultView({ execution, onCancel, onRefresh, onShowPosition, onSelect = () => {}, source = null }) {
+export default function ResultView({ execution, onCancel, onRefresh, onShowPosition, onSelect = () => {}, source = null, sessionId = null }) {
   const { running, result, error, elapsedMs, lockWait, waitEvent, cancelling, lastText, lastFrom, lastScript, tx, progress } = execution;
   const snapshot = tx?.begunWith && tx.state === 'OPEN' && /repeatable|serializable/.test(tx.begunWith.isolation);
   const showAt = (position, offset = 0) => onShowPosition(position, offset);
@@ -216,6 +217,7 @@ export default function ResultView({ execution, onCancel, onRefresh, onShowPosit
         <button type="button" className="btn" onClick={onRefresh} disabled={!lastText || result.sessionEnded} title="Run the same text again">
           Refresh
         </button>
+        {sessionId && result.kind === 'rows' && first?.columns?.length ? <ExportButtons sessionId={sessionId} result={result} /> : null}
       </div>
       {result.notice ? (
         <p className="result-notice" role="status">

@@ -382,6 +382,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                     onShowPosition={showPosition}
                     onSelect={selectRun}
                     source={tabs.tabs.length > 1 ? source : null}
+                    sessionId={session && !lost ? session.id : null}
                   />
                 ) : (
                   <HistoryPanel

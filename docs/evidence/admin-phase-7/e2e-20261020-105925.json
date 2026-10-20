@@ -1,0 +1,61 @@
+﻿{
+    "tag":  "admin-phase-7",
+    "when":  "2026-10-20T10:59:25.1547972+08:00",
+    "masterSeed":  233927059,
+    "repeat":  5,
+    "overall":  "PASS",
+    "edge":  "155.0.4283.62",
+    "commit":  "bd79a70",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  46510421,
+                     "ok":  true,
+                     "passed":  18,
+                     "failed":  [
+
+                                ],
+                     "seconds":  89.2
+                 },
+                 {
+                     "run":  2,
+                     "seed":  184713056,
+                     "ok":  true,
+                     "passed":  18,
+                     "failed":  [
+
+                                ],
+                     "seconds":  87.1
+                 },
+                 {
+                     "run":  3,
+                     "seed":  1410388992,
+                     "ok":  true,
+                     "passed":  18,
+                     "failed":  [
+
+                                ],
+                     "seconds":  88.2
+                 },
+                 {
+                     "run":  4,
+                     "seed":  1233419189,
+                     "ok":  true,
+                     "passed":  18,
+                     "failed":  [
+
+                                ],
+                     "seconds":  88.2
+                 },
+                 {
+                     "run":  5,
+                     "seed":  1051846209,
+                     "ok":  true,
+                     "passed":  18,
+                     "failed":  [
+
+                                ],
+                     "seconds":  87.8
+                 }
+             ]
+}

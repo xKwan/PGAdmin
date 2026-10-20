@@ -3,6 +3,7 @@ import { execute, runScript, transaction } from '../../api/execution.js';
 import { describeMetadataError, describeRelation, qualified } from '../../api/metadata.js';
 import { ConfirmDialog, Spinner } from '../../components/common/index.jsx';
 import { browseSql, buildSave, describeKey, isEditable } from './rowEdit.js';
+import { CsvError, IMPORT_MAX_BYTES, insertScript, parseCsv } from '../export/csv.js';
 
 // The table data browser (admin Phase 6, decision A2). Rows are read with a generated SELECT through the normal
 // execution path (gate, limits, audit, as your own role). Rows can be changed only in a table with a primary key and
@@ -125,6 +126,21 @@ export function DataPanel({ sessionId, schema, table, transaction: txState, onOp
   const canUpdate = !blocked && privileges.has('UPDATE');
   const canDelete = !blocked && privileges.has('DELETE');
   const canInsert = !blocked && privileges.has('INSERT');
+
+  // Import (admin Phase 7, decision A5): the file is read here, in the browser, and turned into INSERT statements
+  // that open in a new editor tab; nothing is sent until the user runs them.
+  const importFile = async (file) => {
+    setNotice(null);
+    try {
+      if (file.size > IMPORT_MAX_BYTES) throw new CsvError(`The file is larger than 1 MB (${Math.ceil(file.size / 1024)} KB). Split it into smaller parts.`);
+      const text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
+      const script = insertScript(schema, table, columns, parseCsv(text), file.name);
+      onOpenSql(script, `import-${table}.sql`);
+      setNotice({ tone: 'ok', text: `${file.name}: the INSERT statements opened in a new editor tab. Review them, then use Run script.` });
+    } catch (e) {
+      setNotice({ tone: 'error', text: e instanceof CsvError ? `Not imported: ${e.message}` : 'Not imported: the file is not UTF-8 text.' });
+    }
+  };
 
   const reload = (keepNotice = false) => {
     setChanges({});
@@ -252,6 +268,21 @@ export function DataPanel({ sessionId, schema, table, transaction: txState, onOp
               <button type="button" className="btn" disabled={form !== null} onClick={() => setForm({ insert: inserted.length, values: {} })}>
                 Add row
               </button>
+            ) : null}
+            {privileges.has('INSERT') ? (
+              <label className="btn file-button">
+                Import CSV…
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="visually-hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = '';
+                    if (f) importFile(f);
+                  }}
+                />
+              </label>
             ) : null}
             {pending > 0 ? (
               <>

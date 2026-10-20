@@ -178,3 +178,32 @@ describe('table data (admin Phase 6)', () => {
     expect(screen.queryByText(/unsaved change/)).toBeNull();
   });
 });
+
+describe('CSV import into a table (admin Phase 7)', () => {
+  it('turns a file into INSERT statements in a new editor tab, and says what is wrong with a bad one', async () => {
+    setup();
+    const onOpenSql = vi.fn();
+    render(<DataPanel sessionId={SID} schema="shop" table="items" transaction="IDLE" onOpenSql={onOpenSql} />);
+    await screen.findByText('Ada');
+    const input = screen.getByLabelText('Import CSV…');
+    await userEvent.upload(input, new File(['id,name\n7,"Smith, Ann"\n8,\n'], 'people.csv', { type: 'text/csv' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('people.csv: the INSERT statements opened in a new editor tab');
+    const [script, title] = onOpenSql.mock.calls[0];
+    expect(title).toBe('import-items.sql');
+    expect(script).toContain("INSERT INTO shop.items (id, name) VALUES\n('7', 'Smith, Ann'),\n('8', NULL);\nCOMMIT;\n");
+    await userEvent.upload(input, new File(['id,colour\n1,red\n'], 'bad.csv', { type: 'text/csv' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not imported: Not columns of shop.items: colour.');
+    await userEvent.upload(input, new File([new Uint8Array([0x69, 0x64, 0x0a, 0xff, 0xfe])], 'binary.csv', { type: 'text/csv' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not imported: the file is not UTF-8 text.');
+    await userEvent.upload(input, new File(['x'.repeat(1024 * 1024 + 1)], 'huge.csv', { type: 'text/csv' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('larger than 1 MB');
+    expect(onOpenSql).toHaveBeenCalledTimes(1);
+  });
+
+  it('is not offered without INSERT', async () => {
+    setup({ rel: relation({ myPrivileges: ['SELECT'] }) });
+    render(<DataPanel sessionId={SID} schema="shop" table="items" transaction="IDLE" onOpenSql={() => {}} />);
+    await screen.findByText('Ada');
+    expect(screen.queryByLabelText('Import CSV…')).toBeNull();
+  });
+});

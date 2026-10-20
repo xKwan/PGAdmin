@@ -1,5 +1,6 @@
 // Phase 8: the main workflow in a real browser. Windows sign-in (NTLM loopback on the workstation), a database
 // session through the production SSPI path, the CodeMirror editor under the strict CSP, and every result view.
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
 const seed = Number(process.env.E2E_SEED || '1');
@@ -23,7 +24,7 @@ async function watch(page) {
   const problems = [];
   const origin = new URL(process.env.E2E_BASE_URL).origin;
   page.on('request', (r) => {
-    if (!r.url().startsWith(origin) && !r.url().startsWith('data:')) problems.push(`request to another origin: ${r.url()}`);
+    if (!r.url().startsWith(origin) && !r.url().startsWith('data:') && !r.url().startsWith(`blob:${origin}`)) problems.push(`request to another origin: ${r.url()}`);
   });
   page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
@@ -439,6 +440,48 @@ test('admin Phase 6: browse a table, then change, add and delete rows in reviewe
   await expect(results.locator('td', { hasText: /^0$/ })).toBeVisible();
   expect(await problems()).toEqual([]);
 });
+
+test('admin Phase 7: export a result as CSV, and import a CSV file as reviewed INSERT statements', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const results = page.getByRole('region', { name: 'Results' });
+
+  // Export: only the rows on screen; the file is what the grid shows.
+  await run(page, editor, "SELECT id, name, '=1+1' AS formula FROM items WHERE id <= 3 ORDER BY id");
+  await expect(results.getByRole('columnheader', { name: /formula/ })).toBeVisible();
+  const [download] = await Promise.all([page.waitForEvent('download'), results.getByRole('button', { name: 'Export CSV' }).click()]);
+  expect(download.suggestedFilename()).toMatch(/^result-\d{8}-\d{6}\.csv$/);
+  const file = await download.path();
+  const csv = readFileSync(file, 'utf8');
+  expect(csv).toBe("id,name,formula\r\n1,item 1,'=1+1\r\n2,item 2,'=1+1\r\n3,item 3,'=1+1\r\n");
+
+  // Import: the file becomes INSERT statements in a new editor tab; nothing runs until Run script.
+  const base = -2_000_000_000 + Math.floor(rng('import')() * 1e6) * 10 + (Date.now() % 10);
+  const objects = page.getByRole('region', { name: 'Objects' });
+  await objects.getByRole('button', { name: 'public', exact: true }).click();
+  await objects.getByRole('button', { name: 'View data of public.items' }).click();
+  const data = page.getByRole('region', { name: 'Table data' });
+  await expect(data.getByText('item 1', { exact: true })).toBeVisible();
+  await data.getByLabel('Import CSV…').setInputFiles({
+    name: 'people.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from(`id,name\r\n${base},"Smith, Ann"\r\n${base + 1},\r\n${base + 2},"O'Brien"\r\n`, 'utf8'),
+  });
+  await expect(data.getByText(/people\.csv: the INSERT statements opened in a new editor tab/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'import-items.sql', exact: true }).last()).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByRole('textbox', { name: 'SQL editor' })).toContainText(`(${quote(base)}, 'Smith, Ann')`);
+  await page.getByRole('button', { name: 'Run script', exact: true }).click();
+  await expect(results.getByText('All 3 statements completed.')).toBeVisible();
+  await run(page, page.getByRole('textbox', { name: 'SQL editor' }), `SELECT count(*) FILTER (WHERE name IS NULL) || '/' || count(*) AS nulls_of FROM items WHERE id BETWEEN ${base} AND ${base + 2}`);
+  await expect(results.locator('td', { hasText: /^1\/3$/ })).toBeVisible();
+  await run(page, page.getByRole('textbox', { name: 'SQL editor' }), `DELETE FROM items WHERE id BETWEEN ${base} AND ${base + 2}`);
+  await expect(results.getByText('Completed. 3 rows affected.')).toBeVisible();
+  expect(await problems()).toEqual([]);
+});
+
+function quote(n) {
+  return `'${n}'`;
+}
 
 test('the workspace fits 1366x768 and 1920x1080 without page-level horizontal scrolling', async ({ page }) => {
   for (const size of [{ width: 1366, height: 768 }, { width: 1920, height: 1080 }]) {

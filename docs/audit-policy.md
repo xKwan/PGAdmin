@@ -28,6 +28,7 @@ The audit trail records who did what, through this application, against which Po
 | `metadata_browse` | Metadata request (object path only; `details.object` is `schemas`, `objects`, `relation` or `extensions`, or, for the read-only administration views of admin Phase 3, `database`, `activity`, `sizes`, `roles` or `definition`; `details.schema` where one was named). Nothing that was shown is recorded |
 | `session_signal` | **Before** another session's query is cancelled or the session ended (admin Phase 4). Fail-closed: no record, no signal. `details.action` (`cancel` or `terminate`), `details.targetPid`, `details.targetUser`, `details.targetDatabase`. An attempt PostgreSQL's rule doesn't allow is recorded with `outcome` `refused` and nothing is sent |
 | `session_signal_outcome` | After the signal: `outcome` `success`, `not_sent` (the session had already gone) or `error` with its SQLSTATE; `details.action`, `details.targetPid`. Best effort |
+| `data_export` | **Before** the browser saves rows it holds as a file (admin Phase 7). Fail-closed: no record, no file. `execution_id` of the statement the rows came from, `details.format` (`csv` or `json`), `details.rows`, `details.columns`. **Never the data.** Importing a CSV file creates no event of its own: the INSERT statements it produces are audited like any script |
 | `audit_spool_replayed`, `audit_failure` | Audit infrastructure events |
 
 ## 3. Fields

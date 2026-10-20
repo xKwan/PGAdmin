@@ -54,6 +54,9 @@ public final class DbSessionServlets {
     }
 
     /** Body of a transaction request: {@code action} begin, commit or rollback. */
+    public record ExportRequest(String executionId, String format, Integer rows, Integer columns) {
+    }
+
     public record TransactionRequest(String action, String isolation, Boolean readOnly) {
     }
 
@@ -219,6 +222,10 @@ public final class DbSessionServlets {
             }
             if (p.length == 2 && p[1].equals("cancel")) {
                 return runner.cancel(user(req), p[0]);
+            }
+            if (p.length == 2 && p[1].equals("export")) {
+                ExportRequest body = body(req, ExportRequest.class);
+                return runner.recordExport(user(req), p[0], body.executionId(), body.format(), body.rows(), body.columns(), requestId(req));
             }
             throw ApiException.notFound();
         }

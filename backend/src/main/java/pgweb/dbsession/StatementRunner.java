@@ -28,4 +28,10 @@ public interface StatementRunner {
 
     /** Whether a statement is running and what it waits for (lock-wait indicator). */
     Map<String, Object> activity(UserContext user, String sessionId);
+
+    /**
+     * Before the browser saves rows it already holds as a file (admin Phase 7): records {@code data_export}, fail-closed.
+     * Reads nothing from the database and records no data.
+     */
+    Map<String, Object> recordExport(UserContext user, String sessionId, String executionId, String format, Integer rows, Integer columns, String requestId);
 }

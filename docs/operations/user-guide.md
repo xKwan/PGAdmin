@@ -143,6 +143,12 @@ In a table with a primary key, and only as far as your role may change it:
 - Saving needs no open transaction of your own: commit or roll back first.
 - Tables without a primary key can be read here, not changed: use SQL with a WHERE clause instead.
 
+## 7d. Export and import
+
+- **Export CSV** and **Export JSON** (above a result's rows) save the rows you see, including pages loaded with **Load more rows**, as a file. It contains exactly what the grid shows: PostgreSQL's text for each value; in CSV an empty field is NULL and `""` is an empty text. Text that a spreadsheet would treat as a formula (starting with `=`, `+`, `-`, `@`) gets a leading `'`. Each export is recorded in the audit log (format and how many rows and columns, never the data); if that record can't be written, nothing is saved. To export more rows than pgweb shows, ask the database owner for an extract.
+- **Import CSV…** (in the Data tab of a table you may insert into) reads a UTF-8 CSV file of up to 1 MB and 5,000 rows, with a header row naming the columns. It writes INSERT statements, in one transaction, into a new editor tab. **Nothing is imported until you press Run script**; if the script stops at an error, press **Roll back**. An empty field becomes NULL, `""` an empty text, and PostgreSQL converts each value to the column's type.
+- Backup and restore are not available in pgweb.
+
 ## 8. What is recorded
 
 Every sign-in, connection and statement (each statement of a script separately, and each extra page of rows you load) is recorded in an audit trail the administrators and named auditors can review. For each statement: when, who, which server and database, the kind of statement, its outcome and row count, and the statement **with every literal value replaced** (`WHERE id = $1`). The values you type aren't stored, and neither is the full text; a keyed fingerprint lets an investigator confirm whether a given text was run. Opening an object, a definition or an administration tab is recorded by name only (for example "activity"), never what was shown. When the audit trail can't be written, statements are refused until it is back; this protects you and the organisation from unrecorded changes.
@@ -182,3 +188,5 @@ Every sign-in, connection and statement (each statement of a script separately, 
 | Nothing was saved: the row with … was changed or deleted by someone else … (Data) | Reload, check the row, and make your change again |
 | Nothing was saved: PostgreSQL refused it: … (Data) | A value doesn't fit the column, or a constraint or privilege refused it; nothing was changed |
 | This table has no primary key, so its rows can be read here but not changed. | Use SQL to change rows of such a table |
+| Not exported: the audit database is unavailable … | The export couldn't be recorded, so nothing was saved; try again later |
+| Not imported: … (Import CSV) | The file isn't UTF-8 CSV, is too large, names a column the table doesn't have, or has a line with the wrong number of fields |
