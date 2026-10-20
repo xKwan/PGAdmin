@@ -8,6 +8,8 @@ import pgweb.audit.AuditService;
 import pgweb.audit.AuditSpool;
 import pgweb.auditviewer.AuditViewer;
 import pgweb.auditviewer.AuditViewerServlet;
+import pgweb.savedqueries.SavedQueries;
+import pgweb.savedqueries.SavedQueriesServlet;
 import pgweb.authz.Access;
 import pgweb.authz.AccessFilter;
 import pgweb.config.Config;
@@ -140,7 +142,9 @@ public final class Application implements AutoCloseable {
                 .servlet("metadata", new MetadataServlet(metadata, new AdminCatalog(metadata, sessions),
                         new SessionSignals(config, metadata, sessions, audit), new SchemaSnapshot(metadata, sessions)), Access.AUTHENTICATED, "/api/metadata/*")
                 .servlet("dbSessions", new DbSessionServlets.Sessions(sessions, engine, config.limits().maxSqlBytes()), Access.AUTHENTICATED, "/api/db-sessions", "/api/db-sessions/*")
-                .servlet("auditSearch", new AuditViewerServlet(new AuditViewer(config, sessions, audit)), Access.AUTHENTICATED, "/api/audit/search");
+                .servlet("auditSearch", new AuditViewerServlet(new AuditViewer(config, sessions, audit)), Access.AUTHENTICATED, "/api/audit/search")
+                .servlet("savedQueries", new SavedQueriesServlet(new SavedQueries(config.server().workDir().resolve("saved-queries"),
+                        config.savedQueriesEnabled(), audit, Json.mapper(), options.clock())), Access.AUTHENTICATED, "/api/saved-queries", "/api/saved-queries/*");
         options.extraRoutes().accept(routes);
         routes.servlet("default", new StaticContentServlet(), Access.AUTHENTICATED, "/");
 

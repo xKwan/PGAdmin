@@ -142,7 +142,7 @@ try {
         # The internal profile (DataAdmin only) points at the same throwaway cluster, with a banner.
         'profile.internal.host=localhost', "profile.internal.port=$pgPort", 'profile.internal.bannerText=INTERNAL', 'profile.internal.bannerTone=danger',
         'execution.enabled=true', ('parser.library=' + (& $fwd $dll)),
-        'auditViewer.enabled=true', 'auditViewer.host=localhost', "auditViewer.port=$pgPort",
+        'auditViewer.enabled=true', 'auditViewer.host=localhost', "auditViewer.port=$pgPort", 'savedQueries.enabled=true',
         ('logging.dir=' + (& $fwd (Join-Path $root 'logs'))), ('server.workDir=' + (& $fwd (Join-Path $root 'work'))))
     Run 'migrate' "`"$java`" -jar `"$jar`" migrate --config `"$config`""
 

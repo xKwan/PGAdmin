@@ -61,6 +61,11 @@ auditViewer.enabled=false
 #auditViewer.sslMode=verify-full
 #auditViewer.sslRootCert=C:\\ProgramData\\pgweb\\config\\root.crt
 
+# --- Saved queries (admin Phase 11): off unless enabled ----------------------------------------------------------
+# Each account's saved queries are kept as files under server.workDir\saved-queries (service account only): SQL text
+# at rest on this server. Switch on only where that is acceptable (threat T43).
+savedQueries.enabled=false
+
 # --- SQL execution: OFF until gate G4 is signed off (EXE-01) ------------------------------------------------------
 execution.enabled=false
 parser.library=native\\pg_query.dll

@@ -76,6 +76,10 @@ Your databases are listed as soon as the workspace opens. Choosing one opens a *
 - **Cancel** stops a running statement. If PostgreSQL doesn't stop it within 5 seconds, pgweb ends that database connection and closes the session.
 - **"Waiting for a lock held by another session"** means another session holds a row or table you need; your statement continues when they commit or roll back, or stops at the time limit.
 
+### Saved queries
+
+Where the administrator has switched them on, **Save to server…** in the editor toolbar keeps the tab's text on the pgweb server under a name, for your Windows account only: nobody else sees your saved queries. The **Saved** tab (next to History) lists them; **Open** puts one in a new editor tab (nothing runs), **Delete** removes it. Saving from a tab that was opened from a saved query replaces it, unless you tick **Save as a new query**. Up to 200 queries of up to 100,000 characters. Don't save passwords or personal data in them: the text is stored on the server.
+
 ### Completion
 
 While you type, the editor offers SQL keywords and, once you are connected, names from the database: schemas, the tables and views on your search path, the columns of the tables your statement names (also after an alias such as `o.`), and after `schema.` that schema's tables, views, functions and procedures. **Ctrl+Space** opens the list where you are; Enter or a click takes a name (quoted where needed). Only objects your role can use are offered. The names are read as your own role when the editor first needs them, one schema at a time, and again after you change objects.

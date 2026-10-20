@@ -18,6 +18,7 @@ import useEditorTabs from '../features/editor/useEditorTabs.js';
 import ObjectExplorer from '../features/explorer/ObjectExplorer.jsx';
 import SessionBar, { LostSession } from '../features/connections/SessionBar.jsx';
 import HistoryPanel from '../features/history/HistoryPanel.jsx';
+import { SaveDialog, SavedPanel } from '../features/saved/SavedPanel.jsx';
 import { addHistory, clearHistory, historyEntry, readHistory } from '../features/history/queryHistory.js';
 import ResultView from '../features/results/ResultView.jsx';
 import useExecution from '../features/results/useExecution.js';
@@ -51,7 +52,7 @@ function changedObjects(result) {
  * time, stopping at the first failure), the execution mode, transaction controls, then the editor tabs. Without a
  * session or with execution switched off, SQL can still be written, opened and saved; nothing can be run.
  */
-function EditorPane({ session, executionEnabled, execution, tabs, controllers, onRun, onRunScript, onExplain, completionSource }) {
+function EditorPane({ session, executionEnabled, execution, tabs, controllers, onRun, onRunScript, onExplain, completionSource, onSaveToServer }) {
   const failed = execution.tx.state === 'FAILED';
   const canRun = Boolean(session) && executionEnabled && !execution.running && !execution.fetching && !failed;
   return (
@@ -81,6 +82,11 @@ function EditorPane({ session, executionEnabled, execution, tabs, controllers, o
         >
           Explain analyze
         </button>
+        {onSaveToServer ? (
+          <button type="button" className="btn" onClick={onSaveToServer} title="Keeps this tab's text on the pgweb server for your Windows account. Nothing is run">
+            Save to server…
+          </button>
+        ) : null}
         <span className="muted">Ctrl+Enter runs the selection, or the statement at the cursor. Run script runs them all.</span>
         {executionEnabled ? null : <StatusBadge tone="warn">Running SQL is switched off by the administrator</StatusBadge>}
         {executionEnabled && !session ? <StatusBadge tone="neutral">Connect to a database to run SQL</StatusBadge> : null}
@@ -151,7 +157,7 @@ const CLOSED_BY_SERVER = 'The database session was closed by the server. Anythin
  * Editor (admin Phase 2): tabs with local .sql files belong to the workspace, not to a session, so they survive
  * switching database and reconnecting; unsaved changes are confirmed before a tab or the workspace is left.
  */
-export default function Workspace({ profile, onBack, executionEnabled = false, user = null }) {
+export default function Workspace({ profile, onBack, executionEnabled = false, user = null, savedQueries = false }) {
   const [session, setSession] = useState(null);
   const [lost, setLost] = useState(null);
   const [opening, setOpening] = useState(null);
@@ -160,7 +166,13 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
   const [history, setHistory] = useState(() => readHistory(profile, user?.sid));
   const [lowerTab, setLowerTab] = useState('results');
   const [dataTarget, setDataTarget] = useState(null); // {schema, name}: the table shown in the Data tab (admin Phase 6)
-  const [compareSource, setCompareSource] = useState(null); // the source schema's snapshot (admin Phase 8); survives switching database
+  const [compareSource, setCompareSource] = useState(null);
+  const [savingTab, setSavingTab] = useState(null); // the editor tab being saved to the server (admin Phase 11)
+  const [savedVersion, setSavedVersion] = useState(0);
+  const saveInitial = useMemo(
+    () => (savingTab ? { name: savingTab.savedId ? savingTab.title.replace(/[.]sql$/, '') : '', savedId: savingTab.savedId } : null),
+    [savingTab],
+  ); // the source schema's snapshot (admin Phase 8); survives switching database
   const [resultTab, setResultTab] = useState(null);
   const [explorerVersion, setExplorerVersion] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -350,6 +362,7 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                   onRunScript={runScript}
                   onExplain={explain}
                   completionSource={completionSource}
+                  onSaveToServer={savedQueries ? () => setSavingTab(tabs.active) : null}
                 />
               </section>
             }
@@ -362,6 +375,11 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                   <button type="button" role="tab" aria-selected={lower === 'history'} className="tab-button" onClick={() => setLowerTab('history')}>
                     History ({history.length})
                   </button>
+                  {savedQueries ? (
+                    <button type="button" role="tab" aria-selected={lower === 'saved'} className="tab-button" onClick={() => setLowerTab('saved')}>
+                      Saved
+                    </button>
+                  ) : null}
                   {session && !lost
                     ? ADMIN_TABS.map(([id, label]) => (
                         <button key={id} type="button" role="tab" aria-selected={lower === id} className="tab-button" onClick={() => setLowerTab(id)}>
@@ -399,7 +417,8 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
                     onOpen={(text, title) => tabs.open(text, title)}
                   />
                 ) : null}
-                {ADMIN_TAB_IDS.has(lower) || lower === 'data' ? null : lower === 'results' ? (
+                {lower === 'saved' ? <SavedPanel version={savedVersion} onOpen={(text, title, id) => tabs.open(text, title, null, id)} /> : null}
+                {ADMIN_TAB_IDS.has(lower) || lower === 'data' || lower === 'saved' ? null : lower === 'results' ? (
                   <ResultView
                     execution={execution}
                     onCancel={execution.cancel}
@@ -438,6 +457,19 @@ export default function Workspace({ profile, onBack, executionEnabled = false, u
         </p>
         <p className="muted">This check is a safeguard against mistakes, not a security control: your PostgreSQL privileges decide what it may do.</p>
       </ConfirmDialog>
+      {savingTab ? (
+        <SaveDialog
+          key={savingTab.id}
+          initial={saveInitial}
+          getText={() => controllers.current[savingTab?.id]?.text?.() ?? ''}
+          onSaved={(saved) => {
+            tabs.markSaved(savingTab.id, { title: `${saved.name}.sql`, savedId: saved.id });
+            setSavingTab(null);
+            setSavedVersion((v) => v + 1);
+          }}
+          onClose={() => setSavingTab(null)}
+        />
+      ) : null}
       <ConfirmDialog
         open={leaving}
         title="Leave with unsaved changes?"

@@ -40,6 +40,7 @@ public final class MeServlet extends ApiServlet {
         caps.put("external", config.profiles().containsKey("external"));
         caps.put("executionEnabled", config.executionEnabled());
         caps.put("auditViewer", config.auditViewer().isPresent());
+        caps.put("savedQueries", config.savedQueriesEnabled());
         Map<String, Object> sess = new LinkedHashMap<>();
         sess.put("loginAt", u.loginAt().toString());
         sess.put("expiresAt", u.loginAt().plus(config.auth().sessionAbsolute()).toString());

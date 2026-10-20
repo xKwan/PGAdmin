@@ -18,7 +18,8 @@ public record Config(
         Path logDir,
         Identity identity,
         Path parserLibrary,
-        Optional<DbProfile> auditViewer) {
+        Optional<DbProfile> auditViewer,
+        boolean savedQueriesEnabled) {
 
     /**
      * How a Windows account maps to its PostgreSQL role (ADR-0002).

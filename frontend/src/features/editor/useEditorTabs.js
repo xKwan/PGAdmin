@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
 
-function nextTab(counter, doc = '', title = null, handle = null) {
+function nextTab(counter, doc = '', title = null, handle = null, savedId = null) {
   counter.current += 1;
   const n = counter.current;
-  return { id: `t${n}`, title: title || `Query ${n}`, handle, dirty: false, initialDoc: doc };
+  return { id: `t${n}`, title: title || `Query ${n}`, handle, dirty: false, initialDoc: doc, savedId };
 }
 
 /**
@@ -15,12 +15,15 @@ export default function useEditorTabs(initialDoc = '') {
   const counter = useRef(1);
   const [state, setState] = useState(() => ({
     active: 't1',
-    tabs: [{ id: 't1', title: 'Query 1', handle: null, dirty: false, initialDoc }],
+    tabs: [{ id: 't1', title: 'Query 1', handle: null, dirty: false, initialDoc, savedId: null }],
   }));
 
-  /** Opens a new tab (empty, or with a file's text) and makes it active. Returns its id. */
-  const open = useCallback((doc = '', title = null, handle = null) => {
-    const tab = nextTab(counter, doc, title, handle);
+  /**
+   * Opens a new tab (empty, or with a file's text) and makes it active. Returns its id. `savedId` links the tab to a
+   * query saved on the server (admin Phase 11).
+   */
+  const open = useCallback((doc = '', title = null, handle = null, savedId = null) => {
+    const tab = nextTab(counter, doc, title, handle, savedId);
     setState((s) => ({ active: tab.id, tabs: [...s.tabs, tab] }));
     return tab.id;
   }, []);
@@ -45,11 +48,13 @@ export default function useEditorTabs(initialDoc = '') {
     setState((s) => (s.tabs.find((t) => t.id === id)?.dirty ? s : { ...s, tabs: s.tabs.map((t) => (t.id === id ? { ...t, dirty: true } : t)) }));
   }, []);
 
-  /** Saved: optionally under a new title and file handle. */
-  const markSaved = useCallback((id, { title, handle } = {}) => {
+  /** Saved: optionally under a new title, file handle or saved-query ID. */
+  const markSaved = useCallback((id, { title, handle, savedId } = {}) => {
     setState((s) => ({
       ...s,
-      tabs: s.tabs.map((t) => (t.id === id ? { ...t, dirty: false, ...(title ? { title } : {}), ...(handle ? { handle } : {}) } : t)),
+      tabs: s.tabs.map((t) =>
+        t.id === id ? { ...t, dirty: false, ...(title ? { title } : {}), ...(handle ? { handle } : {}), ...(savedId ? { savedId } : {}) } : t,
+      ),
     }));
   }, []);
 

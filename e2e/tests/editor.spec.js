@@ -622,6 +622,46 @@ test('admin Phase 10: the editor completes schema, table and column names from t
   expect(await problems()).toEqual([]);
 });
 
+test('admin Phase 11: save a query on the server, open it in a new tab, replace it and delete it', async ({ page }) => {
+  const problems = await watch(page);
+  const editor = await connect(page);
+  const name = `e2e saved ${Date.now().toString(36)}${Math.floor(rng('saved')() * 1e6).toString(36)}`;
+  await editor.click();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.press('Delete');
+  await page.keyboard.insertText('SELECT count(*) FROM items');
+  await page.getByRole('button', { name: 'Save to server…' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Save to server' });
+  await dialog.getByLabel('Name').fill(name);
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole('button', { name: `${name}.sql`, exact: true })).toBeVisible();
+
+  // The list, and opening it in a new tab (nothing runs).
+  await page.getByRole('tab', { name: 'Saved', exact: true }).click();
+  const saved = page.getByRole('region', { name: 'Saved queries' });
+  await saved.getByRole('button', { name: `Open ${name}` }).click();
+  await expect(page.getByRole('button', { name: `${name}.sql`, exact: true })).toHaveCount(2);
+  await expect(page.getByRole('textbox', { name: 'SQL editor' }).last()).toContainText('SELECT count(*) FROM items');
+
+  // Replace it from the tab it was opened in.
+  await page.getByRole('textbox', { name: 'SQL editor' }).last().click();
+  await page.keyboard.press('End');
+  await page.keyboard.insertText(' WHERE id < 10');
+  await page.getByRole('button', { name: 'Save to server…' }).click();
+  await expect(dialog.getByLabel('Name')).toHaveValue(name);
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(dialog).toBeHidden();
+  await saved.getByRole('button', { name: `Open ${name}` }).click();
+  await expect(page.getByRole('textbox', { name: 'SQL editor' }).last()).toContainText('SELECT count(*) FROM items WHERE id < 10');
+
+  // Delete it.
+  await saved.getByRole('button', { name: `Delete ${name}` }).click();
+  await page.getByRole('dialog', { name: 'Delete this saved query?' }).getByRole('button', { name: 'Delete' }).click();
+  await expect(saved.getByRole('button', { name: `Open ${name}` })).toHaveCount(0);
+  expect(await problems()).toEqual([]);
+});
+
 function quote(n) {
   return `'${n}'`;
 }

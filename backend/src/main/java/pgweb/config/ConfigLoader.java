@@ -54,7 +54,7 @@ public final class ConfigLoader {
             "limits.maxScriptStatements", "limits.maxFetchedRows",
             "logging.dir", "identity.roleCase", "identity.roleOverrides", "parser.library",
             "auditViewer.enabled", "auditViewer.host", "auditViewer.port", "auditViewer.database", "auditViewer.sslMode",
-            "auditViewer.sslRootCert");
+            "auditViewer.sslRootCert", "savedQueries.enabled");
     private static final Set<String> PROFILE_KEYS = Set.of(
             "displayName", "host", "port", "sslMode", "sslRootCert", "maintenanceDb", "requiresDataAdmin", "statementTimeoutSeconds",
             "confirmDestructive", "bannerText", "bannerTone");
@@ -132,6 +132,7 @@ public final class ConfigLoader {
             Path logDir = Path.of(str("logging.dir", "logs"));
             Path parserLibrary = Path.of(str("parser.library", "native/pg_query.dll"));
             Optional<Config.DbProfile> auditViewer = auditViewer(prod);
+            boolean savedQueries = bool("savedQueries.enabled", false);
 
             if (!problems.isEmpty()) {
                 throw new ConfigException(problems);
@@ -140,7 +141,7 @@ public final class ConfigLoader {
             if (!problems.isEmpty()) {
                 throw new ConfigException(problems);
             }
-            return new Config(mode, server, auth, audit, profiles, limits, execution, logDir, identity, parserLibrary, auditViewer);
+            return new Config(mode, server, auth, audit, profiles, limits, execution, logDir, identity, parserLibrary, auditViewer, savedQueries);
         }
 
         private Config.Server server(boolean prod) {

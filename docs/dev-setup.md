@@ -88,6 +88,7 @@ Unknown keys are errors, so a misspelt setting can't silently fall back to a def
 | `parser.library` | `native/pg_query.dll` | Path to the libpg_query DLL (relative to the working directory); loaded only when execution is enabled |
 | `auditViewer.enabled` | `false` | Audit viewer for auditors (admin Phase 9). When `true`, `auditViewer.host` is required |
 | `auditViewer.host`, `auditViewer.port`, `auditViewer.database` | —, `5432`, `pgweb_audit` | The audit database as reached **by the signed-in user** (Kerberos: SPN `POSTGRES/<host>`, constrained delegation as for the profiles; a login role per auditor, member of `pgweb_audit_reader`, with a `gss`/`sspi` line in the audit cluster's `pg_hba.conf`) |
+| `savedQueries.enabled` | `false` | Saved queries on the server (admin Phase 11), stored under `server.workDir\saved-queries` |
 | `auditViewer.sslMode`, `auditViewer.sslRootCert` | `verify-full` in prod | As for the profiles |
 | `limits.*` | ADR-0006 | `maxRows` 1000, `maxResponseBytes` 10 MB, `maxCellBytes` 64 KB, `maxSqlBytes` 1 MB, `cancelGraceSeconds` 5, `idleSessionMinutes` 15, `idleInTransactionMinutes` 10 (warning at 8), `maxTransactionAgeMinutes` 60, `heartbeatAbandonSeconds` 120, `sessionsPerUser` 3, `sessionsGlobal` 50, `failedOpensPerWindow` 5 per `failedOpenWindowMinutes` 5, `maxScriptStatements` 1000, `maxFetchedRows` 10000 (admin Phase 2) |
 | `logging.dir` | `logs` | Rolling `pgweb.log` (50 MB × 30 days, 2 GB cap). Messages and stack traces are redacted. |
