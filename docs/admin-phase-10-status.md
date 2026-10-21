@@ -54,6 +54,6 @@
 
 - Aliases in subqueries, CTE names and columns of functions' results aren't offered.
 
-## 9. Ready for review?
+## 8. Ready for review?
 
 **Yes.** Loop 5/5 and E2E 5/5. Decision A15 is open to the stakeholder's review.

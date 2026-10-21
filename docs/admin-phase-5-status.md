@@ -60,6 +60,6 @@ No new endpoint, route, privilege or audit event. Threat T38 (generated SQL does
 - Lists of column names are comma-separated; a column whose name contains a comma must be typed in the SQL editor.
 - The forms don't read the catalog to suggest names; the explorer and the Roles tab show them.
 
-## 9. Ready for review?
+## 8. Ready for review?
 
 **Yes.** Loop 5/5 and E2E 5/5.

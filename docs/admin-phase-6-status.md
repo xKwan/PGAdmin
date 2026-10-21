@@ -60,6 +60,6 @@ No new endpoint or audit event. T39: a save changes rows the user didn't intend,
 - Values are edited as text in a form, one row at a time; no in-cell editing, no editor for JSON or arrays.
 - A table without a primary key can't be edited here (a unique index alone isn't used).
 
-## 9. Ready for review?
+## 8. Ready for review?
 
 **Yes.** Loop 5/5 and E2E 5/5.

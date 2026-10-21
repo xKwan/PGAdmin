@@ -59,6 +59,6 @@
 - Values cut for display at 64 KiB are exported as shown.
 - Import: comma-separated only, UTF-8 only, 1 MB and 5,000 rows at a time; a column name containing a comma must be quoted in the header (it is, by any CSV writer).
 
-## 9. Ready for review?
+## 8. Ready for review?
 
-**Yes.** Loop 5/5 and E2E 5/5. This completes the buildable part of the plan; backup and restore wait for an ADR (A6).
+**Yes.** Loop 5/5 and E2E 5/5. This completes the buildable part of the plan; backup and restore wait for an ADR (A6; draft ADR-0010 written 2026-10-21, Proposed, awaiting approval).

@@ -55,14 +55,16 @@
 
 ## 6. Security and audit implications
 
-- T43: SQL text at rest on the app server; isolation between accounts; file names and IDs. Bounded as above.
-- New audit events `saved_query_saved`, `saved_query_deleted`.
+- **SQL text at rest (T43):** the only feature that stores SQL text on the app server. Files are under `<workDir>/saved-queries/`, which inherits the work folder's ACL (service account only). Off by default (`savedQueries.enabled=false`, also in the production template).
+- **Isolation between accounts:** each account's file is named by the SHA-256 of its SID; there is no way to name another account's file, and another account's query ID is "not found".
+- **No path traversal:** file names come only from the hash; query IDs must be UUIDs and are never used in a path; an encoded `../` is refused before it reaches pgweb.
+- **Audit before action:** saving and deleting are recorded first (`saved_query_saved`, `saved_query_deleted`; fail-closed) with the ID, lengths and the statement HMAC, never the text. Saving runs nothing: a saved query runs only when opened and run like any other text.
 
 ## 7. Known limitations
 
 - No sharing between users, no folders or search.
 - Saved queries live on one app server: they are part of the server's `work` folder for backup and are not migrated anywhere else.
 
-## 9. Ready for review?
+## 8. Ready for review?
 
 **Yes.** Loop 5/5 and E2E 5/5. Decision A16 is open to the stakeholder's review.

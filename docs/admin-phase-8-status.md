@@ -64,6 +64,6 @@
 - Dropping a constraint that a foreign key in another table depends on fails; the script stops and nothing changes.
 - Function bodies are compared as text; a function whose return type changed can't be replaced with `CREATE OR REPLACE` (PostgreSQL refuses it; drop it first).
 
-## 9. Ready for review?
+## 8. Ready for review?
 
 **Yes.** Loop 5/5 and E2E 5/5. Decision A13 is open to the stakeholder's review.

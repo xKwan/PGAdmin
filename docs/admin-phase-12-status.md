@@ -52,6 +52,6 @@ None: presentation only, nothing sent to the server.
 
 - Colour contrast was chosen for readability but not measured with a contrast tool in the browser (jsdom doesn't compute colours).
 
-## 9. Ready for review?
+## 8. Ready for review?
 
 **Yes.** Loop 5/5 and E2E 5/5. Decision A17 is open to the stakeholder's review.

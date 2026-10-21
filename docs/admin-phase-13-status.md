@@ -49,6 +49,11 @@
 
 None: presentation only. Keys don't bypass anything: running still goes through the same checks as the buttons and the server.
 
-## 9. Ready for review?
+## 7. Known limitations
+
+- Only pgweb's own editor commands can be rebound (A18); CodeMirror's editing keys and the browser's keys can't.
+- Keys are kept in this browser only: another browser or computer starts with the defaults.
+
+## 8. Ready for review?
 
 **Yes.** Loop 5/5 and E2E 5/5. Decision A18 is open to the stakeholder's review.

@@ -55,14 +55,17 @@
 
 ## 6. Security and audit implications
 
-- T42: the trail exposed to a non-auditor, or readable by pgweb's own account. Bounded as above.
-- New audit event `audit_view`.
+- **Who can read (T42):** PostgreSQL decides. Each search connects to the audit database as the signed-in user, so only members of `pgweb_audit_reader` read anything; anyone else gets `AUDIT_READ_DENIED`. pgweb's own account stays INSERT-only (ADR-0005 unchanged), so a flaw in pgweb can't widen what it reads.
+- **Audit before action:** every search is recorded first as `audit_view` with its filters (fail-closed: no record, no search).
+- **No injection:** one constant query; every filter is a bound parameter; the user filter's `%` and `_` are escaped; types and outcomes are checked against patterns.
+- **Bounded:** read-only transaction, 15-second statement timeout, at most 31 days and 200 rows per page.
+- **Off by default** (`auditViewer.enabled=false`, also in the production template).
 
 ## 7. Known limitations
 
 - In the E2E the auditor reads the same throwaway cluster as the data, through SSPI on loopback; Kerberos delegation to a separate audit host is target-environment work (as for K3).
 - No export of search results (deliberately).
 
-## 9. Ready for review?
+## 8. Ready for review?
 
 **Yes.** Loop 5/5 and E2E 5/5. Decision A14 is open to the stakeholder's review.

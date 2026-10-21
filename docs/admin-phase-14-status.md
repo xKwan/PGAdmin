@@ -56,8 +56,11 @@
 
 ## 6. Security and audit implications
 
-- T44: bypassing the second person. Bounded as above.
-- New audit events `approval_requested`, `approval_granted`, `approval_rejected`, `approval_withdrawn`.
+- **Bypassing the second person (T44):** the server decides what needs approval on every run, from the gate's parse and the profile's list; the browser can only ask. An approval is bound to the requester's SID, app session and database session, the text's HMAC, the run's form (statement or script) and the session's `standard_conforming_strings`; it covers only the reasons the approver was shown, is used once, and expires 15 minutes after the decision. The requester can never decide (`OWN_REQUEST`), even as an approver; only members of `auth.approverSid` can.
+- **Audit before action:** `approval_requested`, `approval_granted`, `approval_rejected` and `approval_withdrawn` are written first (fail-closed), without the text; a refused run is `exec_rejected` with `approval_required`; an approved run's `exec_intent` carries the approval ID.
+- **No new privilege:** the statement still runs as the requester's own role, through the gate, the confirmation and the kill switch.
+- **Text in memory only:** approvers read the full text; it is never written to disk and ends with a restart.
+- **Residual:** approval covers statement kinds at the top level. A role that may create functions or run DO blocks could wrap a listed statement in one; list `ddl` and `procedural` as well where that matters. Who is in the approver group is the organisation's control.
 
 ## 7. Known limitations
 
@@ -65,6 +68,6 @@
 - Requests are lost when pgweb restarts (by design).
 - No notification: approvers look at the Approvals page.
 
-## 9. Ready for review?
+## 8. Ready for review?
 
 **Yes.** Loop 5/5 and E2E 5/5. Decision A19 is open to the stakeholder's review.
