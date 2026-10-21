@@ -59,6 +59,7 @@ public final class Approvals {
         final String hmac;
         final String text;
         final boolean script;
+        final boolean standardConformingStrings;
         final List<String> reasons;
         final Instant createdAt;
         volatile State state = State.PENDING;
@@ -66,7 +67,7 @@ public final class Approvals {
         volatile Instant decidedAt;
         volatile String comment;
 
-        Request(UserContext user, DbSession s, String hmac, String text, boolean script, List<String> reasons, Instant now) {
+        Request(UserContext user, DbSession s, String hmac, String text, boolean script, boolean scs, List<String> reasons, Instant now) {
             this.requesterAccount = user.account();
             this.requesterSid = user.sid();
             this.appSessionHash = user.sessionHash();
@@ -77,6 +78,7 @@ public final class Approvals {
             this.hmac = hmac;
             this.text = text;
             this.script = script;
+            this.standardConformingStrings = scs;
             this.reasons = List.copyOf(reasons);
             this.createdAt = now;
         }
@@ -105,16 +107,18 @@ public final class Approvals {
     }
 
     /** Creates a request for text that needs approval (the engine has checked it with the gate). */
-    synchronized Map<String, Object> request(UserContext user, DbSession s, String hmac, String text, boolean script, List<String> reasons, String requestId) {
+    synchronized Map<String, Object> request(UserContext user, DbSession s, String hmac, String text, boolean script, boolean scs,
+                                             List<String> reasons, String requestId) {
         expire();
         long open = requests.values().stream().filter(r -> r.requesterSid.equals(user.sid()) && r.state == State.PENDING).count();
         if (open >= MAX_PENDING_PER_USER) {
             throw ApiException.conflict("TOO_MANY_REQUESTS", "You have " + MAX_PENDING_PER_USER + " requests waiting. Withdraw one, or wait for a decision.");
         }
+        forgetFinished();
         if (requests.size() >= MAX_REQUESTS) {
             throw ApiException.conflict("TOO_MANY_REQUESTS", "Too many approval requests are open. Try again later.");
         }
-        Request r = new Request(user, s, hmac, text, script, reasons, clock.instant());
+        Request r = new Request(user, s, hmac, text, script, scs, reasons, clock.instant());
         audit.require(AuditEvent.of("approval_requested").user(user).target(s.profile(), s.database(), s.role(), s.mainPid(), s.id())
                 .statement(script ? "script" : null, null, hmac, text.length(), null).detail("approvalId", r.id).detail("reasons", reasons)
                 .detail("requestId", requestId));
@@ -122,12 +126,17 @@ public final class Approvals {
         return view(r, true, user);
     }
 
-    /** The approval for exactly this run, if one was given and is still valid; it is then used up. */
-    synchronized String consume(UserContext user, DbSession s, String hmac, boolean script) {
+    /**
+     * The approval for exactly this run, if one was given and is still valid; it is then used up. Besides the text, the
+     * run must read it the same way (the session's {@code standard_conforming_strings} decides what a backslash in a
+     * string means) and need no reason the approver wasn't shown.
+     */
+    synchronized String consume(UserContext user, DbSession s, String hmac, boolean script, boolean scs, List<String> needed) {
         expire();
         for (Request r : requests.values()) {
             if (r.state == State.APPROVED && r.requesterSid.equals(user.sid()) && r.appSessionHash.equals(user.sessionHash())
-                    && r.dbSessionId.equals(s.id()) && r.hmac.equals(hmac) && r.script == script) {
+                    && r.dbSessionId.equals(s.id()) && r.hmac.equals(hmac) && r.script == script
+                    && r.standardConformingStrings == scs && r.reasons.containsAll(needed)) {
                 r.state = State.USED;
                 return r.id;
             }
@@ -202,6 +211,20 @@ public final class Approvals {
                 .detail("approvalId", r.id).detail("requestId", requestId));
         r.state = State.WITHDRAWN;
         return view(r, true, user);
+    }
+
+    /**
+     * When the store is full, finished requests (rejected, used, expired, withdrawn) are forgotten, oldest first, so
+     * that only open requests count towards {@link #MAX_REQUESTS}: one account requesting and withdrawing again and
+     * again can't block everyone else's requests for a day.
+     */
+    private void forgetFinished() {
+        if (requests.size() < MAX_REQUESTS) {
+            return;
+        }
+        requests.values().stream().filter(r -> r.state != State.PENDING && r.state != State.APPROVED)
+                .sorted(Comparator.comparing((Request r) -> r.createdAt)).limit(requests.size() - MAX_REQUESTS + 1L).toList()
+                .forEach(r -> requests.remove(r.id));
     }
 
     /** Ends what is past its time, and forgets finished requests after a day. */

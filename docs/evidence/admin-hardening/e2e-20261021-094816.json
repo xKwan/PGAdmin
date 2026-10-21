@@ -1,0 +1,61 @@
+﻿{
+    "tag":  "admin-hardening",
+    "when":  "2026-10-21T09:48:16.0304710+08:00",
+    "masterSeed":  1236376497,
+    "repeat":  5,
+    "overall":  "PASS",
+    "edge":  "155.0.4283.62",
+    "commit":  "e9cf0a8",
+    "runs":  [
+                 {
+                     "run":  1,
+                     "seed":  1347605729,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  96.2
+                 },
+                 {
+                     "run":  2,
+                     "seed":  833021994,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  100.4
+                 },
+                 {
+                     "run":  3,
+                     "seed":  1889281854,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  94.6
+                 },
+                 {
+                     "run":  4,
+                     "seed":  826369441,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  100.2
+                 },
+                 {
+                     "run":  5,
+                     "seed":  1251323621,
+                     "ok":  true,
+                     "passed":  25,
+                     "failed":  [
+
+                                ],
+                     "seconds":  99.9
+                 }
+             ]
+}

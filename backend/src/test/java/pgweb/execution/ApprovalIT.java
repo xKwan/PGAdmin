@@ -147,6 +147,10 @@ class ApprovalIT {
         String other = open(ada);
         assertThat(run(ada, other, "TRUNCATE t").statusCode()).isEqualTo(409);
         assertThat(ada.post("/api/db-sessions/" + id + "/script", Json.write(Map.of("sql", "TRUNCATE t", "confirmed", true))).statusCode()).isEqualTo(409);
+        // Read differently (backslashes in strings change meaning with standard_conforming_strings): not approved.
+        assertThat(run(ada, id, "SET standard_conforming_strings = off").statusCode()).isEqualTo(200);
+        assertThat(json(run(ada, id, "TRUNCATE t"), 409).path("error").path("code").asText()).isEqualTo("APPROVAL_REQUIRED");
+        assertThat(run(ada, id, "SET standard_conforming_strings = on").statusCode()).isEqualTo(200);
         // The approved text runs once.
         assertThat(run(ada, id, "TRUNCATE t").statusCode()).isEqualTo(200);
         assertThat(rows("t")).isZero();
@@ -159,6 +163,21 @@ class ApprovalIT {
         assertThat(grants).filteredOn(e -> String.valueOf(e.get("details")).contains(approval)).hasSize(1);
         assertThat(grants.toString()).doesNotContain("TRUNCATE");
         assertThat(apps.events("exec_intent", "S-1-5-21-6-6-6-1")).anyMatch(e -> String.valueOf(e.get("details")).contains(approval));
+    }
+
+    @Test
+    void finishedRequestsDoNotFillTheStore() throws Exception {
+        MockClient cyd = client("cyd", "3");
+        String id = open(cyd);
+        HttpResponse<String> last = null;
+        for (int i = 0; i <= Approvals.MAX_REQUESTS; i++) {
+            last = cyd.post("/api/db-sessions/" + id + "/approval", Json.write(Map.of("sql", "DROP TABLE IF EXISTS gone" + i)));
+            assertThat(last.statusCode()).as("request %d: %s", i, last.body()).isEqualTo(201);
+            String rid = Json.mapper().readTree(last.body()).path("id").asText();
+            json(cyd.send("DELETE", "/api/approvals/" + rid, null,
+                    Map.of("Origin", cyd.origin(), "X-CSRF-Token", cyd.csrf(), "Content-Type", "application/json")), 200);
+        }
+        assertThat(json(cyd.get("/api/approvals"), 200).path("mine").size()).isLessThanOrEqualTo(Approvals.MAX_REQUESTS);
     }
 
     @Test

@@ -309,7 +309,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         if (!reasons.isEmpty()) {
             throw confirmationRequired(user, s, v.statementClass(), hmac, length, reasons, requestId, Map.of());
         }
-        String approval = approvalFor(user, s, List.of(v.statement()), hmac, false, v.statementClass(), length, requestId);
+        String approval = approvalFor(user, s, List.of(v.statement()), hmac, false, scs, v.statementClass(), length, requestId);
         Map<String, Object> extra = approval == null ? Map.of() : Map.of(APPROVAL_ID, approval);
         return runApproved(user, s, sql, v, scs, hmac, requestId, extra, config.limits().maxResponseBytes(), null).result().document();
     }
@@ -332,12 +332,12 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
      * when none is required; without one, APPROVAL_REQUIRED (audited as a rejection, nothing runs).
      */
     private String approvalFor(UserContext user, DbSession s, List<SqlParser.Statement> statements, String hmac, boolean script,
-                               String statementClass, int length, String requestId) {
+                               boolean scs, String statementClass, int length, String requestId) {
         List<String> needed = approvals.required(s.profile(), allReasons(statements));
         if (needed.isEmpty()) {
             return null;
         }
-        String id = approvals.consume(user, s, hmac, script);
+        String id = approvals.consume(user, s, hmac, script, scs, needed);
         if (id != null) {
             return id;
         }
@@ -388,7 +388,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         if (needed.isEmpty()) {
             throw ApiException.badRequest("APPROVAL_NOT_NEEDED", "This text doesn't need a second person's approval: run it.");
         }
-        return approvals.request(user, s, audit.sqlHmac(sql), sql, script, needed, requestId);
+        return approvals.request(user, s, audit.sqlHmac(sql), sql, script, scs, needed, requestId);
     }
 
     private ApiException confirmationRequired(UserContext user, DbSession s, String statementClass, String hmac, int length,
@@ -515,7 +515,7 @@ public final class ExecutionEngine implements StatementRunner, AutoCloseable {
         if (!reasons.isEmpty()) {
             throw confirmationRequired(user, s, "script", hmac, length, reasons, requestId, Map.of("statements", n));
         }
-        String approval = approvalFor(user, s, items.stream().map(i -> i.verdict().statement()).toList(), hmac, true, "script", length, requestId);
+        String approval = approvalFor(user, s, items.stream().map(i -> i.verdict().statement()).toList(), hmac, true, scs, "script", length, requestId);
         Instant start = clock.instant();
         long budget = config.limits().maxResponseBytes();
         List<Map<String, Object>> out = new ArrayList<>(n);

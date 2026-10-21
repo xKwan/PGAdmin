@@ -37,7 +37,7 @@ Organisations normally take backups at the server level (base backups and WAL ar
 4. **Restore: only into an empty database, never over existing data.**
    - Target: a **new database** created by the user in the same flow (their CREATEDB privilege), or a database they own that has **no tables** (checked as their role just before). `--clean` and `--if-exists` are never used; restoring over a database that has data is not offered.
    - `pg_restore --no-owner --no-privileges --single-transaction --exit-on-error` as the user's role, so a failure leaves the target unchanged.
-   - **Two-person approval** (the deferred feature, when built): a restore must be approved by a second person from the configured approver group before it starts. Until two-person approval exists, restore is not offered even with `backup.enabled=true`.
+   - **Two-person approval**: a restore must be approved by a second person from the configured approver group before it starts. Two-person approval for statements exists since admin Phase 14 (decision A19); a restore would need its own kind of request bound to the job (database, file hash, target), built with this feature. Until then, restore is not offered even with `backup.enabled=true`.
    - The UI asks for confirmation and names the target; the server checks it all again.
 5. **Audit (fail-closed, like SQL):** `backup_requested` (database, schemas, format) before the process starts, `backup_completed` (bytes, SHA-256 of the file, duration, exit code; **no data**); `restore_requested`, `restore_approved`, `restore_completed` likewise. If the intent can't be written, nothing runs.
 6. **Binaries:** PostgreSQL 18 client binaries (`pg_dump.exe`, `pg_restore.exe` and their DLLs) through the offline intake (ADR-0008), with SBOM entries and hashes; the version must be at least the server's. Path in `backup.binDir`; the service refuses to start the feature if the hashes don't match the manifest.
@@ -47,7 +47,7 @@ Organisations normally take backups at the server level (base backups and WAL ar
 - A new kind of process runs under user identities on the app host. It needs a threat-model entry (token handling, argument injection, resource exhaustion, orphaned processes) and tests that kill and clean up processes.
 - Streaming downloads hold an HTTP request open for the length of the dump; the per-user and global job limits protect the service.
 - Users can take a full copy of anything their role can read. That is already true with `pg_dump` on their own machine; pgweb adds an audit record of it.
-- Restore depends on two-person approval, so it can't ship before that feature.
+- Restore depends on two-person approval, extended to restore jobs, so it can't ship before that extension.
 
 ## Questions for the approver
 

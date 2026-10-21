@@ -151,6 +151,14 @@ DataAdmin is the AD group whose SID is `auth.dataAdminSid`; only its members can
 1. **AD admin:** remove the user from the group. It takes effect at their next pgweb sign-in, at the latest after `auth.session.absoluteHours` (8).
 2. For immediate effect: `Restart-Service pgweb` signs everyone out (announce it). The DBA can also `ALTER ROLE <user> NOLOGIN` on the internal server and end their backends: `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename = '<user>';`.
 
+## 7a. Auditors, approvers and saved queries
+
+**Auditors (audit trail viewer, `auditViewer.enabled=true`).** Grant: DBA on the audit database, `GRANT pgweb_audit_reader TO <user's login role>;` (create the login role first, Kerberos only, never superuser). Remove: `REVOKE pgweb_audit_reader FROM <role>;`, effective at the user's next search. Never grant `pgweb_audit_reader` to `pgweb_app`.
+
+**Approvers (two-person approval).** Membership of the AD group named by `auth.approverSid`. Grant or remove in AD; it takes effect at the user's next pgweb sign-in (as for DataAdmin, section 7). Changing which statements need approval: edit `profile.<name>.approvalReasons`, `pgweb check-config`, `Restart-Service pgweb` (open requests are lost; tell users). To switch it off, remove the `approvalReasons` lines.
+
+**Saved queries.** Stored under `server.workDir\saved-queries\`, one JSON file per account, named by the SHA-256 of the account's SID. To remove a departed user's queries, compute the hash of their SID (`[BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes('<SID>'))).Replace('-','').ToLower()`) and delete that file. Switching the feature off (`savedQueries.enabled=false`) hides the files from users but keeps them on disk.
+
 ## 8. Audit investigation and chain verification
 
 Auditors are named accounts granted `pgweb_audit_reader` (`GRANT pgweb_audit_reader TO "<auditor>";`, by the DBA). They query `audit.event` directly with `psql` or any SQL client; pgweb has no audit UI.

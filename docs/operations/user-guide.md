@@ -237,3 +237,21 @@ Every sign-in, connection and statement (each statement of a script separately, 
 | Your PostgreSQL role can't read the audit trail … (Audit trail) | Your role isn't an auditor on the audit database; ask the administrator |
 | … too large to compare here. (Compare) | The schema has more objects than the comparison reads; compare a smaller schema |
 | Not imported: … (Import CSV) | The file isn't UTF-8 CSV, is too large, names a column the table doesn't have, or has a line with the wrong number of fields |
+| A second person must approve this before it runs. | The administrator requires approval for this kind of statement: **Request approval**, then wait for an approver |
+| A second person must decide: you can't approve or reject your own request. (Approvals) | Ask another member of the approver group |
+| You have 5 requests waiting. … | Withdraw one, or wait for a decision |
+| This text doesn't need a second person's approval: run it. | Nothing to ask for: run it as usual |
+
+## 10. Features that depend on the server's settings
+
+Some parts of pgweb appear only where the administrator has switched them on. If you don't see one, it is off for your server, not broken.
+
+| Feature | Where you see it | Off means |
+|---|---|---|
+| Running SQL (Run, Run script, Explain, transactions, the Data tab's Save, Cancel query and End session) | Editor, Data and Activity tabs | You can browse, read definitions and use the administration views, but nothing runs; the buttons say why |
+| Confirmations before destructive statements | When you run them | The server profile doesn't ask; your PostgreSQL privileges still decide |
+| Two-person approval | After a refused run; **Approvals** on the start page | Nothing needs a second person |
+| Saved queries | **Save to server…**, **Saved** tab | Only the browser's history and files on your computer |
+| Audit trail | **Audit trail** on the start page | Auditors use their usual tools on the audit database |
+
+Always available: the object browser and definitions, Activity, Database and Roles, Manage (it only writes SQL), Compare, completion, history, opening and saving files, export, settings.

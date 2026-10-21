@@ -187,6 +187,20 @@ Execution is off in the shipped configuration (EXE-01). Turn it on only after ga
 3. `Restart-Service pgweb`. pgweb refuses to start if execution is on and the parser can't be loaded; the service log says why.
 4. Record the change (who, when, which sign-off) in your change system. Turning it off again is the kill switch (runbooks).
 
+## 9a. Optional features (all off in the template)
+
+Each is switched on in `pgweb.properties` and takes effect after `pgweb check-config` and `Restart-Service pgweb`. Reference: [`../dev-setup.md`](../dev-setup.md) section 4. Record each change in your change system, as for section 9.
+
+| Feature | Setting | Before switching on | What it changes |
+|---|---|---|---|
+| SQL execution | `execution.enabled=true` | Gate G4 signed off (section 9) | Run, Run script, Explain, transactions, row editing, Cancel query and End session on others' sessions (PostgreSQL's own rule applies) |
+| Confirmation of destructive statements | `profile.<name>.confirmDestructive=true` (template: true) | — | Users confirm DROP, TRUNCATE, DDL, GRANT/REVOKE, DO, UPDATE/DELETE without WHERE and EXPLAIN ANALYZE |
+| Two-person approval | `auth.approverSid=<SID of the approvers' AD group>` and `profile.<name>.approvalReasons=drop,truncate,…` (any of `drop`, `truncate`, `ddl`, `privileges`, `procedural`, `no_where`) | `confirmDestructive=true` on that profile; an AD group of approvers. List `ddl` and `procedural` too if a listed statement must not be wrapped in a function or DO block | Listed statements run only after another member of the group approved that exact text, once. Requests are kept in memory and end with a restart |
+| Audit trail viewer | `auditViewer.enabled=true` and `auditViewer.host`, `port`, `database`, `sslMode`, `sslRootCert` | DBA: grant `pgweb_audit_reader` on the audit database to each auditor's login role; AD admin: add `POSTGRES/<audit-host>` to the service account's delegation (section 3) | Auditors read the trail in pgweb, as themselves; each search is itself recorded. pgweb's own account stays INSERT-only |
+| Saved queries | `savedQueries.enabled=true` | Accept that users' SQL text is stored on this server under `server.workDir\saved-queries` (service account only); include it in the server's backup | Users keep up to 200 named queries each, private to their account |
+
+Backup and restore are not available (ADR-0010, Proposed). Audit purges stay prohibited (runbooks, section 11).
+
 ## 10. Monitoring
 
 pgweb has no built-in alert transport; connect the organisation's monitoring agent to these signals:
@@ -210,6 +224,7 @@ Forwarding these to the Windows Event Log or the SIEM is a target-environment it
 | `C:\ProgramData\pgweb\config\` | `pgweb.properties`, `pgweb.p12`, `root.crt`, `pgweb-service.xml` |
 | `C:\ProgramData\pgweb\logs\` | `pgweb.log` (redacted), `service\` (wrapper) |
 | `C:\ProgramData\pgweb\spool\` | Audit records not yet written to the audit database. Never delete. |
+| `C:\ProgramData\pgweb\work\saved-queries\` | Users' saved queries, one file per account (only with `savedQueries.enabled=true`). SQL text: back it up and protect it like the configuration |
 | `C:\ProgramData\pgweb\deploy-history.json` | Install, upgrade, rollback and uninstall steps with timings |
 
 ## 12. Test servers and the CI deployment
